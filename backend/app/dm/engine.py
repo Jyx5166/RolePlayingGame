@@ -941,13 +941,10 @@ class DMEngine:
                 instruction_source="dm_investigation_vote",
             )
             raw, failed = await self._call_agent(context)
-            normalized = raw.upper()
+            normalized = raw.strip().upper()
             approved = (
                 not failed
-                and (
-                    normalized.startswith("APPROVE")
-                    or normalized.startswith("同意")
-                )
+                and normalized in {"APPROVE", "同意"}
             )
             return role_id, approved
 

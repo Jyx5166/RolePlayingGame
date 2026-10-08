@@ -91,6 +91,7 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(payload["input_tokens"])
         self.assertGreaterEqual(payload["latency_ms"], 0)
         self.service.persist_engine_events(self.game["id"], self.dm)
+        self.store.add_event(self.game["id"], "replay", {"truth_revealed": True})
         self.store.update_game(self.game["id"], 3, "completed", "replay")
         role = next(role for role in self.service.get_role_records(self.user["id"], self.game["id"])["roles"] if role["role_id"] == "gu_linchuan")
         self.assertEqual(len(role["agent_context_audits"]), 1)
@@ -148,6 +149,7 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([row["stage"] for row in revisions], [1, 2, 3])
         self.assertEqual([row["phase"] for row in revisions], ["investigation", "dm_hosting", "replay"])
         self.assertEqual([row["content"] for row in revisions], ["v1", "v2", "v3"])
+        self.store.add_event(self.game["id"], "replay", {"truth_revealed": True})
         role = self.service.get_role_records(self.user["id"], self.game["id"])["roles"][0]
         manual = [entry for entry in role["reasoning_notebook"] if entry["source_type"] == "manual"]
         self.assertEqual([entry["stage"] for entry in manual], [1, 2, 3])

@@ -316,6 +316,28 @@ class GameService:
         if game["status"] != "completed":
             raise ValueError("案件结束后才能查看全部角色记录")
 
+        events = self.store.list_events(user_id, game_id)
+        resolutions = self._resolution_history(events)
+        snapshot = self.store.get_runtime_snapshot(user_id, game_id)
+        if snapshot is not None:
+            saved = snapshot.get("state", {}).get("stage_resolutions", {})
+            if saved:
+                resolutions = [saved[stage] for stage in sorted(saved, key=int)]
+
+        final_resolution = next((item for item in resolutions
+                                 if item.get("stage") == game["script"]["script_meta"]["total_stages"]), None)
+        if game["script"].get("stage_flow") and final_resolution is not None:
+            vote = final_resolution.get("vote") if final_resolution else None
+            truth_revealed = bool(final_resolution and final_resolution.get("resolved") is True
+                                  and isinstance(vote, dict) and vote.get("kind") == "final"
+                                  and vote.get("pending") is False and vote.get("truth_revealed") is True)
+        else:
+            replay = next((event["payload"] for event in reversed(events)
+                           if event.get("type") == "replay"), {})
+            truth_revealed = replay.get("truth_revealed") is True
+        if not truth_revealed:
+            raise PermissionError("本结局尚未公开真相，不能查看其他角色的秘密与模型审计；仍可查看自己的线索记录本和终局票型。")
+
         self._ensure_baseline_notebook_records(user_id, game)
         notebook_entries = self.store.list_notebook_entries(user_id, game_id)
         notebook_entries = self._without_legacy_dm_duplicates(notebook_entries)
@@ -328,14 +350,6 @@ class GameService:
             committed[attempt["call_id"]] = attempt
         context_audits = list(committed.values())
         clues = self.store.list_role_clues(user_id, game_id)
-        resolutions = self._resolution_history(
-            self.store.list_events(user_id, game_id)
-        )
-        snapshot = self.store.get_runtime_snapshot(user_id, game_id)
-        if snapshot is not None:
-            saved = snapshot.get("state", {}).get("stage_resolutions", {})
-            if saved:
-                resolutions = [saved[stage] for stage in sorted(saved, key=int)]
         if not activities:
             activities = self._recover_legacy_activities(user_id, game)
         roles: list[dict[str, Any]] = []

@@ -220,6 +220,7 @@ class AuthAndHistoryTest(unittest.TestCase):
 
         asyncio.run(generate_agent_context())
         service.persist_engine_events(game_id, dm)
+        store.add_event(game_id, "replay", {"truth_revealed": True})
         store.update_game(game_id, 3, "completed", "replay")
 
         response = self.client.get(
@@ -322,6 +323,10 @@ class AuthAndHistoryTest(unittest.TestCase):
             shared_scope="public",
             target_role_id=None,
         )
+        # This fixture represents a completed game written before runtime snapshots.
+        with store._connect() as connection:
+            connection.execute("DELETE FROM game_runtime_snapshots WHERE game_id = ?", (game_id,))
+        store.add_event(game_id, "replay", {"truth_revealed": True})
         store.update_game(game_id, 3, "completed", "replay")
 
         audit = self.client.get(
