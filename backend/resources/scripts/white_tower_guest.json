@@ -1,0 +1,862 @@
+{
+  "script_meta": {
+    "script_id": "white_tower_guest",
+    "title": "白塔来客",
+    "total_stages": 3,
+    "supported_skills": [
+      "deduction"
+    ],
+    "adaptation_source": {
+      "title": "The Adventure of the Speckled Band",
+      "author": "Arthur Conan Doyle",
+      "original_publication_year": 1892,
+      "author_death_year": 1930,
+      "catalog_url": "https://www.gutenberg.org/ebooks/1661",
+      "text_url": "https://www.gutenberg.org/cache/epub/1661/pg1661-images.html",
+      "rights_basis": "英文原作目录标为 Public domain in the USA；借鉴看似密室、房间连通与财产控制动机，改写为隐藏检修门，不使用原作毒蛇设定或现代译文。"
+    },
+    "content_notice": "含虚构死亡与隐瞒证词。中文人物、案情、线索和任务为本项目独立创作的测试改编，非商业剧本复刻。",
+    "recommended_test_role_id": "ye_ming"
+  },
+  "story_background": "白塔疗养馆改建为海岸文化馆的前夜，项目负责人叶沅被发现死在反锁的阅览室。她的妹妹、家庭医师、维修工和登记员都留在馆内。白塔旧图纸多次改动，所谓密室是否真的无路可走尚不能确定。叶沅第二天将开始独立审计，其中既有工程账，也有长期由家庭医师代管的信托支出。地图、鉴定与监控分批整理；各幕仅能使用已经发放的事实。",
+  "roles": [
+    {
+      "role_id": "ye_ming",
+      "role_name": "叶茗",
+      "human_playable": true,
+      "public_identity": "叶沅的妹妹，白塔项目的共同受益人。",
+      "personality": "倔强敏感，急于摆脱被安排的生活。",
+      "hidden_goal": "查明姐姐遇害原因，同时承认自己的离馆计划并不等于杀人动机。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "ye_ming_s1_private",
+              "type": "secret",
+              "content": "21:25，你因去留问题与姐姐争吵。21:35 她走入阅览室并反锁，你转去门房打长途电话。你拿过属于自己名下但由馆方保管的旅费，担心大家把这件事说成偷窃。你在电话中听见 21:42 左右传来一声短促惊呼，没看到来源。陆远常年代理信托，你只知道姐姐明天要独立审计，还不知道任何审计结果。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "ye_ming"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "ye_ming_s2_private",
+              "type": "memory",
+              "content": "你记得上周姐姐说阅览室墙柜背后总有冷风，但这只是旧记忆，不能凭此确定那里有门。你可以请乔杉核对工程记录。你与姐姐争吵后并未回阅览室，门房电话和连续摄像应能核对；你没有亲手掌管陆远诊室的钥匙。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "ye_ming"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "ye_ming_s3_private",
+              "type": "memory",
+              "content": "你核对过电话账单，21:37 至 21:48 的通话是自己与外地学校办理入学，不是与他人串供。账单内容需要你主动说明或搜证取得，其他角色不会自动知道。你知道自己只想离馆，不能据此猜测别人做过的事。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "ye_ming"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "lu_yuan",
+      "role_name": "陆远",
+      "human_playable": true,
+      "public_identity": "叶家家庭医师，兼管白塔信托支出。",
+      "personality": "克制有礼，常以长辈身份替别人决定。",
+      "hidden_goal": "至少维持公开发言，尽量遮掩自己通过检修通路杀害叶沅的事实。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "lu_yuan_s1_private",
+              "type": "secret",
+              "content": "你知道自己杀了叶沅。她发现你的信托支出异常，明晨独立审计会使你失去资金控制权。你知道诊室通往阅览室墙柜后有旧检修通路，12:00 以安全检查为名独自领走通路钥匙。21:38 进入诊室后，你在 21:41 通过检修门进入阅览室，用室内石质镇纸袭击叶沅，21:44 退回，21:46 离开诊室。阅览室正门一直由她从内反锁。你可以维持突发疾病说法，但不应把自己的罪行当成未知秘密。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "lu_yuan"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "lu_yuan_s2_private",
+              "type": "memory",
+              "content": "你当天用新白漆封住检修门外缘，袖口沾过漆，曾替叶沅整理蓝色围巾。你不知道调查员将何时打开旧工程图或取得鉴定报告。通路钥匙始终由你持有，但你会尝试把注意力引向乔杉的维修工作或叶茗的旅费争执。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "lu_yuan"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "lu_yuan_s3_private",
+              "type": "memory",
+              "content": "你知道诊室走廊有连续摄像，自己此前没有查看底片；无法声称已删除它。你可以对鉴定或影像提出疑问，却不能更改现存线索。决定哪些私有信息愿意公开是角色目标，调查记录分数不会替你证明无罪。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "lu_yuan"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "qiao_shan",
+      "role_name": "乔杉",
+      "human_playable": true,
+      "public_identity": "维修工，负责白塔的墙柜与外侧楼梯施工。",
+      "personality": "务实好强，害怕安全违规被追责。",
+      "hidden_goal": "承认未报批的小修，核清工程通路与谁实际拿了钥匙。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "qiao_shan_s1_private",
+              "type": "secret",
+              "content": "你白天修过阅览室墙柜，未等报批就补了门框松动处。12:00 陆远要求领走旧检修通路钥匙；你在钥匙柜登记后把钥匙交给他，并未保留副本。21:36 至 21:50 你在塔外铁梯接线，门房每隔数分钟通过工作对讲确认进度。21:42 听见惊呼时你停过一下，但不能从塔外看到阅览室。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "qiao_shan"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "qiao_shan_s2_private",
+              "type": "memory",
+              "content": "工程档案里应有早年的检修通路图，你记得通路经过诊室而非塔外铁梯。你当天下午只修过正面门框，没有进入诊室端的通路。未报批的小修会让你难堪，但不是杀人事实。图纸一旦开放，应由现场搜证确认结构，而非请大家仅相信你的口述。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "qiao_shan"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "qiao_shan_s3_private",
+              "type": "memory",
+              "content": "你确认钥匙柜封存后的照片中备用钥匙仍有原封签。21:36 至 21:50 的塔外影像能与工作对讲互证。你没有拿走被陆远领走的那把钥匙，也不知道他在诊室里具体做了什么；需要以门禁和物证作判断。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "qiao_shan"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "wen_xi",
+      "role_name": "温汐",
+      "human_playable": true,
+      "public_identity": "文化馆登记员，负责访客登记与文件传递。",
+      "personality": "认真寡言，面对冲突时容易先保全工作。",
+      "hidden_goal": "公开被压下的文件线索，查清信托审计与死亡的关系。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "wen_xi_s1_private",
+              "type": "secret",
+              "content": "你在 21:30 递给叶沅一封审计预约函。她请你次日把信托原账交给审计员。你曾替陆远补签一份没有附件的费用表，怕被查出失职。21:35 至 21:49 你一直在前厅给参观团办集体登记，双人签收与前厅摄像应能核对。21:46，你隔着走廊见陆远从诊室方向出来，不能确定他此前去了哪里。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "wen_xi"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "wen_xi_s2_private",
+              "type": "memory",
+              "content": "你保存的预约函副联写明叶沅将终止代管授权，明天核对原账。你还没有看到最终审计，不能说陆远已经被法律认定有罪。你可以解释自己补签费用表的错误，与乔杉一起核对通路钥匙交接。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "wen_xi"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "wen_xi_s3_private",
+              "type": "memory",
+              "content": "你愿意交出前厅签收原件。你见到陆远的时间以走廊钟为准，钟在当天验收时已经校时，无需凭空引入时差。你当时只看到了他离开诊室方向，是否进入阅览室仍需通路、鉴定和衣物证据互证。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "wen_xi"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [
+        3,
+        4,
+        5
+      ],
+      "search_targets": [
+        {
+          "id": "reading_room",
+          "name": "阅览室正门与桌面",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "tower_locked_room",
+              "content": "正门钥匙在室内锁孔中，窗栅与门锁没有破坏痕迹。石质镇纸留有血迹。墙柜背面有一条不合常规的白漆接缝；仅检查正门窗户还不足以证明空间完全封闭。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "trust_desk",
+          "name": "信托预约与旅费资料",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "tower_motives",
+              "content": "叶沅明晨将开始独立审计并终止陆远代管授权；旅费支取确由叶茗签名，但款项原属于她。两份文件说明不同争执，不能单凭旅费或亲属身份判凶。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "old_blueprint",
+          "name": "旧工程档案与钥匙柜",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "tower_service_route",
+              "content": "旧图显示阅览室墙柜背后是一扇可供人通行的检修门，与诊室相连。通路仅两端可进入，塔外楼梯不通此处。钥匙柜登记陆远于 12:00 领走唯一在用钥匙；备用钥匙仍有完整旧封签。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "forensic_desk",
+          "name": "鉴定与审计预约副联",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "tower_cause_window",
+              "content": "鉴定把死亡窗口限定为 21:40 至 21:45，致命创伤来自石质镇纸，未见支持突发旧疾的证据。审计预约副联显示代管权限即将终止，原账附页列有陆远自行批准且没有凭据的支出。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "hallway_reel",
+          "name": "诊室走廊连续底片",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "tower_access_reel",
+              "content": "独立校时的走廊连续底片显示，21:38 至 21:46 只有陆远进入并离开诊室；其间诊室端检修通路无人从另一侧进入。白漆接缝处有本次开合的新裂纹，与 12:00 钥匙领用记录互证。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "alibi_packet",
+          "name": "门房、塔外与前厅原件",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "tower_innocent_alibis",
+              "content": "叶茗 21:37 至 21:48 在门房通话，门房连续摄像未见离开；乔杉 21:36 至 21:50 在塔外铁梯，对讲与影像互证；温汐 21:35 至 21:49 在前厅连续办理参观团双人登记。三处到诊室或阅览室均需经过已覆盖的走廊，死亡窗口无缺口。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sealed_clothes",
+          "name": "封存衣物与检修门",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "tower_trace_match",
+              "content": "陆远袖口新白漆与检修门新裂纹处的漆层一致，袖扣夹着与死者蓝围巾断口匹配的纤维。乔杉工服只有塔外红色底漆。钥匙、诊室出入、死亡窗口和近身接触物证共同闭合，维修工的职业本身不构成定罪理由。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 2,
+      "role_available_from_stage": {
+        "ye_ming": 1,
+        "lu_yuan": 1,
+        "qiao_shan": 1,
+        "wen_xi": 1
+      }
+    }
+  },
+  "stage_flow": {
+    "stage_1": {
+      "title": "第一幕 · 反锁的塔房",
+      "public_briefing": "21:55，叶沅死在阅览室，正门仍从内反锁。现可检查正门桌面与信托预约资料。先记录争执和最后见面，不要用密室一词代替结构调查。",
+      "public_tasks": [
+        "核对正门反锁与伤痕",
+        "区分继承、旅费与代管审计争执"
+      ],
+      "personal_tasks": {
+        "ye_ming": "至少搜证一次并如实公开新线索；说明旅费支取，是否消除误解由复盘评审。",
+        "lu_yuan": "至少公开说明一次自己的行踪；尽量维持旧疾说法，隐瞒目标由复盘评审。",
+        "qiao_shan": "至少搜证一次并如实公开新线索；说明未报批的小修，避免靠职业归罪。",
+        "wen_xi": "至少搜证一次并如实公开新线索；说明审计函，补签责任由复盘评审。"
+      },
+      "personal_task_checks": {
+        "ye_ming": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "qiao_shan": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "wen_xi": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "lu_yuan": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 600,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第1幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "vote": {
+          "prompt": "本幕谁的证词最需要进一步核实？这不是凶手裁决。",
+          "eligible_role_ids": [
+            "ye_ming",
+            "lu_yuan",
+            "qiao_shan",
+            "wen_xi"
+          ],
+          "penalty": {
+            "label": "补充说明",
+            "description": "下一幕搜证次数减少 1 次，并公开说明一次自己的行踪。此限制不改变证据内容。",
+            "target_stage_offset": 1,
+            "search_ap_reduction": 1,
+            "extra_task": "下一幕至少公开说明一次自己的行踪；是否解释清楚由复盘者评审。",
+            "completion_checks": [
+              {
+                "label": "完成一次公开说明",
+                "type": "activity_count",
+                "event_types": [
+                  "public_speech",
+                  "autonomous_public_speech"
+                ],
+                "minimum": 1
+              }
+            ]
+          }
+        }
+      },
+      "dm_hosting": "正门锁住不代表整间房没有通路。下一幕开放工程档案、钥匙柜与初步鉴定，个人隐瞒仍需分别核实。"
+    },
+    "stage_2": {
+      "title": "第二幕 · 旧墙背后",
+      "public_briefing": "旧档案与鉴定已经整理完成。本幕只开放公开交流与搜证，暂停秘密询问，集中核对空间结构与死亡窗口。人物动机仍须与实际通路和物证互证。",
+      "public_tasks": [
+        "核对检修门究竟连接哪里",
+        "核对唯一在用钥匙与死亡窗口",
+        "说明工作失误和杀人责任的区别"
+      ],
+      "personal_tasks": {
+        "ye_ming": "至少搜证一次并如实公开新线索；讨论墙柜冷风是否需要结构验证。",
+        "lu_yuan": "至少公开说明一次自己的行动；回应通路与审计，不得假装自己不知道作案。",
+        "qiao_shan": "至少搜证一次并如实公开新线索；用图纸和钥匙柜说明通路权限。",
+        "wen_xi": "至少搜证一次并如实公开新线索；核对代管授权与原账附件。"
+      },
+      "personal_task_checks": {
+        "ye_ming": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "qiao_shan": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "wen_xi": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "lu_yuan": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 600,
+        "enabled_actions": [
+          "public_speech",
+          "search"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": false
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第2幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "vote": {
+          "prompt": "本幕谁的证词最需要进一步核实？这不是凶手裁决。",
+          "eligible_role_ids": [
+            "ye_ming",
+            "lu_yuan",
+            "qiao_shan",
+            "wen_xi"
+          ],
+          "penalty": {
+            "label": "补充说明",
+            "description": "下一幕搜证次数减少 1 次，并公开说明一次自己的行踪。此限制不改变证据内容。",
+            "target_stage_offset": 1,
+            "search_ap_reduction": 1,
+            "extra_task": "下一幕至少公开说明一次自己的行踪；是否解释清楚由复盘者评审。",
+            "completion_checks": [
+              {
+                "label": "完成一次公开说明",
+                "type": "activity_count",
+                "event_types": [
+                  "public_speech",
+                  "autonomous_public_speech"
+                ],
+                "minimum": 1
+              }
+            ]
+          }
+        }
+      },
+      "dm_hosting": "图纸说明正门并非唯一通路，鉴定说明此案需要解释近身创伤。下一幕开放走廊底片、三处独立行踪原件与封存衣物。"
+    },
+    "stage_3": {
+      "title": "第三幕 · 袖口的新漆",
+      "public_briefing": "最后一批底片、登记和衣物对照可供搜证。请先检查其他人的完整行踪，再把通路控制与近身接触物证连起来。本幕必须完成最终指认。",
+      "public_tasks": [
+        "为每名非凶手建立独立解释",
+        "闭合通路、时间和衣物物证",
+        "最终表决"
+      ],
+      "personal_tasks": {
+        "ye_ming": "至少搜证一次并如实公开新线索；用通话与影像支持自己的行踪。",
+        "lu_yuan": "至少公开说明一次自己的行踪；是否保住可信度由复盘评审。",
+        "qiao_shan": "至少搜证一次并如实公开新线索；核对红漆工服和塔外行踪。",
+        "wen_xi": "至少搜证一次并如实公开新线索；交代走廊目击范围，不把推断说成亲见。"
+      },
+      "personal_task_checks": {
+        "ye_ming": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "qiao_shan": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "wen_xi": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "lu_yuan": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 600,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第3幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "final_decision": {
+          "prompt": "请区分工作违规、隐瞒证词与杀人责任，最终指认真正的杀人者。",
+          "eligible_role_ids": [
+            "ye_ming",
+            "lu_yuan",
+            "qiao_shan",
+            "wen_xi"
+          ],
+          "correct_verdict": "指认成立。你们闭合了作案条件、时间与物证的证据链，DM 将公开本案完整真相。",
+          "incorrect_verdict": "指认未成立。{selected_role_name}并非本案杀人者，调查以错误指认结束；未公开的真相不会在此结局中公布。",
+          "reveal_truth_on_correct": true
+        }
+      },
+      "dm_hosting": "三类资料已全部开放。DM 只在有效最终指认之后发布对应结局；调查记录分不替代证据推理。"
+    }
+  },
+  "hard_constraints": [],
+  "truth": {
+    "culprit_role_id": "lu_yuan",
+    "full_story": "陆远为了阻止叶沅终止信托代管并追查异常支出，12:00 独自领走检修通路唯一在用钥匙。21:38 他进入诊室，21:41 经阅览室墙柜后的旧检修门进入，用石质镇纸袭击叶沅，21:44 返回，21:46 离开诊室。叶沅自锁的正门没有打开，所谓密室只是漏查了旧通路。鉴定死亡窗口为 21:40 至 21:45；钥匙登记、连续底片、陆远袖口新白漆与围巾纤维互证。叶茗、乔杉、温汐分别有门房、塔外、前厅的连续原件洗清杀人嫌疑，旅费、施工违规和补签失职仍需另行说明。",
+    "complete_timeline": {
+      "stage_1": "21:25 姐妹争吵，21:30 审计函送达，21:35 叶沅反锁阅览室，21:42 惊呼，21:55 遗体发现。",
+      "stage_2": "12:00 陆远领检修钥匙；21:40 至 21:45 死亡窗口。旧图揭示诊室连通阅览室，鉴定排除旧疾解释。",
+      "stage_3": "21:38 至 21:46 诊室出入、21:41 袭击、21:44 返回；独立行踪和新漆、纤维完成证据闭合。"
+    },
+    "role_arcs": {
+      "ye_ming": "把离馆与支款争执解释清楚。",
+      "lu_yuan": "权威身份被通路和物证检验。",
+      "qiao_shan": "承认小修违规，证明职业不等于罪责。",
+      "wen_xi": "交出压下的附件，严格限定目击范围。"
+    },
+    "evidence_chain": [
+      {
+        "label": "通路与时间",
+        "clue_ids": [
+          "tower_locked_room",
+          "tower_service_route",
+          "tower_cause_window",
+          "tower_access_reel"
+        ],
+        "inference": "诊室是唯一未封通路，只有陆远在死亡窗口使用；室内反锁可与外来袭击同时成立。"
+      },
+      {
+        "label": "动机与接触物证",
+        "clue_ids": [
+          "tower_motives",
+          "tower_cause_window",
+          "tower_trace_match"
+        ],
+        "inference": "终止代管的审计提供动机，新漆与围巾纤维证明近身接触，不能只靠钥匙定罪。"
+      }
+    ],
+    "innocent_explanations": {
+      "ye_ming": {
+        "clue_ids": [
+          "tower_innocent_alibis"
+        ],
+        "explanation": "死亡窗口在门房连续通话，旅费归其本人。"
+      },
+      "qiao_shan": {
+        "clue_ids": [
+          "tower_innocent_alibis"
+        ],
+        "explanation": "死亡窗口在塔外，检修钥匙已登记交给陆远且没有备用副本。"
+      },
+      "wen_xi": {
+        "clue_ids": [
+          "tower_innocent_alibis"
+        ],
+        "explanation": "死亡窗口在前厅连续双人登记，补签失职不是杀人。"
+      }
+    }
+  }
+}
