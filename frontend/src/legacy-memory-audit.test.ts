@@ -54,7 +54,7 @@ it("renders historical note stages, postgame revisions, canceled attempts and es
   mountLegacyApp();
   await vi.waitFor(() => expect(TestSocket.instance).toBeDefined());
   TestSocket.instance.receive({ type: "phase_changed", phase: { phase: "replay", stage: 3, total_stages: 3 } });
-  TestSocket.instance.receive({ type: "replay", verdict: "合成终局", truth_revealed: false });
+  TestSocket.instance.receive({ type: "replay", verdict: "合成终局", truth_revealed: true });
   (document.getElementById("phaseContinueBtn") as HTMLButtonElement).click();
   await vi.waitFor(() => expect(document.getElementById("roleRecordsModal")!.classList.contains("hidden")).toBe(false));
   const notes = document.getElementById("auditReasoningEntries")!.textContent;

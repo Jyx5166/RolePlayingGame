@@ -1,5 +1,5 @@
 (function() {
-	//#region node_modules/@tanstack/query-core/build/modern/subscribable.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/subscribable.js
 	var Subscribable = class {
 		constructor() {
 			this.listeners = /* @__PURE__ */ new Set();
@@ -20,7 +20,7 @@
 		onUnsubscribe() {}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/focusManager.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/focusManager.js
 	var FocusManager = class extends Subscribable {
 		#focused;
 		#cleanup;
@@ -73,7 +73,7 @@
 	};
 	var focusManager = new FocusManager();
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/timeoutManager.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/timeoutManager.js
 	var defaultTimeoutProvider = {
 		setTimeout: (callback, delay) => setTimeout(callback, delay),
 		clearTimeout: (timeoutId) => clearTimeout(timeoutId),
@@ -104,7 +104,7 @@
 		setTimeout(callback, 0);
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/utils.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/utils.js
 	var isServer = typeof window === "undefined" || "Deno" in globalThis;
 	function noop$2() {}
 	function functionalUpdate(updater, input) {
@@ -270,7 +270,7 @@
 		return object;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/environmentManager.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/environmentManager.js
 	var environmentManager = /* @__PURE__ */ (() => {
 		let isServerFn = () => isServer;
 		return {
@@ -289,7 +289,7 @@
 		};
 	})();
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/thenable.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/thenable.js
 	function pendingThenable() {
 		let resolve;
 		let reject;
@@ -321,7 +321,7 @@
 		return thenable;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/notifyManager.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/notifyManager.js
 	var defaultScheduler = systemSetTimeoutZero;
 	function createNotifyManager() {
 		let queue = [];
@@ -394,7 +394,7 @@
 	}
 	var notifyManager = createNotifyManager();
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/onlineManager.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/onlineManager.js
 	var OnlineManager = class extends Subscribable {
 		#online = true;
 		#cleanup;
@@ -442,7 +442,7 @@
 	};
 	var onlineManager = new OnlineManager();
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/retryer.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/retryer.js
 	function defaultRetryDelay(failureCount) {
 		return Math.min(1e3 * 2 ** failureCount, 3e4);
 	}
@@ -548,7 +548,7 @@
 		};
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/removable.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/removable.js
 	var Removable = class {
 		#gcTimeout;
 		destroy() {
@@ -571,7 +571,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
 	function infiniteQueryBehavior(pages) {
 		return { onFetch: (context, query) => {
 			const options = context.options;
@@ -650,7 +650,7 @@
 		return pages.length > 0 ? options.getPreviousPageParam?.(pages[0], pages, pageParams[0], pageParams) : void 0;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/query.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/query.js
 	var Query = class extends Removable {
 		#queryType;
 		#initialState;
@@ -1024,7 +1024,7 @@
 		};
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/queryObserver.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/queryObserver.js
 	var QueryObserver = class extends Subscribable {
 		constructor(client, options) {
 			super();
@@ -1368,7 +1368,7 @@
 		return false;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/mutation.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/mutation.js
 	var Mutation = class extends Removable {
 		#client;
 		#observers;
@@ -1584,7 +1584,7 @@
 		};
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/mutationCache.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/mutationCache.js
 	var MutationCache$1 = class extends Subscribable {
 		constructor(config = {}) {
 			super();
@@ -1691,7 +1691,7 @@
 		return mutation.options.scope?.id;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/mutationObserver.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/mutationObserver.js
 	var MutationObserver$1 = class extends Subscribable {
 		#client;
 		#currentResult = void 0;
@@ -1795,7 +1795,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/queryCache.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/queryCache.js
 	var QueryCache$1 = class extends Subscribable {
 		constructor(config = {}) {
 			super();
@@ -1887,7 +1887,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/query-core/build/modern/queryClient.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/query-core/build/modern/queryClient.js
 	var QueryClient$1 = class {
 		#queryCache;
 		#mutationCache;
@@ -2128,7 +2128,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@vue/shared/dist/shared.esm-bundler.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@vue/shared/dist/shared.esm-bundler.js
 	/**
 	* @vue/shared v3.5.41
 	* (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -2304,7 +2304,7 @@
 		return isSymbol(v) ? `Symbol(${(_a = v.description) != null ? _a : i})` : v;
 	};
 	//#endregion
-	//#region node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js
 	/**
 	* @vue/reactivity v3.5.41
 	* (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -3658,7 +3658,7 @@
 		return value;
 	}
 	//#endregion
-	//#region node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 	/**
 	* @vue/runtime-core v3.5.41
 	* (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -6431,7 +6431,7 @@
 	}
 	var version = "3.5.41";
 	//#endregion
-	//#region node_modules/@vue/runtime-dom/dist/runtime-dom.esm-bundler.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-bundler.js
 	/**
 	* @vue/runtime-dom v3.5.41
 	* (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -6837,7 +6837,7 @@
 		return container;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/utils.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/utils.js
 	var VUE_QUERY_CLIENT = "VUE_QUERY_CLIENT";
 	function getClientKey(key) {
 		return `${VUE_QUERY_CLIENT}${key ? `:${key}` : ""}`;
@@ -6879,7 +6879,7 @@
 		return typeof value === "function";
 	}
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/useQueryClient.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/useQueryClient.js
 	function useQueryClient(id = "") {
 		if (!hasInjectionContext()) throw new Error("vue-query hooks can only be used inside setup() function or functions that support injection context.");
 		const queryClient = inject(getClientKey(id));
@@ -6887,7 +6887,7 @@
 		return queryClient;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/queryCache.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/queryCache.js
 	var QueryCache = class extends QueryCache$1 {
 		find(filters) {
 			return super.find(cloneDeepUnref(filters));
@@ -6897,7 +6897,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/mutationCache.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/mutationCache.js
 	var MutationCache = class extends MutationCache$1 {
 		find(filters) {
 			return super.find(cloneDeepUnref(filters));
@@ -6907,7 +6907,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/queryClient.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/queryClient.js
 	var QueryClient = class extends QueryClient$1 {
 		constructor(config = {}) {
 			const vueQueryConfig = {
@@ -6999,7 +6999,7 @@
 		}
 	};
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/vueQueryPlugin.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/vueQueryPlugin.js
 	var VueQueryPlugin = { install: (app, options = {}) => {
 		const clientKey = getClientKey(options.queryClientKey);
 		let client;
@@ -7031,7 +7031,7 @@
 		app.provide(clientKey, client);
 	} };
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/useBaseQuery.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/useBaseQuery.js
 	function useBaseQuery(Observer, options, queryClient) {
 		const client = queryClient || useQueryClient();
 		const defaultedOptions = computed(() => {
@@ -7099,12 +7099,12 @@
 		return object;
 	}
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/useQuery.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/useQuery.js
 	function useQuery(options, queryClient) {
 		return useBaseQuery(QueryObserver, options, queryClient);
 	}
 	//#endregion
-	//#region node_modules/@tanstack/vue-query/build/modern/useMutation.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/@tanstack/vue-query/build/modern/useMutation.js
 	function useMutation(mutationOptions, queryClient) {
 		const client = queryClient || useQueryClient();
 		const options = computed(() => {
@@ -7137,7 +7137,7 @@
 		};
 	}
 	//#endregion
-	//#region node_modules/pinia/dist/pinia.js
+	//#region ../../../RolePlayingGame/frontend/node_modules/pinia/dist/pinia.js
 	/*!
 	* pinia v4.0.2
 	* (c) 2026 Eduardo San Martin Morote
@@ -7571,7 +7571,7 @@
 		return useStore;
 	}
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/shared/src/utils/isEmptyString.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/shared/src/utils/isEmptyString.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7580,7 +7580,7 @@
 	*/
 	var isEmptyString = (value) => value === "";
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/shared/src/utils/mergeClasses.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/shared/src/utils/mergeClasses.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7591,7 +7591,7 @@
 		return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index;
 	}).join(" ").trim();
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/shared/src/utils/toKebabCase.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/shared/src/utils/toKebabCase.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7600,7 +7600,7 @@
 	*/
 	var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/shared/src/utils/toCamelCase.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/shared/src/utils/toCamelCase.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7609,7 +7609,7 @@
 	*/
 	var toCamelCase = (string) => string.replace(/^([A-Z])|[\s-_]+(\w)/g, (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase());
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/shared/src/utils/toPascalCase.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/shared/src/utils/toPascalCase.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7621,7 +7621,7 @@
 		return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 	};
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/defaultAttributes.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/defaultAttributes.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7640,7 +7640,7 @@
 		"stroke-linejoin": "round"
 	};
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/context.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/context.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7652,7 +7652,7 @@
 		return inject(LUCIDE_CONTEXT, {});
 	}
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/Icon.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/Icon.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7678,7 +7678,7 @@
 		}, [...(iconNode ?? iconNodeKebabCase ?? []).map((child) => h(...child)), ...slots.default ? [slots.default()] : []]);
 	};
 	//#endregion
-	//#region node_modules/@lucide/vue/dist/esm/createLucideIcon.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/@lucide/vue/dist/esm/createLucideIcon.mjs
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7835,7 +7835,7 @@
 		}]
 	]);
 	//#endregion
-	//#region node_modules/vue-router/dist/devtools-EWN81iOl.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/vue-router/dist/devtools-EWN81iOl.mjs
 	/*!
 	* vue-router v4.6.4
 	* (c) 2025 Eduardo San Martin Morote
@@ -8441,7 +8441,7 @@
 		];
 	}
 	//#endregion
-	//#region node_modules/vue-router/dist/vue-router.mjs
+	//#region ../../../RolePlayingGame/frontend/node_modules/vue-router/dist/vue-router.mjs
 	/*!
 	* vue-router v4.6.4
 	* (c) 2025 Eduardo San Martin Morote
@@ -9989,15 +9989,17 @@
 	//#endregion
 	//#region src/components/AppSidebar.vue?vue&type=script&setup=true&lang.ts
 	var _hoisted_1$2 = { "aria-label": "主要导航" };
-	var _hoisted_2$2 = { class: "sidebar-account" };
-	var _hoisted_3$2 = ["aria-label", "title"];
-	var _hoisted_4$2 = {
+	var _hoisted_2$2 = ["aria-current"];
+	var _hoisted_3$2 = ["aria-current"];
+	var _hoisted_4$2 = { class: "sidebar-account" };
+	var _hoisted_5$2 = ["aria-label", "title"];
+	var _hoisted_6$2 = {
 		id: "userAvatarInitial",
 		class: "account-avatar-initial"
 	};
-	var _hoisted_5$2 = { id: "currentUsername" };
-	var _hoisted_6$2 = ["aria-expanded"];
-	var _hoisted_7$2 = ["disabled"];
+	var _hoisted_7$2 = { id: "currentUsername" };
+	var _hoisted_8$2 = ["aria-expanded"];
+	var _hoisted_9$2 = ["disabled"];
 	//#endregion
 	//#region src/components/AppSidebar.vue
 	var AppSidebar_default = /* @__PURE__ */ defineComponent({
@@ -10008,7 +10010,7 @@
 			const route = useRoute();
 			const username = computed(() => auth.user?.username || "用户");
 			const avatarInitial = computed(() => username.value.slice(0, 1).toUpperCase());
-			const avatarStatus = computed(() => ui.gameActive ? "剧本演绎中，正在思考" : auth.user ? "在线" : "离线");
+			const avatarStatus = computed(() => ui.gameActive ? "正在调查" : auth.user ? "在线" : "离线");
 			const activeView = computed(() => {
 				if (route.name === "case-list") return "records";
 				if (route.name === "case-create") return "create";
@@ -10025,28 +10027,30 @@
 			}
 			return (_ctx, _cache) => {
 				return openBlock(), createElementBlock(Fragment, null, [
-					_cache[8] || (_cache[8] = createBaseVNode("div", { class: "sidebar-brand" }, [createBaseVNode("span", { class: "brand-seal small" }, "剧"), createBaseVNode("div", null, [createBaseVNode("strong", null, "剧镜"), createBaseVNode("span", null, "悬疑推理 MVP")])], -1)),
+					_cache[8] || (_cache[8] = createBaseVNode("div", { class: "sidebar-brand" }, [createBaseVNode("span", { class: "brand-seal small" }, "剧"), createBaseVNode("div", null, [createBaseVNode("strong", null, "剧镜"), createBaseVNode("span", null, "悬疑推理")])], -1)),
 					createBaseVNode("nav", _hoisted_1$2, [createBaseVNode("button", {
 						class: normalizeClass(["nav-button", { active: activeView.value === "create" }]),
+						"aria-current": activeView.value === "create" ? "page" : void 0,
 						type: "button",
 						onClick: _cache[0] || (_cache[0] = ($event) => navigate("create"))
 					}, [createVNode(unref(Plus), {
 						size: 18,
 						"aria-hidden": "true"
-					}), _cache[3] || (_cache[3] = createTextVNode("新建案件", -1))], 2), createBaseVNode("button", {
+					}), _cache[3] || (_cache[3] = createTextVNode("新建案件", -1))], 10, _hoisted_2$2), createBaseVNode("button", {
 						class: normalizeClass(["nav-button", { active: activeView.value === "records" }]),
+						"aria-current": activeView.value === "records" ? "page" : void 0,
 						type: "button",
 						onClick: _cache[1] || (_cache[1] = ($event) => navigate("records"))
 					}, [createVNode(unref(Archive), {
 						size: 18,
 						"aria-hidden": "true"
-					}), _cache[4] || (_cache[4] = createTextVNode("案件档案", -1))], 2)]),
+					}), _cache[4] || (_cache[4] = createTextVNode("案件档案", -1))], 10, _hoisted_3$2)]),
 					_cache[9] || (_cache[9] = createBaseVNode("div", { class: "mvp-scope" }, [
-						createBaseVNode("span", null, "当前版本"),
-						createBaseVNode("strong", null, "悬疑推理"),
-						createBaseVNode("small", null, "DEDUCTION · MVP")
+						createBaseVNode("span", null, "调查提示"),
+						createBaseVNode("strong", null, "读懂证词，留意矛盾"),
+						createBaseVNode("small", null, "线索与推理手记会随案件保存。")
 					], -1)),
-					createBaseVNode("div", _hoisted_2$2, [
+					createBaseVNode("div", _hoisted_4$2, [
 						createBaseVNode("div", {
 							id: "userAvatar",
 							class: normalizeClass(["avatar account-avatar", {
@@ -10061,7 +10065,7 @@
 								class: "account-avatar-aura",
 								"aria-hidden": "true"
 							}, null, -1)),
-							createBaseVNode("b", _hoisted_4$2, toDisplayString(avatarInitial.value), 1),
+							createBaseVNode("b", _hoisted_6$2, toDisplayString(avatarInitial.value), 1),
 							_cache[6] || (_cache[6] = createBaseVNode("span", {
 								class: "account-avatar-spectrum",
 								"aria-hidden": "true"
@@ -10072,8 +10076,8 @@
 								createBaseVNode("i"),
 								createBaseVNode("i")
 							], -1))
-						], 10, _hoisted_3$2),
-						createBaseVNode("div", null, [createBaseVNode("strong", _hoisted_5$2, toDisplayString(username.value), 1), _cache[7] || (_cache[7] = createBaseVNode("span", null, "本地调查员", -1))]),
+						], 10, _hoisted_5$2),
+						createBaseVNode("div", null, [createBaseVNode("strong", _hoisted_7$2, toDisplayString(username.value), 1), _cache[7] || (_cache[7] = createBaseVNode("span", null, "本地调查员", -1))]),
 						createBaseVNode("button", {
 							id: "collapseSidebarBtn",
 							class: "icon-button sidebar-toggle-button",
@@ -10086,7 +10090,7 @@
 						}, [createVNode(unref(PanelLeftClose), {
 							size: 17,
 							"aria-hidden": "true"
-						})], 8, _hoisted_6$2),
+						})], 8, _hoisted_8$2),
 						createBaseVNode("button", {
 							id: "logoutBtn",
 							class: "icon-button",
@@ -10098,7 +10102,7 @@
 						}, [createVNode(unref(LogOut), {
 							size: 17,
 							"aria-hidden": "true"
-						})], 8, _hoisted_7$2)
+						})], 8, _hoisted_9$2)
 					])
 				], 64);
 			};
@@ -10113,16 +10117,17 @@
 		role: "tablist",
 		"aria-label": "账户操作"
 	};
-	var _hoisted_4$1 = ["aria-selected"];
-	var _hoisted_5$1 = ["aria-selected"];
-	var _hoisted_6$1 = ["disabled"];
-	var _hoisted_7$1 = ["autocomplete", "disabled"];
-	var _hoisted_8$1 = {
+	var _hoisted_4$1 = ["aria-selected", "tabindex"];
+	var _hoisted_5$1 = ["aria-selected", "tabindex"];
+	var _hoisted_6$1 = ["aria-labelledby"];
+	var _hoisted_7$1 = ["disabled"];
+	var _hoisted_8$1 = ["autocomplete", "disabled"];
+	var _hoisted_9$1 = {
 		id: "authError",
 		class: "form-error",
 		"aria-live": "polite"
 	};
-	var _hoisted_9$1 = ["disabled"];
+	var _hoisted_10$1 = ["disabled"];
 	//#endregion
 	//#region src/components/AuthView.vue
 	var AuthView_default = /* @__PURE__ */ defineComponent({
@@ -10133,6 +10138,8 @@
 			const router = useRouter();
 			const username = /* @__PURE__ */ ref("");
 			const password = /* @__PURE__ */ ref("");
+			const loginTab = /* @__PURE__ */ ref(null);
+			const registerTab = /* @__PURE__ */ ref(null);
 			const mode = computed(() => route.name === "register" ? "register" : "login");
 			const submitting = computed(() => auth.status === "submitting");
 			watch(mode, () => {
@@ -10141,31 +10148,56 @@
 			async function selectMode(nextMode) {
 				await router.push({ name: nextMode });
 			}
+			async function handleModeKeydown(event) {
+				if (![
+					"ArrowLeft",
+					"ArrowRight",
+					"Home",
+					"End"
+				].includes(event.key)) return;
+				event.preventDefault();
+				const nextMode = event.key === "Home" ? "login" : event.key === "End" ? "register" : mode.value === "login" ? "register" : "login";
+				await selectMode(nextMode);
+				(nextMode === "login" ? loginTab.value : registerTab.value)?.focus();
+			}
 			async function submit() {
 				await auth.authenticate(mode.value, username.value, password.value);
 				if (auth.status === "authenticated") password.value = "";
 			}
 			return (_ctx, _cache) => {
-				return openBlock(), createElementBlock(Fragment, null, [_cache[10] || (_cache[10] = createStaticVNode("<section class=\"auth-scene\"><div class=\"auth-brand\"><div class=\"brand-lockup\"><span class=\"brand-seal\">剧</span><span>AI 悬疑推理</span></div><div class=\"auth-copy\"><p class=\"case-label\">CASE SYSTEM / 01</p><h1>剧镜</h1><p class=\"auth-lead\">每一份证词，都藏着另一面真相。</p></div><div class=\"scene-status\"><span><i></i>DM 已待命</span><span>角色知识隔离</span><span>本地案件档案</span></div></div></section>", 1)), createBaseVNode("section", _hoisted_1$1, [createBaseVNode("div", _hoisted_2$1, [
-					_cache[6] || (_cache[6] = createBaseVNode("p", { class: "case-label" }, "INVESTIGATOR ACCESS", -1)),
-					_cache[7] || (_cache[7] = createBaseVNode("h2", null, "进入调查室", -1)),
-					_cache[8] || (_cache[8] = createBaseVNode("p", { class: "auth-subtitle" }, "登录后继续你的案件，或建立新的调查员档案。", -1)),
+				return openBlock(), createElementBlock(Fragment, null, [_cache[9] || (_cache[9] = createStaticVNode("<section class=\"auth-scene\"><div class=\"auth-brand\"><div class=\"brand-lockup\"><span class=\"brand-seal\">剧</span><span>悬疑推理</span></div><div class=\"auth-copy\"><h1>剧镜</h1><p class=\"auth-lead\">每一份证词，都藏着另一面真相。</p></div><div class=\"scene-status\"><span>独自入局</span><span>多角色演绎</span><span>案件随时续查</span></div></div></section>", 1)), createBaseVNode("section", _hoisted_1$1, [createBaseVNode("div", _hoisted_2$1, [
+					_cache[6] || (_cache[6] = createBaseVNode("h2", null, "进入调查室", -1)),
+					_cache[7] || (_cache[7] = createBaseVNode("p", { class: "auth-subtitle" }, "登录后继续你的案件，或建立新的调查员档案。", -1)),
 					createBaseVNode("div", _hoisted_3$1, [createBaseVNode("button", {
 						id: "loginTab",
+						ref_key: "loginTab",
+						ref: loginTab,
 						class: normalizeClass(["tab-button", { active: mode.value === "login" }]),
 						type: "button",
 						role: "tab",
 						"aria-selected": mode.value === "login",
-						onClick: _cache[0] || (_cache[0] = ($event) => selectMode("login"))
-					}, "登录", 10, _hoisted_4$1), createBaseVNode("button", {
+						tabindex: mode.value === "login" ? 0 : -1,
+						"aria-controls": "authModePanel",
+						onClick: _cache[0] || (_cache[0] = ($event) => selectMode("login")),
+						onKeydown: handleModeKeydown
+					}, "登录", 42, _hoisted_4$1), createBaseVNode("button", {
 						id: "registerTab",
+						ref_key: "registerTab",
+						ref: registerTab,
 						class: normalizeClass(["tab-button", { active: mode.value === "register" }]),
 						type: "button",
 						role: "tab",
 						"aria-selected": mode.value === "register",
-						onClick: _cache[1] || (_cache[1] = ($event) => selectMode("register"))
-					}, "注册", 10, _hoisted_5$1)]),
-					createBaseVNode("form", {
+						tabindex: mode.value === "register" ? 0 : -1,
+						"aria-controls": "authModePanel",
+						onClick: _cache[1] || (_cache[1] = ($event) => selectMode("register")),
+						onKeydown: handleModeKeydown
+					}, "注册", 42, _hoisted_5$1)]),
+					createBaseVNode("div", {
+						id: "authModePanel",
+						role: "tabpanel",
+						"aria-labelledby": mode.value === "login" ? "loginTab" : "registerTab"
+					}, [createBaseVNode("form", {
 						id: "authForm",
 						onSubmit: withModifiers(submit, ["prevent"])
 					}, [
@@ -10178,7 +10210,7 @@
 							placeholder: "输入用户名",
 							disabled: submitting.value,
 							required: ""
-						}, null, 8, _hoisted_6$1), [[vModelText, username.value]])]),
+						}, null, 8, _hoisted_7$1), [[vModelText, username.value]])]),
 						createBaseVNode("label", null, [_cache[5] || (_cache[5] = createBaseVNode("span", null, "访问密码", -1)), withDirectives(createBaseVNode("input", {
 							id: "passwordInput",
 							"onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => password.value = $event),
@@ -10188,16 +10220,16 @@
 							placeholder: "至少 6 位",
 							disabled: submitting.value,
 							required: ""
-						}, null, 8, _hoisted_7$1), [[vModelText, password.value]])]),
-						createBaseVNode("p", _hoisted_8$1, toDisplayString(unref(auth).error), 1),
+						}, null, 8, _hoisted_8$1), [[vModelText, password.value]])]),
+						createBaseVNode("p", _hoisted_9$1, toDisplayString(unref(auth).error), 1),
 						createBaseVNode("button", {
 							id: "authSubmit",
 							class: "primary-button wide",
 							type: "submit",
 							disabled: submitting.value
-						}, toDisplayString(submitting.value ? "处理中" : mode.value === "login" ? "登录" : "创建账户"), 9, _hoisted_9$1)
-					], 32),
-					_cache[9] || (_cache[9] = createBaseVNode("p", { class: "local-note" }, [createBaseVNode("span", null, "●"), createTextVNode("账户与案件记录保存在本机")], -1))
+						}, toDisplayString(submitting.value ? "处理中" : mode.value === "login" ? "登录" : "创建账户"), 9, _hoisted_10$1)
+					], 32)], 8, _hoisted_6$1),
+					_cache[8] || (_cache[8] = createBaseVNode("p", { class: "local-note" }, [createBaseVNode("span", null, "●"), createTextVNode("账户与案件记录保存在本机")], -1))
 				])])], 64);
 			};
 		}
@@ -10271,7 +10303,7 @@
 	};
 	var _hoisted_6 = {
 		key: 2,
-		class: "empty-state"
+		class: "empty-state records-empty-state"
 	};
 	var _hoisted_7 = { class: "record-title" };
 	var _hoisted_8 = { class: "record-cell" };
@@ -10361,11 +10393,7 @@
 			});
 			return (_ctx, _cache) => {
 				return openBlock(), createElementBlock(Fragment, null, [
-					createBaseVNode("header", _hoisted_1, [_cache[0] || (_cache[0] = createBaseVNode("div", null, [
-						createBaseVNode("p", { class: "case-label" }, "CASE ARCHIVE"),
-						createBaseVNode("h2", null, "案件档案"),
-						createBaseVNode("p", null, "继续调查或查看已经完成的案件。")
-					], -1)), createBaseVNode("button", {
+					createBaseVNode("header", _hoisted_1, [_cache[1] || (_cache[1] = createBaseVNode("div", null, [createBaseVNode("h2", null, "案件档案"), createBaseVNode("p", null, "继续调查或查看已经完成的案件。")], -1)), createBaseVNode("button", {
 						id: "refreshRecordsBtn",
 						class: normalizeClass(["icon-button bordered records-refresh", { "is-loading": unref(isFetching) }]),
 						type: "button",
@@ -10377,7 +10405,7 @@
 						size: 17,
 						"aria-hidden": "true"
 					})], 10, _hoisted_2)]),
-					_cache[5] || (_cache[5] = createBaseVNode("div", {
+					_cache[8] || (_cache[8] = createBaseVNode("div", {
 						class: "records-header",
 						"aria-hidden": "true"
 					}, [
@@ -10398,15 +10426,23 @@
 					}, [createVNode(unref(RefreshCw), {
 						size: 15,
 						"aria-hidden": "true"
-					}), _cache[1] || (_cache[1] = createTextVNode("重新读取 ", -1))])])) : !games.value.length ? (openBlock(), createElementBlock("div", _hoisted_6, "暂无游戏记录")) : createCommentVNode("", true), (openBlock(true), createElementBlock(Fragment, null, renderList(games.value, (game) => {
+					}), _cache[2] || (_cache[2] = createTextVNode("重新读取 ", -1))])])) : !games.value.length ? (openBlock(), createElementBlock("div", _hoisted_6, [
+						_cache[3] || (_cache[3] = createBaseVNode("h3", null, "暂无游戏记录", -1)),
+						_cache[4] || (_cache[4] = createBaseVNode("p", null, "选择内置案件或导入剧本，开始第一场调查。", -1)),
+						createBaseVNode("button", {
+							class: "primary-button",
+							type: "button",
+							onClick: _cache[0] || (_cache[0] = ($event) => unref(appEvents).emit("navigation:view", { view: "create" }))
+						}, " 新建案件 ")
+					])) : createCommentVNode("", true), (openBlock(true), createElementBlock(Fragment, null, renderList(games.value, (game) => {
 						return openBlock(), createElementBlock("article", {
 							key: game.id,
 							class: "record-row"
 						}, [
 							createBaseVNode("div", _hoisted_7, [createBaseVNode("strong", null, toDisplayString(game.title), 1), createBaseVNode("span", null, toDisplayString(formatUpdatedAt(game.updated_at)), 1)]),
-							createBaseVNode("div", _hoisted_8, [_cache[2] || (_cache[2] = createBaseVNode("span", null, "类型", -1)), createTextVNode(toDisplayString(categoryNames[game.category] || game.category), 1)]),
-							createBaseVNode("div", _hoisted_9, [_cache[3] || (_cache[3] = createBaseVNode("span", null, "模式", -1)), createTextVNode(toDisplayString(modeNames[game.mode] || game.mode), 1)]),
-							createBaseVNode("div", _hoisted_10, [_cache[4] || (_cache[4] = createBaseVNode("span", null, "进度", -1)), createTextVNode(toDisplayString(game.current_stage) + "/" + toDisplayString(game.total_stages), 1)]),
+							createBaseVNode("div", _hoisted_8, [_cache[5] || (_cache[5] = createBaseVNode("span", null, "类型", -1)), createTextVNode(toDisplayString(categoryNames[game.category] || game.category), 1)]),
+							createBaseVNode("div", _hoisted_9, [_cache[6] || (_cache[6] = createBaseVNode("span", null, "模式", -1)), createTextVNode(toDisplayString(modeNames[game.mode] || game.mode), 1)]),
+							createBaseVNode("div", _hoisted_10, [_cache[7] || (_cache[7] = createBaseVNode("span", null, "进度", -1)), createTextVNode(toDisplayString(game.current_stage) + "/" + toDisplayString(game.total_stages), 1)]),
 							createBaseVNode("div", _hoisted_11, [createBaseVNode("button", {
 								class: "secondary-button",
 								type: "button",
@@ -10738,6 +10774,7 @@
 			"conversationParticipants"
 		].map((id) => [id, document.getElementById(id)]));
 		const avatarActionTimers = /* @__PURE__ */ new WeakMap();
+		let replayTruthRevealed = false;
 		const categoryNames = {
 			mystery: "悬疑推理",
 			adventure: "冒险探索",
@@ -10861,6 +10898,8 @@
 				const current = index + 1;
 				item.classList.toggle("active", current === step);
 				item.classList.toggle("complete", current < step);
+				if (current === step) item.setAttribute("aria-current", "step");
+				else item.removeAttribute("aria-current");
 			});
 		}
 		async function readScriptFile(file) {
@@ -11092,10 +11131,10 @@
 			showPhaseStage(true);
 			els.privateDossier.classList.add("hidden");
 			els.phaseEyebrow.textContent = {
-				briefing: "DM BRIEFING · 公开信息",
-				private_reveal: "ROLE DOSSIER · 仅你可见",
-				dm_hosting: "DM HOSTING · 本幕收束"
-			}[summary.phase] || "DM HOSTING";
+				briefing: "案情通报 · 公开信息",
+				private_reveal: "私人剧本 · 仅你可见",
+				dm_hosting: "DM 主持 · 本幕收束"
+			}[summary.phase] || "DM 主持";
 			els.phaseHint.textContent = {
 				briefing: "请听完 DM 的案情通报与本幕公开任务",
 				private_reveal: "阅读你的独属剧本和个人任务",
@@ -11233,9 +11272,10 @@
 			els.phaseRoundLabel.textContent = "CASE CLOSED";
 			els.phaseRoundTitle.textContent = "案件终局";
 			const finalDecision = message.final_decision;
-			const truthRevealed = message.truth_revealed !== false;
-			els.phaseEyebrow.textContent = truthRevealed ? "DM REPLAY · 真相公开" : "DM VERDICT · 错误指认";
-			els.phaseTitle.textContent = truthRevealed ? "完整案件复盘" : "最终指认失败";
+			const truthRevealed = message.truth_revealed === true;
+			replayTruthRevealed = truthRevealed;
+			els.phaseEyebrow.textContent = truthRevealed ? "终局复盘 · 真相公开" : "终局裁决 · 真相未公开";
+			els.phaseTitle.textContent = truthRevealed ? "完整案件复盘" : message.truth_revealed === false ? "最终指认失败" : "案件已结束";
 			els.privateDossier.classList.add("hidden");
 			els.stageResolutionPanel.classList.add("hidden");
 			els.narrationBlock.classList.remove("hidden");
@@ -11252,17 +11292,17 @@
 				decisionSummary,
 				"指认成立，完整真相已经公开",
 				...timeline
-			] : [
+			] : message.truth_revealed === false ? [
 				decisionSummary,
 				"指认未成立，该角色并非真正凶手",
 				"真正作案者没有在本局中公开"
-			]);
+			] : [decisionSummary, "本局真相尚未公开"]);
 			document.querySelectorAll(".phase-sequence li").forEach((item) => {
 				item.classList.remove("active");
 				item.classList.add("complete");
 			});
-			els.phaseHint.textContent = truthRevealed ? "指认正确，本局记录与完整真相已保存" : "指认错误，本局仍已形成明确结局并保存全部记录";
-			setPhaseContinue("查看全部角色记录", true);
+			els.phaseHint.textContent = truthRevealed ? "指认正确，本局记录与完整真相已保存" : "本局结局与调查笔记已保存，其他角色的秘密尚未公开";
+			setPhaseContinue(truthRevealed ? "查看全部角色记录" : "返回案件档案", true);
 			els.advanceBtn.classList.add("hidden");
 			setComposerBusy(false);
 			loadNotebook(state.game?.id);
@@ -11305,7 +11345,7 @@
 				setPhaseContinue(Number(resolution.stage) >= Number(state.phaseSummary?.total_stages) ? "查看终局复盘" : "进入下一幕", true);
 				return;
 			}
-			els.resolutionVoteLabel.textContent = vote.kind === "final" ? "FINAL ACCUSATION" : "COLLECTIVE DECISION";
+			els.resolutionVoteLabel.textContent = vote.kind === "final" ? "最终指认" : "集体决策";
 			els.resolutionVotePrompt.textContent = vote.prompt;
 			els.resolutionVoteRule.textContent = vote.tie_breaker_label || "";
 			els.resolutionCandidates.innerHTML = "";
@@ -12455,7 +12495,9 @@
 		els.chooseFileBtn.addEventListener("click", () => els.scriptFileInput.click());
 		els.uploadZone.addEventListener("dblclick", () => els.scriptFileInput.click());
 		els.uploadZone.addEventListener("keydown", (event) => {
-			if (event.key === "Enter") els.scriptFileInput.click();
+			if (event.target !== els.uploadZone || !["Enter", " "].includes(event.key)) return;
+			event.preventDefault();
+			els.scriptFileInput.click();
 		});
 		els.scriptFileInput.addEventListener("change", () => readScriptFile(els.scriptFileInput.files[0]));
 		for (const eventName of ["dragenter", "dragover"]) els.uploadZone.addEventListener(eventName, (event) => {
@@ -12518,7 +12560,8 @@
 		els.privateChannelBtn.addEventListener("click", () => setChannel("private"));
 		els.phaseContinueBtn.addEventListener("click", () => {
 			if (state.currentPhase === "replay") {
-				openRoleRecords();
+				if (replayTruthRevealed) openRoleRecords();
+				else showPage("records");
 				return;
 			}
 			if (state.stageResolution?.vote?.pending) {

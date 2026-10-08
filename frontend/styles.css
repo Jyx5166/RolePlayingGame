@@ -10,7 +10,7 @@
   --paper: #d8d0c1;
   --text: #f1eee8;
   --text-soft: #c1c0bc;
-  --muted: #81888a;
+  --muted: #a1aaa9;
   --line: #303638;
   --line-strong: #474f51;
   --crimson: #a63d36;
@@ -18,6 +18,8 @@
   --brass: #c5a15c;
   --teal: #5f9b91;
   --success: #72a87e;
+  --reading-size: 14px;
+  --caption-size: 12px;
 }
 
 * {
@@ -52,6 +54,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--brass);
   outline-offset: 2px;
@@ -69,10 +72,9 @@ button:disabled {
 .case-label {
   margin: 0;
   color: var(--brass);
-  font-size: 10px;
+  font-size: var(--caption-size);
   font-weight: 700;
   line-height: 1.4;
-  text-transform: uppercase;
 }
 
 .primary-button,
@@ -242,7 +244,7 @@ button:disabled {
   flex-wrap: wrap;
   gap: 18px;
   color: rgba(255, 255, 255, 0.66);
-  font-size: 11px;
+  font-size: var(--caption-size);
 }
 
 .scene-status span {
@@ -284,7 +286,7 @@ button:disabled {
 .auth-subtitle {
   margin: 0 0 30px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--reading-size);
   line-height: 1.7;
 }
 
@@ -314,7 +316,7 @@ label {
   gap: 8px;
   margin-bottom: 18px;
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: var(--reading-size);
 }
 
 input,
@@ -343,13 +345,14 @@ select:focus {
   min-height: 18px;
   margin: 2px 0 10px;
   color: #e37c74;
-  font-size: 11px;
+  font-size: var(--caption-size);
+  line-height: 1.6;
 }
 
 .local-note {
   margin: 20px 0 0;
-  color: #62696b;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: var(--caption-size);
   text-align: center;
 }
 
@@ -392,7 +395,7 @@ select:focus {
 
 .sidebar-brand span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--caption-size);
 }
 
 .app-sidebar nav {
@@ -451,7 +454,8 @@ select:focus {
 .mvp-scope span,
 .mvp-scope small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
+  line-height: 1.65;
 }
 
 .mvp-scope strong {
@@ -486,7 +490,7 @@ select:focus {
 
 .sidebar-account span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
 }
 
 .avatar {
@@ -822,7 +826,8 @@ select:focus {
 .page-header > div > p:last-child {
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--reading-size);
+  line-height: 1.7;
 }
 
 .step-indicator {
@@ -840,8 +845,8 @@ select:focus {
   gap: 7px;
   padding: 0 12px;
   border-right: 1px solid var(--line);
-  color: #686f71;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: var(--caption-size);
 }
 
 .step-indicator span:last-child {
@@ -849,8 +854,8 @@ select:focus {
 }
 
 .step-indicator b {
-  color: #4f5658;
-  font-size: 9px;
+  color: var(--muted);
+  font-size: var(--caption-size);
 }
 
 .step-indicator .active {
@@ -901,14 +906,14 @@ select:focus {
   padding: 0 8px;
   border: 1px solid rgba(214, 100, 91, 0.78);
   color: #dc746b;
-  font-size: 9px;
+  font-size: var(--caption-size);
   font-weight: 800;
 }
 
 .case-cover-copy p {
   margin: 18px 0 5px;
   color: var(--paper);
-  font-size: 10px;
+  font-size: var(--caption-size);
 }
 
 .case-cover-copy h3 {
@@ -919,8 +924,8 @@ select:focus {
 }
 
 .case-cover-copy > span:last-child {
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 11px;
+  color: var(--paper);
+  font-size: var(--reading-size);
 }
 
 .cover-action {
@@ -936,7 +941,7 @@ select:focus {
   border: 1px solid rgba(255, 255, 255, 0.34);
   background: rgba(8, 11, 12, 0.74);
   color: #fff;
-  font-size: 11px;
+  font-size: var(--reading-size);
 }
 
 .cover-action:hover {
@@ -972,12 +977,12 @@ select:focus {
 
 .case-protocol span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
 }
 
 .case-protocol strong {
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: var(--reading-size);
 }
 
 .form-section {
@@ -1003,13 +1008,13 @@ select:focus {
 
 .section-heading h3 {
   margin: 0 0 5px;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .section-heading p {
   margin: 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
   line-height: 1.5;
 }
 
@@ -1050,12 +1055,12 @@ select:focus {
 
 .upload-copy strong {
   overflow-wrap: anywhere;
-  font-size: 12px;
+  font-size: var(--reading-size);
 }
 
 .upload-copy span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
 }
 
 .script-summary {
@@ -1080,12 +1085,12 @@ select:focus {
 
 .script-summary span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
 }
 
 .script-summary strong {
   overflow-wrap: anywhere;
-  font-size: 12px;
+  font-size: var(--reading-size);
 }
 
 .role-options {
@@ -1127,14 +1132,14 @@ select:focus {
 
 .role-option strong {
   color: var(--text);
-  font-size: 12px;
+  font-size: var(--reading-size);
 }
 
 .role-option span span {
   margin-top: 5px;
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.55;
+  font-size: var(--caption-size);
+  line-height: 1.75;
 }
 
 .start-button {
@@ -1166,7 +1171,7 @@ select:focus {
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
 }
 
 .records-list {
@@ -1227,7 +1232,7 @@ select:focus {
 .record-title strong {
   overflow: hidden;
   font-family: "STSong", "SimSun", serif;
-  font-size: 14px;
+  font-size: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1236,12 +1241,12 @@ select:focus {
 .record-cell span {
   margin-bottom: 4px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: var(--caption-size);
 }
 
 .record-cell {
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: var(--reading-size);
 }
 
 .record-actions {
@@ -1254,7 +1259,7 @@ select:focus {
 .record-row .secondary-button,
 .record-delete-button {
   width: 100%;
-  min-height: 34px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1262,7 +1267,7 @@ select:focus {
   padding: 0 9px;
   border-radius: 12px 4px 14px 5px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -1284,7 +1289,7 @@ select:focus {
 }
 
 .record-delete-button b {
-  font-size: 9px;
+  font-size: var(--caption-size);
   font-weight: 650;
 }
 
@@ -1301,7 +1306,27 @@ select:focus {
   place-items: center;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--reading-size);
+}
+
+.records-empty-state {
+  justify-items: start;
+  align-content: center;
+  gap: 14px;
+  padding: 32px 20px;
+  background: rgba(12, 18, 20, 0.9);
+}
+
+.records-empty-state h3 {
+  margin: 0;
+  color: var(--paper);
+  font: 24px/1.4 "STSong", "SimSun", serif;
+}
+
+.records-empty-state p {
+  max-width: 36em;
+  margin: 0;
+  line-height: 1.75;
 }
 
 .game-view {
@@ -2851,15 +2876,9 @@ select:focus {
 }
 
 .page-header {
-  padding: 18px 20px;
-  border: 1px solid rgba(230, 241, 238, 0.11);
-  border-radius: 24px 7px 26px 9px;
-  background: rgba(11, 17, 19, 0.38);
-  box-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.08),
-    0 22px 60px rgba(0, 0, 0, 0.16);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
+  padding: 20px;
+  border-bottom: 1px solid rgba(230, 241, 238, 0.16);
+  background: rgba(11, 17, 19, 0.9);
 }
 
 .step-indicator {
@@ -2897,15 +2916,10 @@ select:focus {
 }
 
 .case-protocol {
-  overflow: hidden;
-  border-color: rgba(229, 240, 237, 0.14);
-  border-radius: 7px 23px 8px 25px;
-  background: rgba(12, 18, 20, 0.6);
-  box-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.07),
-    0 20px 50px rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
-  backdrop-filter: blur(22px) saturate(135%);
+  border-right: 0;
+  border-left: 0;
+  border-bottom-color: rgba(229, 240, 237, 0.16);
+  background: rgba(12, 18, 20, 0.9);
 }
 
 .case-protocol > div,
@@ -2916,17 +2930,11 @@ select:focus {
 }
 
 .form-section {
-  margin-top: 12px;
+  margin-top: 20px;
   padding-right: 18px;
   padding-left: 18px;
-  border: 1px solid rgba(226, 239, 235, 0.1);
-  border-radius: 20px 6px 24px 8px;
-  background: rgba(9, 15, 17, 0.48);
-  box-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.05),
-    0 20px 54px rgba(0, 0, 0, 0.12);
-  -webkit-backdrop-filter: blur(20px) saturate(128%);
-  backdrop-filter: blur(20px) saturate(128%);
+  border-top: 1px solid rgba(226, 239, 235, 0.16);
+  background: rgba(9, 15, 17, 0.9);
 }
 
 .upload-zone {
@@ -2992,25 +3000,16 @@ select:focus {
 }
 
 .records-header {
-  border-radius: 16px 5px 18px 6px;
-  background: rgba(12, 18, 20, 0.48);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
+  background: rgba(12, 18, 20, 0.9);
 }
 
 .record-row {
-  margin-top: 6px;
-  border: 1px solid rgba(226, 239, 235, 0.1);
-  border-radius: 16px 5px 19px 7px;
-  background: rgba(12, 18, 20, 0.56);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.045);
-  -webkit-backdrop-filter: blur(18px) saturate(125%);
-  backdrop-filter: blur(18px) saturate(125%);
+  border-bottom-color: rgba(226, 239, 235, 0.16);
+  background: rgba(12, 18, 20, 0.92);
 }
 
 .record-row:hover {
-  border-color: rgba(226, 239, 235, 0.19);
-  background: rgba(29, 37, 39, 0.66);
+  background: rgba(29, 37, 39, 0.96);
 }
 
 .game-toolbar {
@@ -3356,7 +3355,6 @@ select:focus {
 
   .page-header {
     padding: 15px;
-    border-radius: 19px 6px 22px 8px;
   }
 
   .form-section {
@@ -3374,8 +3372,7 @@ select:focus {
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
+    animation: none !important;
     transition-duration: 1ms !important;
   }
 }
@@ -5087,5 +5084,40 @@ select:focus {
 
   .game-view .composer {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Keep controls legible when people request less transparency or more contrast. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :is(.auth-panel, .app-sidebar, .game-toolbar, .intel-panel, .dm-panel,
+      .dialogue-panel, .dialogue-header, .composer-shell, .compact-game-tabs,
+      .phase-sequence, .role-records-shell) {
+    background: #0c1214;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  :is(input, select, textarea, .auth-tabs, .step-indicator, .role-option,
+      .upload-zone, .primary-button, .secondary-button, .text-button,
+      .icon-button, .cover-action, .search-button, .record-delete-button,
+      .connection-state, .stage-badge, .round-clock, .compact-game-tab) {
+    border-color: #8f9d99;
+    background: #182022;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .primary-button,
+  .primary-button:hover {
+    border-color: #e58b80;
+    background: #a63d36;
+  }
+
+  :is(.role-option:has(input:checked), .nav-button.active, .tab-button.active,
+      .compact-game-tab.active) {
+    border-color: var(--brass);
+    background: #323026;
+    color: var(--text);
   }
 }

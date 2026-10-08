@@ -46,6 +46,7 @@ const els = Object.fromEntries(
   ].map((id) => [id, document.getElementById(id)])
 );
 const avatarActionTimers = new WeakMap();
+let replayTruthRevealed = false;
 
 const categoryNames = {
   mystery: "悬疑推理",
@@ -180,6 +181,8 @@ function setCreationStep(step) {
     const current = index + 1;
     item.classList.toggle("active", current === step);
     item.classList.toggle("complete", current < step);
+    if (current === step) item.setAttribute("aria-current", "step");
+    else item.removeAttribute("aria-current");
   });
 }
 
@@ -422,10 +425,10 @@ function renderScenePhase(summary) {
   showPhaseStage(true);
   els.privateDossier.classList.add("hidden");
   els.phaseEyebrow.textContent = {
-    briefing: "DM BRIEFING · 公开信息",
-    private_reveal: "ROLE DOSSIER · 仅你可见",
-    dm_hosting: "DM HOSTING · 本幕收束",
-  }[summary.phase] || "DM HOSTING";
+    briefing: "案情通报 · 公开信息",
+    private_reveal: "私人剧本 · 仅你可见",
+    dm_hosting: "DM 主持 · 本幕收束",
+  }[summary.phase] || "DM 主持";
   els.phaseHint.textContent = {
     briefing: "请听完 DM 的案情通报与本幕公开任务",
     private_reveal: "阅读你的独属剧本和个人任务",
@@ -608,11 +611,13 @@ function showReplay(message) {
   els.phaseRoundLabel.textContent = "CASE CLOSED";
   els.phaseRoundTitle.textContent = "案件终局";
   const finalDecision = message.final_decision;
-  const truthRevealed = message.truth_revealed !== false;
+  const truthRevealed = message.truth_revealed === true;
+  replayTruthRevealed = truthRevealed;
   els.phaseEyebrow.textContent = truthRevealed
-    ? "DM REPLAY · 真相公开"
-    : "DM VERDICT · 错误指认";
-  els.phaseTitle.textContent = truthRevealed ? "完整案件复盘" : "最终指认失败";
+    ? "终局复盘 · 真相公开"
+    : "终局裁决 · 真相未公开";
+  els.phaseTitle.textContent = truthRevealed ? "完整案件复盘"
+    : message.truth_revealed === false ? "最终指认失败" : "案件已结束";
   els.privateDossier.classList.add("hidden");
   els.stageResolutionPanel.classList.add("hidden");
   els.narrationBlock.classList.remove("hidden");
@@ -630,7 +635,9 @@ function showReplay(message) {
   renderPhaseObjectives(
     truthRevealed
       ? [decisionSummary, "指认成立，完整真相已经公开", ...timeline]
-      : [decisionSummary, "指认未成立，该角色并非真正凶手", "真正作案者没有在本局中公开"],
+      : message.truth_revealed === false
+        ? [decisionSummary, "指认未成立，该角色并非真正凶手", "真正作案者没有在本局中公开"]
+        : [decisionSummary, "本局真相尚未公开"],
   );
   document.querySelectorAll(".phase-sequence li").forEach((item) => {
     item.classList.remove("active");
@@ -638,8 +645,8 @@ function showReplay(message) {
   });
   els.phaseHint.textContent = truthRevealed
     ? "指认正确，本局记录与完整真相已保存"
-    : "指认错误，本局仍已形成明确结局并保存全部记录";
-  setPhaseContinue("查看全部角色记录", true);
+    : "本局结局与调查笔记已保存，其他角色的秘密尚未公开";
+  setPhaseContinue(truthRevealed ? "查看全部角色记录" : "返回案件档案", true);
   els.advanceBtn.classList.add("hidden");
   setComposerBusy(false);
   loadNotebook(state.game?.id);
@@ -692,8 +699,8 @@ function renderStageResolution(resolution) {
   }
 
   els.resolutionVoteLabel.textContent = vote.kind === "final"
-    ? "FINAL ACCUSATION"
-    : "COLLECTIVE DECISION";
+    ? "最终指认"
+    : "集体决策";
   els.resolutionVotePrompt.textContent = vote.prompt;
   els.resolutionVoteRule.textContent = vote.tie_breaker_label || "";
   els.resolutionCandidates.innerHTML = "";
@@ -2084,7 +2091,11 @@ document.querySelectorAll(".compact-game-tab").forEach((button) => {
 compactGameMedia.addEventListener("change", syncCompactGamePanel);
 els.chooseFileBtn.addEventListener("click", () => els.scriptFileInput.click());
 els.uploadZone.addEventListener("dblclick", () => els.scriptFileInput.click());
-els.uploadZone.addEventListener("keydown", (event) => { if (event.key === "Enter") els.scriptFileInput.click(); });
+els.uploadZone.addEventListener("keydown", (event) => {
+  if (event.target !== els.uploadZone || !["Enter", " "].includes(event.key)) return;
+  event.preventDefault();
+  els.scriptFileInput.click();
+});
 els.scriptFileInput.addEventListener("change", () => readScriptFile(els.scriptFileInput.files[0]));
 for (const eventName of ["dragenter", "dragover"]) els.uploadZone.addEventListener(eventName, (event) => { event.preventDefault(); els.uploadZone.classList.add("dragging"); });
 for (const eventName of ["dragleave", "drop"]) els.uploadZone.addEventListener(eventName, (event) => { event.preventDefault(); els.uploadZone.classList.remove("dragging"); });
@@ -2146,7 +2157,8 @@ els.publicChannelBtn.addEventListener("click", () => setChannel("public"));
 els.privateChannelBtn.addEventListener("click", () => setChannel("private"));
 els.phaseContinueBtn.addEventListener("click", () => {
   if (state.currentPhase === "replay") {
-    openRoleRecords();
+    if (replayTruthRevealed) openRoleRecords();
+    else showPage("records");
     return;
   }
   if (state.stageResolution?.vote?.pending) {

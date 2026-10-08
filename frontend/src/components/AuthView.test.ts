@@ -35,5 +35,14 @@ describe("AuthView", () => {
     await flushPromises();
     expect(router.currentRoute.value.fullPath).toBe("/login");
     expect(wrapper.get("#passwordInput").attributes("autocomplete")).toBe("current-password");
+    expect(wrapper.get("#registerTab").attributes("tabindex")).toBe("-1");
+    await wrapper.get("#loginTab").trigger("keydown", { key: "ArrowRight" });
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe("/register");
+    expect(wrapper.get("#authModePanel").attributes("aria-labelledby")).toBe("registerTab");
+    await wrapper.get("#registerTab").trigger("keydown", { key: "Home" });
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe("/login");
+    wrapper.unmount();
   });
 });

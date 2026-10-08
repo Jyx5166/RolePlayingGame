@@ -115,7 +115,6 @@ onBeforeUnmount(() => {
 <template>
   <header class="page-header">
     <div>
-      <p class="case-label">CASE ARCHIVE</p>
       <h2>案件档案</h2>
       <p>继续调查或查看已经完成的案件。</p>
     </div>
@@ -142,7 +141,13 @@ onBeforeUnmount(() => {
         <RefreshCw :size="15" aria-hidden="true" />重新读取
       </button>
     </div>
-    <div v-else-if="!games.length" class="empty-state">暂无游戏记录</div>
+    <div v-else-if="!games.length" class="empty-state records-empty-state">
+      <h3>暂无游戏记录</h3>
+      <p>选择内置案件或导入剧本，开始第一场调查。</p>
+      <button class="primary-button" type="button" @click="appEvents.emit('navigation:view', { view: 'create' })">
+        新建案件
+      </button>
+    </div>
     <article v-for="game in games" :key="game.id" class="record-row">
       <div class="record-title">
         <strong>{{ game.title }}</strong>

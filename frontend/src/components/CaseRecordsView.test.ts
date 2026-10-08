@@ -57,8 +57,10 @@ describe("CaseRecordsView", () => {
     });
     const onOpen = vi.fn();
     const onDeleted = vi.fn();
+    const onNavigate = vi.fn();
     const stopOpen = appEvents.on("records:open", onOpen);
     const stopDeleted = appEvents.on("records:deleted", onDeleted);
+    const stopNavigate = appEvents.on("navigation:view", onNavigate);
 
     const wrapper = mount(CaseRecordsView, {
       global: {
@@ -91,11 +93,14 @@ describe("CaseRecordsView", () => {
     expect(onDeleted).toHaveBeenCalledWith({ gameId: game.id, title: game.title });
     expect(wrapper.find(".record-row").exists()).toBe(false);
     expect(wrapper.text()).toContain("暂无游戏记录");
+    await wrapper.get(".records-empty-state .primary-button").trigger("click");
+    expect(onNavigate).toHaveBeenCalledWith({ view: "create" });
 
     wrapper.unmount();
     queryClient.clear();
     stopOpen();
     stopDeleted();
+    stopNavigate();
     apiRequest.mockReset();
   });
 });

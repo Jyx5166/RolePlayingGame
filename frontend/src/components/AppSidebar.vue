@@ -13,7 +13,7 @@ const route = useRoute();
 const username = computed(() => auth.user?.username || "用户");
 const avatarInitial = computed(() => username.value.slice(0, 1).toUpperCase());
 const avatarStatus = computed(() => (
-  ui.gameActive ? "剧本演绎中，正在思考" : auth.user ? "在线" : "离线"
+  ui.gameActive ? "正在调查" : auth.user ? "在线" : "离线"
 ));
 const activeView = computed(() => {
   if (route.name === "case-list") return "records";
@@ -33,26 +33,28 @@ function collapseSidebar(): void {
 <template>
   <div class="sidebar-brand">
     <span class="brand-seal small">剧</span>
-    <div><strong>剧镜</strong><span>悬疑推理 MVP</span></div>
+    <div><strong>剧镜</strong><span>悬疑推理</span></div>
   </div>
   <nav aria-label="主要导航">
     <button
       class="nav-button"
       :class="{ active: activeView === 'create' }"
+      :aria-current="activeView === 'create' ? 'page' : undefined"
       type="button"
       @click="navigate('create')"
     ><Plus :size="18" aria-hidden="true" />新建案件</button>
     <button
       class="nav-button"
       :class="{ active: activeView === 'records' }"
+      :aria-current="activeView === 'records' ? 'page' : undefined"
       type="button"
       @click="navigate('records')"
     ><Archive :size="18" aria-hidden="true" />案件档案</button>
   </nav>
   <div class="mvp-scope">
-    <span>当前版本</span>
-    <strong>悬疑推理</strong>
-    <small>DEDUCTION · MVP</small>
+    <span>调查提示</span>
+    <strong>读懂证词，留意矛盾</strong>
+    <small>线索与推理手记会随案件保存。</small>
   </div>
   <div class="sidebar-account">
     <div

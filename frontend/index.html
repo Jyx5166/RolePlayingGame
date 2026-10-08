@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>剧镜 · AI 剧本杀</title>
-    <link rel="stylesheet" href="/static/styles.css?v=a355f4629444b1b7" />
+    <link rel="stylesheet" href="/static/styles.css?v=91e20fce56e36e03" />
   </head>
   <body>
     <div id="vueRoot"></div>
@@ -17,7 +17,6 @@
         <section id="createView" class="page-view">
           <header class="page-header">
             <div>
-              <p class="case-label">NEW INVESTIGATION</p>
               <h2>建立新案件</h2>
               <p>导入案件剧本，选择你的调查身份。</p>
             </div>
@@ -30,8 +29,8 @@
 
           <section class="case-cover">
             <div class="case-cover-copy">
-              <span class="confidential-stamp">MVP CASE</span>
-              <p>内置案件</p>
+              <span class="confidential-stamp">内置案件</span>
+              <p>悬疑推理</p>
               <h3>雾港档案·钟楼夜宴</h3>
               <span>暴雨 · 密室 · 四名嫌疑人</span>
             </div>
@@ -44,7 +43,7 @@
           <div class="case-protocol">
             <div><span>案件类型</span><strong id="selectedCategoryText">悬疑推理</strong></div>
             <div><span>调查模式</span><strong id="selectedModeText">推理对抗</strong></div>
-            <div><span>主持方式</span><strong>DM + 角色 Agent</strong></div>
+            <div><span>主持方式</span><strong>预设主持与角色演绎</strong></div>
           </div>
           <div id="categoryGrid" class="hidden"></div>
           <div id="modeControl" class="hidden"></div>
@@ -71,18 +70,18 @@
           <section id="scriptPreview" class="form-section hidden">
             <div class="section-heading">
               <span>02</span>
-              <div><h3>调查身份</h3><p>其余角色由 Agent 接管</p></div>
+              <div><h3>调查身份</h3><p>其余角色由 AI 扮演</p></div>
             </div>
             <div>
               <div class="script-summary">
                 <div><span>案件</span><strong id="previewTitle">-</strong></div>
                 <div><span>调查阶段</span><strong id="previewStages">-</strong></div>
                 <div><span>涉案角色</span><strong id="previewRoles">-</strong></div>
-                <div><span>角色 Agent</span><strong id="previewAgents">-</strong></div>
+                <div><span>AI 演绎角色</span><strong id="previewAgents">-</strong></div>
               </div>
               <div id="roleOptions" class="role-options"></div>
               <button id="startGameBtn" class="primary-button start-button" type="button">
-                <span>启动 DM，进入案发现场</span><b>→</b>
+                <span>进入案发现场</span><b aria-hidden="true">→</b>
               </button>
             </div>
           </section>
@@ -123,11 +122,11 @@
               <div class="dm-presence" aria-hidden="true">
                 <span>DM</span>
                 <i></i>
-                <small>HOST ONLINE</small>
+                <small>主持进行中</small>
               </div>
 
               <div class="phase-copy">
-                <p id="phaseEyebrow" class="case-label">DM BRIEFING</p>
+                <p id="phaseEyebrow" class="case-label">案情通报</p>
                 <h2 id="phaseTitle">案情通报</h2>
                 <div id="narrationBlock" class="narration-block">
                   <p id="dmNarration"></p><span id="streamCursor" class="stream-cursor hidden"></span>
@@ -135,13 +134,13 @@
 
                 <section id="privateDossier" class="private-dossier hidden">
                   <div class="dossier-heading">
-                    <span>CONFIDENTIAL · 仅你可见</span>
+                    <span>私人剧本 · 仅你可见</span>
                     <strong id="dossierRole">-</strong>
                     <p id="dossierIdentity">-</p>
                   </div>
                   <div id="dossierBlocks" class="dossier-blocks"></div>
                   <div class="personal-mission">
-                    <span>PERSONAL MISSION</span>
+                    <span>你的任务</span>
                     <p id="dossierTask">-</p>
                   </div>
                 </section>
@@ -149,14 +148,14 @@
                 <section id="stageResolutionPanel" class="stage-resolution hidden">
                   <header class="resolution-heading">
                     <div>
-                      <span>STAGE SETTLEMENT</span>
+                      <span>调查成果</span>
                       <h3 id="resolutionTitle">本幕结算</h3>
                     </div>
                     <p id="resolutionMetric">等待 DM 计算</p>
                   </header>
                   <div id="resolutionRoleResults" class="resolution-role-results"></div>
                   <section id="resolutionVoteSection" class="resolution-vote hidden">
-                    <span id="resolutionVoteLabel">COLLECTIVE DECISION</span>
+                    <span id="resolutionVoteLabel">集体决策</span>
                     <h4 id="resolutionVotePrompt">选择一名角色</h4>
                     <p id="resolutionVoteRule" class="muted"></p>
                     <div id="resolutionCandidates" class="resolution-candidates" role="radiogroup" aria-label="选择投票角色"></div>
@@ -177,12 +176,12 @@
 
               <aside class="phase-context">
                 <section>
-                  <span class="phase-context-label">PUBLIC OBJECTIVES</span>
+                  <span class="phase-context-label">共同目标</span>
                   <h3>本幕公开任务</h3>
                   <ol id="phaseObjectiveList" class="phase-objective-list"></ol>
                 </section>
                 <section>
-                  <span class="phase-context-label">CAST</span>
+                  <span class="phase-context-label">涉案人物</span>
                   <h3>在场角色</h3>
                   <div id="phaseCastList" class="phase-cast-list"></div>
                 </section>
@@ -204,7 +203,7 @@
 
           <div id="gameLayout" class="game-layout" data-compact-panel="dialogue">
             <aside id="intelPanel" class="intel-panel">
-              <div class="panel-heading"><span>CASE NOTEBOOK</span><strong>线索记录本</strong></div>
+              <div class="panel-heading"><span>调查笔记</span><strong>线索记录本</strong></div>
               <div class="notebook-tabs" role="tablist" aria-label="线索记录本分区">
                 <button id="notebookAutoTab" class="active" type="button" role="tab" aria-selected="true">自动归档</button>
                 <button id="notebookCluesTab" type="button" role="tab" aria-selected="false">私有线索</button>
@@ -221,10 +220,10 @@
                 <div id="ownedClues" class="owned-clues"></div>
               </section>
 
-              <div class="panel-heading compact"><span>CONFIDENTIAL</span><strong>私人情报</strong></div>
+              <div class="panel-heading compact"><span>仅你可见</span><strong>私人情报</strong></div>
               <div id="playerIntel" class="intel-list"></div>
 
-              <div class="panel-heading compact"><span>EVIDENCE</span><strong>现场搜证</strong></div>
+              <div class="panel-heading compact"><span>查找证物</span><strong>现场搜证</strong></div>
               <div id="searchTargets" class="search-list"></div>
 
               <div id="whisperSection" class="hidden">
@@ -240,7 +239,7 @@
 
             <section id="dialoguePanel" class="dialogue-panel">
               <header class="dialogue-header">
-                <div><span>INTERROGATION LOG</span><strong>询问记录</strong></div>
+                <div><span>证词与问题</span><strong>询问记录</strong></div>
                 <div id="conversationParticipants" class="conversation-participants hidden" aria-label="当前私聊双方"></div>
                 <div class="dialogue-state">
                   <p>所有公开证词均由 DM 记录</p>
@@ -266,12 +265,12 @@
             <aside id="dmPanel" class="dm-panel">
               <div class="dm-status">
                 <div class="dm-core">DM</div>
-                <div><span class="online-dot"></span><strong>主持 Agent 在线</strong><p>完整案件已载入</p></div>
+                <div><span class="online-dot"></span><strong>DM 主持</strong><p>完整案件已载入</p></div>
               </div>
               <dl class="orchestration-meta">
                 <div><dt>你的身份</dt><dd id="humanRole">-</dd></div>
                 <div><dt>涉案角色</dt><dd id="totalRoles">-</dd></div>
-                <div><dt>角色 Agent</dt><dd id="agentCount">-</dd></div>
+                <div><dt>AI 演绎角色</dt><dd id="agentCount">-</dd></div>
               </dl>
               <div class="panel-heading compact"><span>PERSONS OF INTEREST</span><strong>涉案人员</strong></div>
               <div id="castList" class="cast-list"></div>
@@ -325,6 +324,6 @@
         </div>
       </section>
     </div>
-    <script src="/static/app.js?v=02a1937836a30c17"></script>
+    <script src="/static/app.js?v=1715f10345491468"></script>
   </body>
 </html>
