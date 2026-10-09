@@ -1,0 +1,235 @@
+{
+  "script_meta": {
+    "script_id": "flame_mountain",
+    "title": "西游记·火焰山",
+    "total_stages": 3,
+    "supported_skills": ["narrative"],
+    "recommended_player_role": "red_boy"
+  },
+  "story_background": "唐僧师徒行至火焰山，烈焰阻路。孙悟空前来借芭蕉扇，红孩儿守在山前，观音尚未现身。",
+  "roles": [
+    {
+      "role_id": "red_boy",
+      "role_name": "红孩儿",
+      "human_playable": true,
+      "public_identity": "火焰山少主，骄傲任性，擅使三昧真火。",
+      "personality": "骄傲、好胜、嘴硬，但并非恶毒。",
+      "hidden_goal": null,
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "rb_s1_bg",
+              "type": "background",
+              "content": "你是红孩儿，今日有个自称孙悟空的猴子闯到火焰山前，说要借芭蕉扇过山。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "red_boy"
+            },
+            {
+              "block_id": "public_s1_scene",
+              "type": "public",
+              "content": "火焰山热浪翻涌，山路被火光封住。所有人都知道必须想办法借到芭蕉扇。",
+              "visibility": "public",
+              "unlock_stage": 1,
+              "owner_role": "dm"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "rb_s2_memory",
+              "type": "memory",
+              "content": "你想起母亲铁扇公主曾提醒过你：不要轻易相信孙悟空，他常用激将法。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "red_boy"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "rb_s3_arc",
+              "type": "reveal",
+              "content": "你意识到继续逞强只会让火焰山百姓受苦。你可以选择放下敌意，给取经人一条路。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "red_boy"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "monkey_king",
+      "role_name": "孙悟空",
+      "human_playable": true,
+      "public_identity": "取经人护法，机敏好斗，急着借扇过山。",
+      "personality": "机警、急躁、嘴上不饶人，但重情重义。",
+      "hidden_goal": null,
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "mk_s1_bg",
+              "type": "background",
+              "content": "你是孙悟空，火焰山挡住取经路。你来找红孩儿交涉，希望尽快借到芭蕉扇。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "monkey_king"
+            },
+            {
+              "block_id": "public_s1_scene",
+              "type": "public",
+              "content": "火焰山热浪翻涌，山路被火光封住。所有人都知道必须想办法借到芭蕉扇。",
+              "visibility": "public",
+              "unlock_stage": 1,
+              "owner_role": "dm"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "mk_s2_plan",
+              "type": "strategy",
+              "content": "你发现红孩儿吃软不吃硬。与其硬抢，不如先压住火气，问清他真正担心什么。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "monkey_king"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "mk_s3_arc",
+              "type": "reveal",
+              "content": "你明白红孩儿不是单纯作恶，他只是害怕失去火焰山的尊严。你可以给他一个体面的台阶。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "monkey_king"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "guanyin",
+      "role_name": "观音",
+      "human_playable": false,
+      "public_identity": "慈悲而威严的菩萨，暂未进入当前争执。",
+      "personality": "温和、坚定、善于点破执念。",
+      "hidden_goal": null,
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": []
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "gy_s2_arrive",
+              "type": "entrance",
+              "content": "你被请到火焰山附近，看到红孩儿与孙悟空争执。你暂时观察，不急着判定谁对谁错。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "guanyin"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "gy_s3_guidance",
+              "type": "reveal",
+              "content": "你看出红孩儿真正需要的不是胜利，而是被承认。你可以引导他把火焰山的守护变成新的修行。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "guanyin"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "mechanics_enabled": ["search", "whisper"],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [1, 1, 1],
+      "search_targets": [
+        {
+          "id": "mountain_pass",
+          "name": "山道火线",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "clue_heat_gap",
+              "content": "山道火线并非处处相同，靠近旧石碑处的火势明显较弱。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "old_tablet",
+          "name": "旧石碑",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "clue_tablet_words",
+              "content": "石碑上残留几个字：火不只为拒人，也可为护人。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "lotus_shadow",
+          "name": "莲影",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "clue_lotus",
+              "content": "火光里浮出莲影，似乎在提醒众人：收束争斗比赢下争斗更难。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 2,
+      "role_available_from_stage": {
+        "monkey_king": 1,
+        "guanyin": 2
+      }
+    }
+  },
+  "hard_constraints": [
+    {
+      "role_id": "*",
+      "until_stage": 2,
+      "keywords": ["观音现身", "观音来了", "莲影"],
+      "message": "当前阶段角色还不应知道观音或莲影相关信息。"
+    },
+    {
+      "role_id": "*",
+      "until_stage": 3,
+      "keywords": ["善财童子", "放下敌意", "新的修行"],
+      "message": "当前阶段还没有进入最终转变，不应提前说出终局信息。"
+    }
+  ],
+  "truth": {
+    "full_story": "红孩儿与孙悟空从冲突走向理解。观音在后期出现，引导红孩儿把骄傲转化为守护，最终火焰山留出通路。",
+    "complete_timeline": {
+      "stage_1": "孙悟空来到火焰山，红孩儿阻拦，双方互相试探。",
+      "stage_2": "双方发现硬碰硬无效，观音来到附近观察局势。",
+      "stage_3": "观音点破红孩儿执念，孙悟空给出台阶，红孩儿选择让路。"
+    },
+    "role_arcs": {
+      "red_boy": "从逞强守山到理解守护的含义。",
+      "monkey_king": "从急躁求胜到学会给对方台阶。",
+      "guanyin": "从观察者成为引导者，促成和解。"
+    }
+  }
+}
