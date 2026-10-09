@@ -1,0 +1,31 @@
+{
+  "script_meta": {"script_id": "qa_wrong_ending_timeout", "title": "合成验收 · 五秒调查", "total_stages": 1, "supported_skills": ["deduction"]},
+  "story_background": "馆长在办公室被发现死亡，记者、经理和医生在场。这是只用于验证超时和错误结局的合成案件。",
+  "roles": [
+    {"role_id": "qa_a_reporter", "role_name": "记者", "human_playable": true, "public_identity": "采访馆长的记者", "hidden_goal": "核实事实", "stage_knowledge": {"stage_1": {"blocks": []}}},
+    {"role_id": "qa_b_manager", "role_name": "经理", "human_playable": true, "public_identity": "负责办公楼的经理", "hidden_goal": "澄清自己没有参与杀人，不把猜测当成事实", "stage_knowledge": {"stage_1": {"blocks": []}}},
+    {"role_id": "qa_c_doctor", "role_name": "医生", "human_playable": true, "public_identity": "负责馆长体检的医生", "hidden_goal": "掩盖自己杀人的事实，避免被最终指认", "stage_knowledge": {"stage_1": {"blocks": [
+      {"block_id": "qa_private_culprit", "type": "secret", "content": "你提前调换馆长的药物，造成他死亡。这个秘密只属于你。", "owner_role": "qa_c_doctor", "visibility": "self_only", "unlock_stage": 1}
+    ]}}}
+  ],
+  "stage_flow": {"stage_1": {
+    "title": "合成验收幕", "public_briefing": "五秒调查结束后，所有人必须完成最终指认。当前没有充分证据。",
+    "public_tasks": ["区分事实与猜测"],
+    "personal_tasks": {"qa_a_reporter": "核实事实", "qa_b_manager": "澄清嫌疑", "qa_c_doctor": "避免暴露真实秘密"},
+    "investigation": {"duration_seconds": 5, "enabled_actions": ["public_speech", "search"], "allow_manual_end": true,
+      "autonomy": {"enabled": false, "initial_delay_seconds": 10, "interval_seconds": 30, "max_turns": 0, "allow_private": false},
+      "end_conditions": {"auto_end": false}},
+    "resolution": {"title": "最终指认", "metric": {"key": "contribution", "label": "贡献", "unit": "点", "initial": 0},
+      "scoring_rules": [{"label": "公开质询", "event_types": ["public_speech", "public_response"], "points_per_event": 1, "max_points": 2}],
+      "final_decision": {"prompt": "根据当前掌握的信息，最终指认谁是凶手？", "eligible_role_ids": ["qa_a_reporter", "qa_b_manager", "qa_c_doctor"],
+        "correct_verdict": "指认正确，DM 公布真相。", "incorrect_verdict": "{selected_role_name}不是凶手。你们做出了错误指认，案件仍未被侦破。", "reveal_truth_on_correct": true}},
+    "dm_hosting": "调查时限到了。请完成最终指认，DM 必须发布明确结果。"
+  }},
+  "mechanics_enabled": ["search"],
+  "mechanics_config": {"search": {"ap_per_stage": [2], "search_targets": [
+    {"id": "fireplace", "name": "壁炉", "unlock_stage": 1, "clues": [
+      {"id": "qa_burned_note", "content": "壁炉里有一张烧毁一半的用药登记纸。", "exclusivity": "shared"}
+    ]}
+  ]}},
+  "truth": {"culprit_role_id": "qa_c_doctor", "full_story": "医生提前调换馆长的药物杀死了馆长。", "complete_timeline": {"stage_1": "医生提前调换药物。"}, "role_arcs": {}}
+}
