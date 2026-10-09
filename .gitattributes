@@ -1,0 +1,4 @@
+# Content-versioned frontend resources must retain the bytes hashed by the build.
+frontend/index.html text eol=lf
+frontend/styles.css text eol=lf
+frontend/app.js text eol=lf
