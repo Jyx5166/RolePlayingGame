@@ -1,0 +1,30 @@
+name: jujing
+
+services:
+  web:
+    image: jujing-web:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${JUJING_BIND_ADDRESS:-127.0.0.1}:${JUJING_PORT:-8000}:8000"
+    env_file:
+      - path: ${JUJING_ENV_FILE:-docker.env}
+        required: false
+    environment:
+      AI_MURDER_MYSTERY_DATA_DIR: /data
+    volumes:
+      - data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  data:
