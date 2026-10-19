@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
+import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timedelta, timezone
@@ -98,7 +100,7 @@ class AppStore:
                     title TEXT NOT NULL,
                     category TEXT NOT NULL,
                     mode TEXT NOT NULL,
-                    player_role_id TEXT NOT NULL,
+                    player_role_id TEXT,
                     ai_agent_count INTEGER NOT NULL,
                     current_stage INTEGER NOT NULL DEFAULT 1,
                     current_phase TEXT NOT NULL DEFAULT 'investigation',
@@ -115,6 +117,33 @@ class AppStore:
                     event_type TEXT NOT NULL,
                     payload_json TEXT NOT NULL,
                     created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS published_scripts (
+                    catalog_id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    version TEXT NOT NULL,
+                    authoring_job_id TEXT NOT NULL UNIQUE,
+                    title TEXT NOT NULL,
+                    tags_json TEXT NOT NULL,
+                    script_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS game_context_scopes (
+                    context_id TEXT PRIMARY KEY,
+                    game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+                    scope_key TEXT NOT NULL,
+                    UNIQUE(game_id, scope_key)
+                );
+
+                CREATE TABLE IF NOT EXISTS game_preparation_requests (
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    request_id TEXT NOT NULL,
+                    game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+                    catalog_id TEXT NOT NULL,
+                    script_version TEXT NOT NULL,
+                    PRIMARY KEY(user_id, request_id)
                 );
 
                 CREATE TABLE IF NOT EXISTS realtime_events (
@@ -246,6 +275,19 @@ class AppStore:
                 connection.execute(
                     "ALTER TABLE games ADD COLUMN current_phase TEXT NOT NULL DEFAULT 'investigation'"
                 )
+            for name, definition in (
+                ("lifecycle_version", "INTEGER NOT NULL DEFAULT 1"),
+                ("catalog_script_id", "TEXT"), ("script_version", "TEXT"),
+                ("paused_at", "REAL"), ("run_id", "TEXT"),
+                ("state_version", "INTEGER NOT NULL DEFAULT 0"),
+                ("phase_epoch", "INTEGER NOT NULL DEFAULT 0"), ("workflow_config_json", "TEXT"),
+            ):
+                if name not in game_columns:
+                    connection.execute(f"ALTER TABLE games ADD COLUMN {name} {definition}")
+            self._migrate_optional_player_role(connection)
+            ticket_columns = {row['name'] for row in connection.execute('PRAGMA table_info(websocket_tickets)')}
+            if 'controller_id' not in ticket_columns:
+                connection.execute("ALTER TABLE websocket_tickets ADD COLUMN controller_id TEXT NOT NULL DEFAULT ''")
             session_columns = {
                 row["name"]
                 for row in connection.execute("PRAGMA table_info(sessions)").fetchall()
@@ -364,6 +406,7 @@ class AppStore:
         game_id: int,
         session_key: str,
         ttl_seconds: int = 30,
+        controller_id: str = '',
     ) -> str:
         self.get_game(user_id, game_id)
         ticket = new_websocket_ticket()
@@ -377,8 +420,8 @@ class AppStore:
             connection.execute(
                 """
                 INSERT INTO websocket_tickets(
-                    ticket_hash, session_key, user_id, game_id, expires_at, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    ticket_hash, session_key, user_id, game_id, expires_at, created_at, controller_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session_storage_key(ticket),
@@ -387,6 +430,7 @@ class AppStore:
                     game_id,
                     expires.isoformat(),
                     now.isoformat(),
+                    controller_id or str(uuid.uuid4()),
                 ),
             )
         return ticket
@@ -406,6 +450,7 @@ class AppStore:
                 SELECT
                     websocket_tickets.user_id,
                     websocket_tickets.session_key,
+                    websocket_tickets.controller_id,
                     users.username
                 FROM websocket_tickets
                 JOIN sessions ON sessions.token = websocket_tickets.session_key
@@ -422,6 +467,109 @@ class AppStore:
                 (ticket_hash,),
             )
         return dict(row) if row else None
+
+    @staticmethod
+    def _migrate_optional_player_role(connection: sqlite3.Connection) -> None:
+        columns = connection.execute("PRAGMA table_info(games)").fetchall()
+        if not next(row["notnull"] for row in columns if row["name"] == "player_role_id"):
+            return
+        sequence = connection.execute("SELECT seq FROM sqlite_sequence WHERE name = 'games'").fetchone()
+        connection.execute("PRAGMA foreign_keys = OFF")
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            definitions = []
+            for row in columns:
+                definition = f'{row["name"]} {row["type"]}'
+                if row["pk"]:
+                    definition += " PRIMARY KEY AUTOINCREMENT"
+                elif row["name"] == "user_id":
+                    definition += " NOT NULL REFERENCES users(id) ON DELETE CASCADE"
+                elif row["notnull"] and row["name"] != "player_role_id":
+                    definition += " NOT NULL"
+                if row["dflt_value"] is not None:
+                    definition += f' DEFAULT {row["dflt_value"]}'
+                definitions.append(definition)
+            connection.execute(f"CREATE TABLE games_migration ({', '.join(definitions)})")
+            names = ", ".join(row["name"] for row in columns)
+            connection.execute(f"INSERT INTO games_migration ({names}) SELECT {names} FROM games")
+            connection.execute("DROP TABLE games")
+            connection.execute("ALTER TABLE games_migration RENAME TO games")
+            if sequence is not None:
+                connection.execute("UPDATE sqlite_sequence SET seq = MAX(seq, ?) WHERE name = 'games'", (sequence["seq"],))
+            if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise ValueError("游戏表迁移后外键校验失败")
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.execute("PRAGMA foreign_keys = ON")
+
+    def publish_script(self, user_id: int, catalog_id: str, version: str, job_id: str,
+                       script: dict[str, Any], tags: list[str]) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO published_scripts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (catalog_id, user_id, version, job_id, script["script_meta"]["title"],
+                 json.dumps(tags, ensure_ascii=False), json.dumps(script, ensure_ascii=False), utc_now()),
+            )
+
+    def list_published_scripts(self, user_id: int) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM published_scripts WHERE user_id = ? ORDER BY created_at DESC", (user_id,),
+            ).fetchall()
+        return [{**dict(row), "script": json.loads(row["script_json"])} for row in rows]
+
+    def find_preparation_request(self, user_id: int, request_id: str, catalog_id: str, version: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute("SELECT * FROM game_preparation_requests WHERE user_id = ? AND request_id = ?", (user_id, request_id)).fetchone()
+        if row is None:
+            return None
+        if row["catalog_id"] != catalog_id or row["script_version"] != version:
+            raise ValueError("同一开局请求编号不能用于不同的剧本版本")
+        return self.get_game(user_id, row["game_id"])
+
+    def prepare_game(self, user_id: int, script: dict[str, Any], catalog_id: str, version: str,
+                     request_id: str | None = None, workflow_config: dict[str, Any] | None = None) -> dict[str, Any]:
+        meta = script["script_meta"]
+        now = utc_now()
+        request_id = request_id or str(uuid.uuid4())
+        with self.transaction() as connection:
+            existing = self.find_preparation_request(user_id, request_id, catalog_id, version)
+            if existing is not None:
+                return existing
+            cursor = connection.execute(
+                """INSERT INTO games(user_id, title, category, mode, player_role_id, ai_agent_count,
+                    current_stage, current_phase, total_stages, status, script_json, created_at, updated_at,
+                    lifecycle_version, catalog_script_id, script_version, paused_at, workflow_config_json)
+                    VALUES (?, ?, 'mystery', 'deduction', NULL, ?, 1, 'preparing', ?, 'preparing', ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, meta["title"], len(script["roles"]) - 1, meta["total_stages"],
+                 json.dumps(script, ensure_ascii=False), now, now, (4 if workflow_config.get('version') == 2 else 3) if workflow_config else 2, catalog_id, version, time.time(),
+                 json.dumps(workflow_config) if workflow_config else None),
+            )
+            game_id = int(cursor.lastrowid)
+            connection.execute("INSERT INTO game_preparation_requests VALUES (?, ?, ?, ?, ?)", (user_id, request_id, game_id, catalog_id, version))
+            for scope in ["dm", *(f'role:{role["role_id"]}' for role in script["roles"])]:
+                connection.execute("INSERT INTO game_context_scopes VALUES (?, ?, ?)", (str(uuid.uuid4()), game_id, scope))
+            self.add_event(game_id, "game_prepared", {"catalog_script_id": catalog_id, "script_version": version})
+        return self.get_game(user_id, game_id)
+
+    def activate_preparation(self, user_id: int, game_id: int, role_id: str, run_id: str) -> None:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """UPDATE games SET player_role_id = ?, status = 'playing', run_id = ?, paused_at = ?, updated_at = ?
+                    WHERE id = ? AND user_id = ? AND status = 'preparing'""",
+                (role_id, run_id, time.time(), utc_now(), game_id, user_id),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("游戏准备状态已发生变化，请重新读取")
+
+    def set_game_lifecycle(self, game_id: int, *, paused_at: float | None, status: str | None = None,
+                           run_id: str | None = None) -> None:
+        with self._connect() as connection:
+            connection.execute("UPDATE games SET paused_at = ?, status = COALESCE(?, status), run_id = COALESCE(?, run_id), updated_at = ? WHERE id = ?",
+                               (paused_at, status, run_id, utc_now(), game_id))
 
     def create_game(
         self,
@@ -462,7 +610,7 @@ class AppStore:
         return self.get_game(user_id, game_id, include_script=True)
 
     def get_game(self, user_id: int, game_id: int, include_script: bool = False) -> dict[str, Any]:
-        columns = "*" if include_script else "id, title, category, mode, player_role_id, ai_agent_count, current_stage, current_phase, total_stages, status, created_at, updated_at"
+        columns = "*" if include_script else "id, title, category, mode, player_role_id, ai_agent_count, current_stage, current_phase, total_stages, status, created_at, updated_at, lifecycle_version, catalog_script_id, script_version, paused_at, run_id"
         with self._connect() as connection:
             row = connection.execute(
                 f"SELECT {columns} FROM games WHERE id = ? AND user_id = ?",
@@ -480,7 +628,8 @@ class AppStore:
             rows = connection.execute(
                 """
                 SELECT id, title, category, mode, player_role_id, ai_agent_count,
-                       current_stage, current_phase, total_stages, status, created_at, updated_at
+                       current_stage, current_phase, total_stages, status, created_at, updated_at,
+                       lifecycle_version, catalog_script_id, script_version, paused_at, run_id
                 FROM games WHERE user_id = ? ORDER BY updated_at DESC
                 """,
                 (user_id,),

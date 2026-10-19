@@ -9,7 +9,7 @@ from agent.context import AgentContext, ContextMessage, ContextScope
 from llm.budget import ContextBudget, estimate_tokens
 
 
-PROMPT_VERSION = "role-context-v2"
+PROMPT_VERSION = "role-context-v3"
 
 
 def terms(text: str) -> set[str]:
@@ -55,7 +55,7 @@ def prepare_input(context: AgentContext, system: str, records: list[dict[str, An
         memory = ContextMessage("user", content, ContextScope.ROLE_PRIVATE, "role_memory",
                                 f"role-memory:{context.role_id}:{context.stage}", (context.role_id,))
         return AgentContext(context.role_id, context.stage, context.channel, context.purpose,
-                            (memory, *selected_history, *instructions))
+                            (memory, *selected_history, *instructions), runtime_scope=context.runtime_scope)
 
     used = budget.validate([{"role": "system", "content": system}, *build().to_llm_messages()])
     for record in optional:
@@ -64,7 +64,7 @@ def prepare_input(context: AgentContext, system: str, records: list[dict[str, An
             selected.append(record)
             used += cost
     for message in reversed(history):
-        cost = len(message.content.encode("utf-8")) + 16
+        cost = len(message.to_llm_message()["content"].encode("utf-8")) + 16
         if used + cost <= budget.input_limit:
             selected_history.insert(0, message)
             used += cost

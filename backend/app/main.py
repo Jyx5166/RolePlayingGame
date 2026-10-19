@@ -5,7 +5,7 @@ import hmac
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import (
     Depends,
@@ -25,12 +25,14 @@ from fastapi.exception_handlers import (
     request_validation_exception_handler,
 )
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from agent.pool import AgentPool
 from config import load_settings
 from dm.engine import DMEngine
 from game_service import GameService
+from runtime.workflow import GameWorkflow
+from runtime.contracts import RuntimeAccessError
 from llm.factory import LLMFactory
 from loader.script_loader import ScriptLoader
 from paths import data_dir, frontend_dir, scripts_dir
@@ -41,6 +43,9 @@ from skill.deduction import DeductionSkill
 from skill.faction import FactionSkill
 from skill.narrative import NarrativeSkill
 from storage import AppStore
+from script_catalog import BUILTIN_SCRIPT_IDS, ScriptCatalog
+from script_workshop import ScriptWorkshop
+from workflow_config import load_workflow_settings
 from ws.handlers import (
     build_autonomy_activity,
     build_game_init,
@@ -78,11 +83,42 @@ class GameCreation(BaseModel):
     script_id: str | None = None
 
 
+class ScriptPublication(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    script: dict[str, Any]
+    title: str = Field(min_length=1, max_length=120)
+    tags: list[str] = Field(default_factory=list, max_length=12)
+
+
+class GamePreparation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    catalog_id: str = Field(min_length=1, max_length=128)
+    version: str = Field(min_length=1, max_length=64)
+    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()), min_length=8, max_length=128)
+
+
+class AuthoringRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    mode: Literal['import','ai'] = 'import'
+    request_id: str = Field(min_length=8,max_length=128)
+    title: str = Field(min_length=1,max_length=120)
+    tags: list[str] = Field(default_factory=list,max_length=12)
+    topic: str = Field(default='',max_length=2000)
+    script: dict[str,Any] | None = None
+    catalog_id: str | None = None
+    source_job_id: str | None = Field(default=None,max_length=128)
+
+
+class GameActivation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    player_role_id: str = Field(min_length=1, max_length=128)
+
+
 def resolve_script(script: dict[str, Any] | None, script_id: str | None) -> dict[str, Any]:
     if (script is None) == (script_id is None):
         raise ValueError("必须且只能选择上传剧本或内置剧本")
     if script_id is not None:
-        if script_id != "fog_harbor_clocktower":
+        if script_id not in BUILTIN_SCRIPT_IDS:
             raise ValueError("未知的内置剧本")
         return ScriptLoader(scripts_dir()).load(script_id)
     validate_script_payload(script)
@@ -121,7 +157,7 @@ class GameSummaryResponse(BaseModel):
     title: str
     category: str
     mode: str
-    player_role_id: str
+    player_role_id: str | None
     ai_agent_count: int
     current_stage: int
     current_phase: str
@@ -129,6 +165,10 @@ class GameSummaryResponse(BaseModel):
     status: str
     created_at: str
     updated_at: str
+    lifecycle_version: int = 1
+    catalog_script_id: str | None = None
+    script_version: str | None = None
+    run_id: str | None = None
 
 
 class GameCreationResponse(GameSummaryResponse):
@@ -143,6 +183,8 @@ class DomainEventResponse(BaseModel):
 
 class GameDetailResponse(GameSummaryResponse):
     events: list[DomainEventResponse]
+    has_opening: bool = False
+    before_first_stage: bool = False
 
 
 class ScriptInspectionResponse(BaseModel):
@@ -224,6 +266,11 @@ def create_app(
     application.state.game_service = service
     application.state.cookie_name = cookie_name
     application.state.command_locks = {}
+    application.state.active_connections = {}
+    script_catalog = ScriptCatalog(store, service)
+    workshop = ScriptWorkshop(script_catalog)
+    application.state.script_workshop = workshop
+    application.state.authoring_tasks = {}
 
     frontend = frontend_dir()
     application.mount("/static", StaticFiles(directory=frontend), name="static")
@@ -261,7 +308,7 @@ def create_app(
                 response = await call_next(request)
         else:
             response = await call_next(request)
-        if request.url.path in {"/", "/login", "/register"} or request.url.path.startswith(("/api/", "/cases")):
+        if request.url.path in {"/", "/login", "/register", "/play", "/scripts/new", "/personal-center"} or request.url.path.startswith(("/api/", "/cases", "/games/")):
             response.headers["Cache-Control"] = "no-store, private"
         elif request.url.path in {"/static/app.js", "/static/styles.css"}:
             response.headers["Cache-Control"] = "no-cache"
@@ -377,6 +424,10 @@ def create_app(
 
     @application.get("/cases")
     @application.get("/cases/{case_path:path}")
+    @application.get("/play")
+    @application.get("/scripts/new")
+    @application.get("/personal-center")
+    @application.get("/games/{case_path:path}")
     async def desktop_case_route(case_path: str = "") -> FileResponse:
         return FileResponse(frontend / "index.html")
 
@@ -442,6 +493,7 @@ def create_app(
     )
     async def websocket_ticket(
         game_id: int,
+        controller_id: str = Query(default='', max_length=64),
         user: dict[str, Any] = Depends(require_user),
     ) -> dict[str, Any]:
         try:
@@ -449,6 +501,7 @@ def create_app(
                 user["id"],
                 game_id,
                 user["session_key"],
+                controller_id=controller_id,
             )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -517,6 +570,120 @@ def create_app(
     async def example_script(user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
         return service.inspect_script(ScriptLoader(scripts_dir()).load("fog_harbor_clocktower"), "deduction")
 
+    @application.get("/api/v1/scripts/schema")
+    async def script_schema(user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        return ScriptLoader.json_schema()
+
+    @application.get("/api/v1/scripts")
+    async def list_scripts(q: str = Query(default="", max_length=120), user: dict[str, Any] = Depends(require_user)) -> list[dict[str, Any]]:
+        return script_catalog.list(user["id"], q)
+
+    @application.post("/api/v1/scripts", status_code=201)
+    async def publish_script(body: ScriptPublication, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        try:
+            return script_catalog.publish(user["id"], body.script, body.title, body.tags)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @application.post("/api/v1/game-preparations", status_code=201, response_model=GameSummaryResponse)
+    async def prepare_game(body: GamePreparation, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        try:
+            existing = store.find_preparation_request(user["id"], body.request_id, body.catalog_id, body.version)
+            if existing is not None:
+                return existing
+            item = script_catalog.resolve(user["id"], body.catalog_id, body.version)
+            service.inspect_script(item["script"], "deduction")
+            return store.prepare_game(user["id"], item["script"], item["catalog_id"], item["version"], body.request_id,
+                                      workflow_config=load_workflow_settings().model_dump())
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @application.post('/api/v1/authoring-jobs',status_code=202)
+    async def authoring_job(body: AuthoringRequest,user: dict[str,Any]=Depends(require_user)):
+        if (body.mode=='import' and body.script is None) or (body.mode=='ai' and not body.topic.strip()):
+            raise HTTPException(status_code=400,detail='请提供剧本文件或创作主题')
+        try:
+            job,created = workshop.create(user['id'],body.request_id,body.mode,
+                {'title':body.title,'tags':body.tags,'topic':body.topic,'script':body.script,
+                 'source_job_id':body.source_job_id},body.catalog_id)
+            if created:
+                task = asyncio.create_task(workshop.execute(user['id'],job['job_id']))
+                application.state.authoring_tasks[job['job_id']] = task
+                task.add_done_callback(lambda completed: application.state.authoring_tasks.pop(job['job_id'],None))
+            return job
+        except KeyError as exc:
+            raise HTTPException(status_code=404,detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409,detail=str(exc)) from exc
+
+    @application.get('/api/v1/authoring-jobs/{job_id}')
+    async def read_authoring_job(job_id: str,user: dict[str,Any]=Depends(require_user)):
+        try: return workshop.job(user['id'],job_id)
+        except KeyError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+
+    @application.post('/api/v1/authoring-jobs/{job_id}/publish',status_code=201)
+    async def publish_authoring_job(job_id: str,user: dict[str,Any]=Depends(require_user)):
+        try: return workshop.publish(user['id'],job_id)
+        except KeyError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+        except ValueError as exc: raise HTTPException(status_code=409,detail=str(exc)) from exc
+
+    @application.post('/api/v1/authoring-jobs/{job_id}/cancel')
+    async def cancel_authoring_job(job_id: str,user: dict[str,Any]=Depends(require_user)):
+        try:
+            workshop.cancel(user['id'],job_id)
+            task=application.state.authoring_tasks.get(job_id)
+            if task is not None:
+                task.cancel();await asyncio.gather(task,return_exceptions=True)
+            return workshop.job(user['id'],job_id)
+        except KeyError as exc:raise HTTPException(status_code=404,detail=str(exc)) from exc
+        except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc)) from exc
+
+    @application.get('/api/v1/scripts/{catalog_id}/edit')
+    async def script_edit_data(catalog_id: str,user: dict[str,Any]=Depends(require_user)):
+        try:
+            item = script_catalog.resolve(user['id'],catalog_id)
+            if item['source']!='imported': raise KeyError('只能编辑自己的剧本')
+            return {'script':item['script'],'versions':workshop.revisions(user['id'],catalog_id),
+                    'source_job_id':workshop.source_job_for_catalog(user['id'],catalog_id)}
+        except KeyError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+
+    @application.get("/api/v1/games/{game_id}/preparation")
+    async def game_preparation(game_id: int, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        try:
+            game = store.get_game(user["id"], game_id, include_script=True)
+            opening = game["script"].get("opening")
+            return {"game": service._public_game(game), "script": service.inspect_script(game["script"], game["mode"]),
+                    "tags": game["script"]["script_meta"].get("tags", []),
+                    "opening": {"title": opening["title"], "content": opening["content"]} if opening else None}
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.post("/api/v1/games/{game_id}/activate", response_model=GameSummaryResponse)
+    async def activate_game(game_id: int, body: GameActivation, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        lock = application.state.command_locks.setdefault(game_id, asyncio.Lock())
+        try:
+            async with lock:
+                return await service.activate_game(user["id"], game_id, body.player_role_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @application.post("/api/v1/games/{game_id}/pause", response_model=GameSummaryResponse)
+    async def pause_game(game_id: int, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        lock = application.state.command_locks.setdefault(game_id, asyncio.Lock())
+        try:
+            async with lock:
+                game = service.pause_game(user["id"], game_id)
+            active = application.state.active_connections.get(game_id)
+            if active is not None:
+                await active.close(code=1000, reason="游戏已暂停")
+            return game
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @application.post("/api/games")
     @application.post("/api/v1/games", response_model=GameCreationResponse)
     async def create_game(
@@ -546,9 +713,12 @@ def create_app(
     )
     async def game_detail(game_id: int, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
         try:
-            game = store.get_game(user["id"], game_id)
-            game["events"] = store.list_events(user["id"], game_id)
-            return game
+            game = store.get_game(user["id"], game_id, include_script=True)
+            has_opening = bool(game["script"].get("opening"))
+            return {**service._public_game(game), "events": store.list_events(user["id"], game_id),
+                    "has_opening": has_opening,
+                    "before_first_stage": has_opening and game["current_stage"] == 1
+                    and game["current_phase"] in {"opening", "private_reveal"}}
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -577,6 +747,8 @@ def create_app(
             return service.get_player_notebook(user["id"], game_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @application.put("/api/games/{game_id}/notebook/manual")
     @application.put(
@@ -598,6 +770,8 @@ def create_app(
             )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @application.get("/api/games/{game_id}/role-records")
     @application.get("/api/v1/games/{game_id}/role-records")
@@ -612,7 +786,56 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    async def serve_game_websocket(
+    @application.get("/api/v1/games/{game_id}/execution-logs")
+    async def execution_logs(game_id: int, user: dict[str, Any] = Depends(require_user)) -> dict[str, Any]:
+        try:
+            return service.runtime_store.logs(user["id"], game_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.post('/api/v1/games/{game_id}/takeover')
+    async def takeover_game(game_id: int, user: dict[str, Any] = Depends(require_user)):
+        try:
+            game = service.leases.invalidate(user['id'],game_id)
+            service.sessions.pop(game_id,None)
+            active = application.state.active_connections.get(game_id)
+            if active is not None:
+                await active.close(code=4409,reason='游戏已被另一个窗口接管')
+            return game
+        except KeyError as exc:
+            raise HTTPException(status_code=404,detail=str(exc)) from exc
+
+    @application.post('/api/v1/games/{game_id}/cancel-preparation')
+    async def cancel_preparation(game_id: int,user: dict[str,Any]=Depends(require_user)):
+        try:
+            with store.transaction():
+                game=store.get_game(user['id'],game_id)
+                if game['status']=='preparing':
+                    store.set_game_lifecycle(game_id,paused_at=None,status='abandoned')
+                    store.add_event(game_id,'preparation_cancelled',{})
+                elif game['status']!='abandoned':
+                    raise HTTPException(status_code=409,detail='已开始的游戏不能取消选角')
+            return store.get_game(user['id'],game_id)
+        except KeyError as exc:raise HTTPException(status_code=404,detail=str(exc)) from exc
+
+    @application.get('/api/v1/games/{game_id}/execution-log-pages')
+    async def execution_log_pages(game_id: int,kind: Literal['models','tools','runs']='tools',actor_role_id: str='',
+                                  offset: int=Query(default=0,ge=0),limit: int=Query(default=30,ge=1,le=100),user: dict[str,Any]=Depends(require_user)):
+        try: return service.runtime_store.log_page(user['id'],game_id,kind,actor_role_id,offset,limit)
+        except KeyError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+
+    @application.get('/api/v1/games/{game_id}/export')
+    async def export_game(game_id: int,user: dict[str,Any]=Depends(require_user)):
+        try:
+            game = store.get_game(user['id'],game_id)
+            records = service.get_role_records(user['id'],game_id) if game['status']=='completed' else service.get_player_notebook(user['id'],game_id)
+            logs = service.runtime_store.logs(user['id'],game_id)
+            return JSONResponse({'schema_version':'1.0','game':game,'records':records,'execution':logs},
+                headers={'Content-Disposition':f'attachment; filename="game-{game_id}.json"'})
+        except KeyError as exc: raise HTTPException(status_code=404,detail=str(exc)) from exc
+        except ValueError as exc: raise HTTPException(status_code=409,detail=str(exc)) from exc
+
+    async def run_game_websocket(
         ws: WebSocket,
         user: dict[str, Any],
         game_id: int,
@@ -633,6 +856,8 @@ def create_app(
         command_lock = application.state.command_locks.setdefault(game_id, asyncio.Lock())
         await await_with_heartbeat(ws, command_lock.acquire(), game_id, protocol_v1)
         try:
+            if dm.workflow_enabled and dm.workflow_settings.model_hosting and dm.state.scene_phase.value in {'briefing','dm_hosting'}:
+                await GameWorkflow(service,user['id'],dm).dispatch(f'hosting:{dm.state.current_stage_num}:{dm.state.scene_phase.value}',{'type':'hosting_tick'})
             game_init = build_game_init(
                 dm,
                 history_events=store.list_events(user["id"], game_id),
@@ -729,7 +954,10 @@ def create_app(
                         )
                         continue
                 try:
+                    streamed_event_ids: set[int] = set()
                     async with command_lock:
+                        if store.get_game(user["id"], game_id)["status"] == "paused":
+                            raise ValueError("游戏已暂停")
                         existing_events = (
                             store.realtime_events_for_request(
                                 game_id,
@@ -738,7 +966,26 @@ def create_app(
                             if protocol_v1 and request_id
                             else []
                         )
-                        if existing_events:
+                        if dm.workflow_enabled:
+                            async def stream_committed():
+                                nonlocal last_sent_event_id
+                                if protocol_v1:
+                                    for event in store.list_realtime_events(user['id'],game_id,last_sent_event_id,200):
+                                        await send_connected(ws,event_envelope(game_id,event))
+                                        last_sent_event_id=int(event['event_id'])
+                                        streamed_event_ids.add(last_sent_event_id)
+                            async def stream_activity(payload):
+                                envelope = heartbeat_message(game_id,protocol_v1)
+                                if protocol_v1:
+                                    envelope.update(type=payload['type'],request_id=request_id,payload=payload)
+                                else:
+                                    envelope=payload
+                                await send_connected(ws,envelope)
+                            responses = await await_with_heartbeat(ws,
+                                GameWorkflow(service, user["id"], dm).dispatch(str(request_id or uuid.uuid4()), message,activity_sink=stream_activity),
+                                game_id, protocol_v1,on_tick=stream_committed if protocol_v1 else None)
+                            realtime_events = store.realtime_events_for_request(game_id, str(request_id)) if protocol_v1 and request_id else []
+                        elif existing_events:
                             realtime_events = existing_events
                             responses = []
                         else:
@@ -782,6 +1029,8 @@ def create_app(
                     )
                 if protocol_v1:
                     for event in realtime_events:
+                        if int(event['event_id']) in streamed_event_ids:
+                            continue
                         await send_connected(ws, event_envelope(game_id, event))
                         last_sent_event_id = max(last_sent_event_id, int(event["event_id"]))
                         if event["type"] == "dm_narration_chunk":
@@ -793,6 +1042,60 @@ def create_app(
                             await asyncio.sleep(0.035)
         except WebSocketDisconnect:
             return
+
+    async def serve_game_websocket(ws: WebSocket, user: dict[str, Any], game_id: int,
+                                   *, protocol_v1: bool = False, after_event_id: int = 0) -> None:
+        try:
+            game = store.get_game(user["id"], game_id)
+        except KeyError:
+            await ws.close(code=4404, reason="游戏记录不存在")
+            return
+        if game.get("lifecycle_version", 1) < 2:
+            await run_game_websocket(ws, user, game_id, protocol_v1=protocol_v1, after_event_id=after_event_id)
+            return
+        if game["status"] == "preparing":
+            await ws.close(code=4409, reason="请先选择角色")
+            return
+        # Only one connection may advance a new-version game's runtime at a time.
+        if game_id in application.state.active_connections:
+            await ws.close(code=4409, reason="本场游戏正在另一个窗口运行")
+            return
+        controller = user.get('controller_id') or 'legacy:'+user['session_key']
+        settings_for_lease = service.workflow_defaults
+        from workflow_config import WorkflowSettings
+        full_game = store.get_game(user['id'],game_id,include_script=True)
+        if full_game.get('workflow_config_json'):
+            settings_for_lease = WorkflowSettings.model_validate_json(full_game['workflow_config_json'])
+        try:
+            service.leases.claim(user['id'],game_id,controller,settings_for_lease)
+            service.sessions.pop(game_id,None)
+        except RuntimeAccessError:
+            await ws.close(code=4409,reason='本场游戏正在另一个窗口运行，或处于重连保留期')
+            return
+        application.state.active_connections[game_id] = ws
+        async def pulse():
+            while True:
+                await asyncio.sleep(settings_for_lease.heartbeat_seconds)
+                try:
+                    service.leases.heartbeat(game_id,settings_for_lease)
+                except RuntimeAccessError:
+                    await ws.close(code=4409,reason='本场游戏已暂停或被接管')
+                    return
+        heartbeat_task = asyncio.create_task(pulse())
+        try:
+            await run_game_websocket(ws, user, game_id, protocol_v1=protocol_v1, after_event_id=after_event_id)
+        finally:
+            heartbeat_task.cancel()
+            lock = application.state.command_locks.setdefault(game_id, asyncio.Lock())
+            async with lock:
+                try:
+                    if service.leases.owned(game_id):
+                        service.pause_game(user["id"], game_id)
+                        service.leases.release(game_id,settings_for_lease)
+                except KeyError:
+                    pass
+                application.state.active_connections.pop(game_id, None)
+                service.sessions.pop(game_id, None)
 
     @application.websocket("/ws/v1/games/{game_id}")
     async def game_ws(
@@ -809,6 +1112,7 @@ def create_app(
             "id": ticket_user["user_id"],
             "username": ticket_user["username"],
             "session_key": ticket_user["session_key"],
+            "controller_id": ticket_user['controller_id'],
         }
         await serve_game_websocket(
             ws,

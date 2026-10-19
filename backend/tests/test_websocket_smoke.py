@@ -7,6 +7,7 @@ import tempfile
 import unittest
 import warnings
 from pathlib import Path
+from unittest.mock import patch
 
 warnings.filterwarnings("ignore", message="Using `httpx` with `starlette.testclient` is deprecated.*")
 os.environ["LLM_PROVIDER"] = "echo"
@@ -15,8 +16,11 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_ROOT / "app"))
 
 from fastapi.testclient import TestClient
-from main import create_app
+_IMPORT_DATA_DIRECTORY = tempfile.TemporaryDirectory()
+with patch.dict(os.environ, {"AI_MURDER_MYSTERY_DATA_DIR": _IMPORT_DATA_DIRECTORY.name}):
+    from main import create_app
 from backend.tests.test_engine_flow import actual_input
+from backend.tests.script_fixtures import single_stage_script
 
 
 class WebSocketSmokeTest(unittest.TestCase):
@@ -207,6 +211,7 @@ class WebSocketSmokeTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        script.pop("opening", None)
         creation = self.client.post(
             "/api/games",
             headers=self.headers,
@@ -266,7 +271,7 @@ class WebSocketSmokeTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        script["script_meta"]["total_stages"] = 1
+        script = single_stage_script(script)
         creation = self.client.post(
             "/api/games",
             headers=self.headers,
@@ -281,14 +286,8 @@ class WebSocketSmokeTest(unittest.TestCase):
         with self.client.websocket_connect(
             f"/game?token={self.token}&game_id={creation['id']}"
         ) as ws:
-            ws.receive_json()
-            self._receive_until(ws, "dm_narration_end")
-            ws.send_json({"type": "advance_phase"})
-            self.assertEqual(ws.receive_json()["type"], "phase_changed")
-            self.assertEqual(ws.receive_json()["type"], "private_script")
-            ws.send_json({"type": "advance_phase"})
-            self.assertEqual(ws.receive_json()["type"], "phase_changed")
-            self.assertEqual(ws.receive_json()["type"], "investigation_open")
+            init = ws.receive_json()
+            self._open_investigation(ws, init["phase"]["phase"])
             ws.send_json({"type": "request_phase_end"})
             self._receive_until(ws, "dm_narration_end")
             ws.send_json(
@@ -325,7 +324,7 @@ class WebSocketSmokeTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        script["script_meta"]["total_stages"] = 1
+        script = single_stage_script(script)
         investigation = script["stage_flow"]["stage_1"]["investigation"]
         investigation["end_conditions"] = {}
         investigation["autonomy"]["max_turns"] = 0
@@ -349,14 +348,8 @@ class WebSocketSmokeTest(unittest.TestCase):
         with self.client.websocket_connect(
             f"/game?token={self.token}&game_id={game_id}"
         ) as ws:
-            ws.receive_json()
-            self._receive_until(ws, "dm_narration_end")
-            ws.send_json({"type": "advance_phase"})
-            ws.receive_json()
-            ws.receive_json()
-            ws.send_json({"type": "advance_phase"})
-            ws.receive_json()
-            ws.receive_json()
+            init = ws.receive_json()
+            self._open_investigation(ws, init["phase"]["phase"])
 
             ws.send_json(
                 {
@@ -404,7 +397,7 @@ class WebSocketSmokeTest(unittest.TestCase):
         }
         self.assertTrue(
             {
-                "story_background",
+                "opening",
                 "public_briefing",
                 "public_tasks",
                 "public_information",
@@ -459,14 +452,8 @@ class WebSocketSmokeTest(unittest.TestCase):
         with self.client.websocket_connect(
             f"/game?token={self.token}&game_id={creation['id']}"
         ) as ws:
-            ws.receive_json()
-            self._receive_until(ws, "dm_narration_end")
-            ws.send_json({"type": "advance_phase"})
-            ws.receive_json()
-            ws.receive_json()
-            ws.send_json({"type": "advance_phase"})
-            ws.receive_json()
-            opened = ws.receive_json()
+            init = ws.receive_json()
+            opened = self._open_investigation(ws, init["phase"]["phase"])
             self.assertTrue(opened["phase"]["autonomy"]["enabled"])
 
             activity = ws.receive_json()
@@ -486,6 +473,22 @@ class WebSocketSmokeTest(unittest.TestCase):
             "ai_proactive_speech",
             [event["type"] for event in detail["events"]],
         )
+
+    def _open_investigation(self, ws: object, phase: str) -> dict[str, object]:
+        for _ in range(4):
+            if phase == "investigation":
+                return self._receive_until(ws, "investigation_open")[-1]
+            if phase in {"opening", "briefing"}:
+                self._receive_until(ws, "dm_narration_end")
+            elif phase == "private_reveal":
+                self._receive_until(ws, "private_script")
+            else:
+                self.fail(f"Unexpected introductory phase: {phase}")
+            ws.send_json({"type": "advance_phase"})
+            changed = ws.receive_json()
+            self.assertEqual(changed["type"], "phase_changed")
+            phase = changed["phase"]["phase"]
+        self.fail("Investigation did not open after the introduction")
 
     @staticmethod
     def _receive_until(ws: object, terminal_type: str) -> list[dict[str, object]]:

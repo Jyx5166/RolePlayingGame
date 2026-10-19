@@ -6,6 +6,7 @@ import { CommandOutbox } from "./command-outbox";
 import { useAuthStore } from "./stores/auth";
 import { useUiStore } from "./stores/ui";
 import { buildCommandEnvelope, reduceRealtimeEnvelope } from "./ws-protocol";
+import { rolePortrait } from "./script-artwork";
 
 export function mountLegacyApp() {
 const state = createAppState();
@@ -18,11 +19,8 @@ const authChannel = "BroadcastChannel" in window ? new BroadcastChannel("ai-mm-a
 const els = Object.fromEntries(
   [
     "authView", "appView", "appSidebar",
-    "createView", "recordsView", "gameView", "categoryGrid", "modeControl", "selectedCategoryText",
-    "selectedModeText", "uploadZone", "scriptFileInput", "chooseFileBtn", "exampleScriptBtn",
-    "uploadTitle", "uploadMeta", "scriptError", "scriptPreview", "previewTitle", "previewStages",
-    "previewRoles", "previewAgents", "roleOptions", "startGameBtn",
-    "leaveGameBtn", "expandSidebarBtn", "gameModeLabel", "gameTitle", "currentStage", "totalStages", "playerIntel",
+    "createView", "scriptLibraryView", "preparationView", "recordsView", "personalCenterView", "gameView", 'modernGameView',
+    "leaveGameBtn", "gameModeLabel", "gameTitle", "currentStage", "totalStages", "playerIntel",
     "searchTargets", "messages", "speechForm", "speechInput", "humanRole", "totalRoles",
     "agentCount", "castList", "dispatchList", "advanceBtn", "toast", "whisperSection",
     "whisperTarget", "whisperInviteBtn", "whisperCloseBtn", "whisperStatus",
@@ -39,13 +37,18 @@ const els = Object.fromEntries(
     "phaseRules", "investigationEndVoteStatus", "agentAutonomyState", "notebookAutoTab", "notebookCluesTab", "notebookManualTab",
     "notebookAutoPane", "notebookCluesPane", "notebookManualPane", "notebookAutoEntries",
     "ownedClues",
-    "notebookManualNotes", "notebookSaveState", "roleRecordsModal",
+    "notebookManualNotes", "notebookSaveState", "roleRecordsModal", "auditExecutionLogs", "auditRoleDetails",
     "closeRoleRecordsBtn", "auditRoleTabs", "auditClues", "auditAutomaticEntries",
     "auditReasoningEntries", "auditStageResults", "auditOperations", "auditAgentContexts",
     "conversationParticipants",
   ].map((id) => [id, document.getElementById(id)])
 );
 const avatarActionTimers = new WeakMap();
+els.gameView?.addEventListener("error", (event) => {
+  if (event.target instanceof HTMLImageElement && event.target.hasAttribute("data-role-portrait")) {
+    event.target.remove();
+  }
+}, true);
 
 const categoryNames = {
   mystery: "悬疑推理",
@@ -83,9 +86,6 @@ function showAuth(preserveReturnPath = true) {
   uiStore.setGameActive(false);
   state.csrfToken = "";
   state.user = null;
-  state.script = null;
-  state.builtinScriptId = null;
-  state.preview = null;
   state.game = null;
   state.lastEventId = 0;
   state.roleRecords = null;
@@ -97,11 +97,6 @@ function showAuth(preserveReturnPath = true) {
   localStorage.removeItem("ai_mm_token");
   closeGameSocket();
   stopCountdown();
-  els.uploadTitle.textContent = "拖入案件文件，或从本机选择";
-  els.uploadMeta.textContent = "JSON · 最大 5 MB";
-  els.scriptPreview.classList.add("hidden");
-  els.scriptError.textContent = "";
-  setCreationStep(1);
   els.authView.classList.remove("hidden");
   els.appView.classList.add("hidden");
   const authMode = appRouter.current().name === "register" ? "register" : "login";
@@ -115,13 +110,11 @@ async function enterApp(user) {
   state.user = authStore.user;
   els.authView.classList.add("hidden");
   els.appView.classList.remove("hidden");
-  state.catalog = await api("/api/catalog");
-  renderCatalog();
   const returnPath = appRouter.consumeReturnPath();
   if (returnPath) {
     await appRouter.replacePath(returnPath);
   } else if (["login", "register", "not-found"].includes(appRouter.current().name)) {
-    await appRouter.replace({ name: "case-create" });
+    await appRouter.replace({ name: "script-library" });
   }
   await restoreRoute();
 }
@@ -130,144 +123,61 @@ function syncAccountAvatar() {
   uiStore.setGameActive(Boolean(state.user) && els.appView.classList.contains("game-active"));
 }
 
-function renderCatalog() {
-  const category = state.catalog.categories.find((item) => item.id === "mystery");
-  const mode = state.catalog.modes.find((item) => item.id === "deduction");
-  state.category = category?.id || "mystery";
-  state.mode = mode?.id || "deduction";
-  els.selectedCategoryText.textContent = category?.name || "悬疑推理";
-  els.selectedModeText.textContent = mode?.name || "推理对抗";
-
-  els.categoryGrid.innerHTML = "";
-  els.modeControl.innerHTML = "";
+async function pauseCurrentGame() {
+  if (state.game?.lifecycle_version >= 2 && els.appView.classList.contains("game-active")) {
+    await api(`/api/games/${state.game.id}/pause`, { method: "POST" });
+    appEvents.emit("records:invalidate", {});
+  }
 }
 
-function showPage(name, updateHistory = true) {
+function hideWorkspaceViews() {
+  for (const view of [els.createView, els.scriptLibraryView, els.preparationView, els.recordsView, els.personalCenterView, els.gameView, els.modernGameView]) view.classList.add("hidden");
+}
+
+async function showPage(name, updateHistory = true) {
+  // Close the socket first so that a pending inference cannot outlive leaving this page.
   closeGameSocket();
+  try { await pauseCurrentGame(); } catch (error) { toast(error.message); return; }
+  stopCountdown();
   closeRoleRecords();
-  setSidebarCollapsed(false);
   els.appView.classList.remove("game-active");
   syncAccountAvatar();
-  for (const view of [els.createView, els.recordsView, els.gameView]) view.classList.add("hidden");
-  if (name === "records") {
-    if (updateHistory) void appRouter.push({ name: "case-list" });
-    els.recordsView.classList.remove("hidden");
-    animateView(els.recordsView);
-  } else {
-    if (updateHistory) void appRouter.push({ name: "case-create" });
-    els.createView.classList.remove("hidden");
-    setCreationStep(state.preview ? 2 : 1);
-    animateView(els.createView);
-  }
+  hideWorkspaceViews();
+  const page = name === "profile" ? els.personalCenterView : name === "records" ? els.recordsView : name === "create" ? els.createView : els.scriptLibraryView;
+  const route = name === "profile" ? "personal-center" : name === "records" ? "case-list" : name === "create" ? "script-create" : "script-library";
+  if (updateHistory) await appRouter.push({ name: route });
+  page.classList.remove("hidden");
+  animateView(page);
+}
+
+async function openPreparation(gameId, updateHistory = true) {
+  closeGameSocket();
+  await pauseCurrentGame();
+  stopCountdown();
+  closeRoleRecords();
+  els.appView.classList.remove("game-active");
+  syncAccountAvatar();
+  hideWorkspaceViews();
+  if (updateHistory) await appRouter.push({ name: "game-prepare", gameId });
+  els.preparationView.classList.remove("hidden");
+  animateView(els.preparationView);
 }
 
 async function restoreRoute() {
   const route = appRouter.current();
-  if (route.name === "case-detail") {
+  if (route.name === "case-detail" || route.name === "game-detail") {
     await openGame(route.gameId, null, false);
-    return;
-  }
-  if (route.name === "case-list") {
-    showPage("records", false);
-    return;
-  }
-  if (route.name !== "case-create") await appRouter.replace({ name: "case-create" });
-  showPage("create", false);
-}
-
-function setCreationStep(step) {
-  document.querySelectorAll(".step-indicator span").forEach((item, index) => {
-    const current = index + 1;
-    item.classList.toggle("active", current === step);
-    item.classList.toggle("complete", current < step);
-  });
-}
-
-async function readScriptFile(file) {
-  els.scriptError.textContent = "";
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    els.scriptError.textContent = "剧本文件不能超过 5 MB";
-    return;
-  }
-  try {
-    state.builtinScriptId = null;
-    state.script = JSON.parse(await file.text());
-    els.uploadTitle.textContent = file.name;
-    els.uploadMeta.textContent = `${Math.max(1, Math.ceil(file.size / 1024))} KB · JSON`;
-    await inspectScript();
-  } catch (error) {
-    state.script = null;
-    els.scriptPreview.classList.add("hidden");
-    setCreationStep(1);
-    els.scriptError.textContent = error instanceof SyntaxError ? "JSON 格式无效" : error.message;
-  }
-}
-
-async function inspectScript() {
-  if (!state.script && !state.builtinScriptId) return;
-  try {
-    state.preview = await api("/api/scripts/inspect", {
-      method: "POST",
-      body: JSON.stringify({ mode: state.mode, ...scriptSource() }),
-    });
-    els.scriptError.textContent = "";
-    renderScriptPreview();
-  } catch (error) {
-    state.preview = null;
-    els.scriptPreview.classList.add("hidden");
-    setCreationStep(1);
-    els.scriptError.textContent = error.message;
-  }
-}
-
-function scriptSource() {
-  return state.builtinScriptId ? { script_id: state.builtinScriptId } : { script: state.script };
-}
-
-function renderScriptPreview() {
-  const preview = state.preview;
-  els.previewTitle.textContent = preview.title;
-  els.previewStages.textContent = String(preview.total_stages);
-  els.previewRoles.textContent = String(preview.role_count);
-  els.previewAgents.textContent = String(preview.ai_agent_count);
-  els.roleOptions.innerHTML = "";
-  preview.playable_roles.forEach((role, index) => {
-    const label = document.createElement("label");
-    label.className = "role-option";
-    label.innerHTML = `
-      <input type="radio" name="player-role" value="${escapeHtml(role.role_id)}" ${index === 0 ? "checked" : ""} />
-      <span><strong>${escapeHtml(role.role_name)}</strong><span>${escapeHtml(role.public_identity)}</span></span>`;
-    els.roleOptions.appendChild(label);
-  });
-  els.scriptPreview.classList.remove("hidden");
-  setCreationStep(2);
-}
-
-async function startGame() {
-  const selectedRole = document.querySelector('input[name="player-role"]:checked');
-  if ((!state.script && !state.builtinScriptId) || !state.preview || !selectedRole) return;
-  setCreationStep(3);
-  els.startGameBtn.disabled = true;
-  els.startGameBtn.innerHTML = "<span>DM 正在建立调查现场...</span><b>···</b>";
-  try {
-    const game = await api("/api/games", {
-      method: "POST",
-      body: JSON.stringify({
-        category: state.category,
-        mode: state.mode,
-        player_role_id: selectedRole.value,
-        ...scriptSource(),
-      }),
-    });
-    appEvents.emit("records:invalidate", {});
-    await openGame(game.id, game);
-  } catch (error) {
-    setCreationStep(2);
-    toast(error.message);
-  } finally {
-    els.startGameBtn.disabled = false;
-    els.startGameBtn.innerHTML = "<span>启动 DM，进入案发现场</span><b>→</b>";
+  } else if (route.name === "game-prepare") {
+    await openPreparation(route.gameId, false);
+  } else if (route.name === "case-list") {
+    await showPage("records", false);
+  } else if (route.name === "personal-center") {
+    await showPage("profile", false);
+  } else if (route.name === "script-create" || route.name === "case-create") {
+    await showPage("create", false);
+  } else {
+    if (route.name !== "script-library") await appRouter.replace({ name: "script-library" });
+    await showPage("library", false);
   }
 }
 
@@ -281,19 +191,20 @@ async function openGame(gameId, summary = null, updateHistory = true) {
     toast(error.message);
     return;
   }
+  if (detail.status === "preparing") { await openPreparation(Number(gameId)); return; }
   state.game = { ...(summary || {}), ...detail };
-  if (updateHistory) void appRouter.push({ name: "case-detail", gameId: Number(gameId) });
+  if (updateHistory) await appRouter.push({ name: detail.lifecycle_version >= 2 ? "game-detail" : "case-detail", gameId: Number(gameId) });
   state.roleRecords = null;
-  setSidebarCollapsed(false);
+  setSidebarCollapsed(true);
   els.appView.classList.add("game-active");
   syncAccountAvatar();
   closeRoleRecords();
-  els.createView.classList.add("hidden");
-  els.recordsView.classList.add("hidden");
+  hideWorkspaceViews();
+  if (detail.lifecycle_version>=4) { els.modernGameView.classList.remove('hidden'); return; }
   els.gameView.classList.remove("hidden");
   animateView(els.gameView);
   els.gameTitle.textContent = detail.title;
-  els.gameModeLabel.textContent = `${categoryNames[detail.category] || detail.category} · ${modeNames[detail.mode] || detail.mode}`;
+  els.gameModeLabel.textContent = `${categoryNames[detail.category] || detail.category} · ${modeNames[detail.mode] || detail.mode} · GAME #${detail.id}`;
   els.currentStage.textContent = String(detail.current_stage);
   els.totalStages.textContent = String(detail.total_stages);
   els.messages.innerHTML = "";
@@ -310,17 +221,16 @@ function setSidebarCollapsed(collapsed, focusTarget = false) {
   state.sidebarCollapsed = active;
   uiStore.setSidebarCollapsed(active);
   els.appView?.classList.toggle("sidebar-collapsed", active);
-  els.appSidebar?.setAttribute("aria-hidden", String(active));
-  els.appSidebar?.toggleAttribute("inert", active);
-  els.expandSidebarBtn?.setAttribute("aria-expanded", String(!active));
+  els.appSidebar?.removeAttribute("aria-hidden");
+  els.appSidebar?.removeAttribute("inert");
   if (focusTarget) {
     window.requestAnimationFrame(() => {
-      (active ? els.expandSidebarBtn : document.getElementById("collapseSidebarBtn"))?.focus();
+      document.getElementById("collapseSidebarBtn")?.focus();
     });
   }
 }
 
-const compactGameMedia = window.matchMedia("(max-width: 1180px)");
+const compactGameMedia = window.matchMedia("(max-width: 780px)");
 
 function syncCompactGamePanel() {
   const compact = compactGameMedia.matches;
@@ -822,7 +732,9 @@ async function connectGame(gameId, reconnecting = false) {
   state.reconnectTimer = null;
   let ticket;
   try {
-    const result = await api(`/api/games/${gameId}/ws-ticket`, { method: "POST" });
+    let controller = sessionStorage.getItem('game_controller_id');
+    if (!controller) { controller = crypto.randomUUID(); sessionStorage.setItem('game_controller_id', controller); }
+    const result = await api(`/api/games/${gameId}/ws-ticket?controller_id=${encodeURIComponent(controller)}`, { method: "POST" });
     ticket = result.ticket;
   } catch (error) {
     if (state.user) {
@@ -904,6 +816,16 @@ function scheduleGameReconnect(gameId) {
 function handleGameMessage(message) {
   switch (message.type) {
     case "heartbeat":
+      break;
+    case "game_command_complete":
+      clearAgentActivity();
+      setComposerBusy(false);
+      break;
+    case "dm_task_published":
+      addMessage("dm", "DM · 任务", message.content);
+      break;
+    case "dm_information_available":
+      loadNotebook(state.game?.id);
       break;
     case "game_init":
       renderGameInit(message);
@@ -1550,6 +1472,11 @@ async function openRoleRecords() {
   if (!gameId) return;
   try {
     const records = await api(`/api/games/${gameId}/role-records`);
+    if (state.game?.lifecycle_version >= 3) {
+      records.execution = await api(`/api/v1/games/${gameId}/execution-logs`);
+      records.roles.push({ role_id: "dm", role_name: "DM 主持", controller: "dm", operations: [],
+        clues: [], automatic_notebook: [], reasoning_notebook: [], stage_results: [], agent_context_audits: [] });
+    }
     state.roleRecords = records;
     els.auditRoleTabs.innerHTML = "";
     records.roles.forEach((role, index) => {
@@ -1574,6 +1501,9 @@ async function openRoleRecords() {
 function renderRoleRecord(roleId) {
   const role = state.roleRecords?.roles?.find((item) => item.role_id === roleId);
   if (!role) return;
+  const dmView = roleId === "dm";
+  els.auditRoleDetails.classList.toggle("hidden", dmView);
+  els.auditExecutionLogs.closest(".role-audit-grid").classList.toggle("dm-audit", dmView);
   [...els.auditRoleTabs.children].forEach((button, index) => {
     const selected = state.roleRecords.roles[index]?.role_id === roleId;
     button.classList.toggle("active", selected);
@@ -1592,6 +1522,7 @@ function renderRoleRecord(roleId) {
   );
   renderAuditStageResults(role.stage_results || []);
   renderAgentContextAudits(role.agent_context_audits || []);
+  renderExecutionLogs(roleId);
   els.auditOperations.innerHTML = "";
   if (!role.operations.length) {
     els.auditOperations.innerHTML = '<div class="audit-empty">该角色没有执行操作</div>';
@@ -1605,6 +1536,38 @@ function renderRoleRecord(roleId) {
       els.auditOperations.appendChild(item);
     });
   }
+}
+
+function renderExecutionLogs(roleId) {
+  if (!els.auditExecutionLogs) return;
+  const logs = state.roleRecords?.execution;
+  els.auditExecutionLogs.innerHTML = "";
+  if (!logs) {
+    els.auditExecutionLogs.innerHTML = '<div class="audit-empty">此存档使用旧版执行器</div>';
+    return;
+  }
+  const entries = [
+    ...logs.model_requests.filter((row) => row.actor_role_id === roleId).map((row) => ({
+      id: row.model_request_id, kind: "模型请求", title: row.metadata_json ? JSON.parse(row.metadata_json).purpose : "角色推理",
+      ...row, details: { input: row.input, output: row.output, usage: row.usage_json ? JSON.parse(row.usage_json) : null },
+    })),
+    ...logs.tool_calls.filter((row) => row.actor_role_id === roleId).map((row) => ({
+      id: row.tool_call_id, kind: "函数调用", title: row.tool_name,
+      ...row, details: { arguments: JSON.parse(row.arguments_json), result: row.result_json ? JSON.parse(row.result_json) : null },
+    })),
+  ].sort((a, b) => a.started_at.localeCompare(b.started_at));
+  if (!entries.length) {
+    els.auditExecutionLogs.innerHTML = '<div class="audit-empty">该角色没有新版本执行记录</div>';
+    return;
+  }
+  entries.forEach((row) => {
+    const item = document.createElement("article");
+    item.innerHTML = `<span>游戏 #${escapeHtml(logs.game_id)} · ${escapeHtml(row.kind)}</span>
+      <strong>${escapeHtml(row.title)} · ${escapeHtml(row.status)}</strong>
+      <p>调用 ${escapeHtml(row.id)}<br>运行 ${escapeHtml(row.run_id)}<br>回合 ${escapeHtml(row.turn_id)}</p>
+      <details><summary>参数、结果与用量</summary><pre>${escapeHtml(JSON.stringify(row.details, null, 2))}</pre></details>`;
+    els.auditExecutionLogs.appendChild(item);
+  });
 }
 
 function renderAgentContextAudits(audits) {
@@ -1870,6 +1833,7 @@ function roleAvatarMarkup(roleId, label, options = {}) {
     ? "DM"
     : [...identityLabel.replace(/\s/g, "")].slice(-1).join("") || "?";
   const tone = avatarTone(normalizedRoleId);
+  const portrait = rolePortrait(normalizedRoleId);
   const classes = [
     "role-avatar",
     `avatar-tone-${tone}`,
@@ -1879,8 +1843,10 @@ function roleAvatarMarkup(roleId, label, options = {}) {
     options.session ? "avatar-private-session" : "",
   ].filter(Boolean).join(" ");
   return `
-    <span class="${classes}" data-role-avatar="${escapeHtml(normalizedRoleId)}"${options.live ? ' data-avatar-live="true"' : ""} title="${escapeHtml(normalizedLabel)}">
-      <i aria-hidden="true"></i><b>${escapeHtml(initial)}</b><em aria-hidden="true"></em>
+    <span class="${classes}" data-role-avatar="${escapeHtml(normalizedRoleId)}"${options.live ? ' data-avatar-live="true"' : ""} role="img" aria-label="${escapeHtml(normalizedLabel)}" title="${escapeHtml(normalizedLabel)}">
+      <i aria-hidden="true"></i><b aria-hidden="true">${escapeHtml(initial)}</b>
+      ${portrait ? `<img data-role-portrait src="${escapeHtml(portrait)}" alt="${escapeHtml(identityLabel)}的角色肖像" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 28%;border-radius:inherit;z-index:1" />` : ""}
+      <em aria-hidden="true" style="z-index:2"></em>
     </span>`;
 }
 
@@ -1920,6 +1886,9 @@ function refreshRoleAvatars() {
     const label = avatar.querySelector("b");
     if (label && initial) label.textContent = initial;
     avatar.title = name;
+    avatar.setAttribute("aria-label", name);
+    const portrait = avatar.querySelector("img[data-role-portrait]");
+    if (portrait) portrait.alt = `${name}的角色肖像`;
   });
 }
 
@@ -2024,26 +1993,6 @@ function animateView(element) {
   window.setTimeout(() => element.classList.remove("view-enter"), 500);
 }
 
-const glassInteractiveSelector = [
-  "button",
-  ".role-option",
-  ".upload-zone",
-].join(",");
-
-document.addEventListener("pointerdown", (event) => {
-  const target = event.target.closest(glassInteractiveSelector);
-  if (!target || target.matches(":disabled")) return;
-
-  const rect = target.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
-  const y = ((event.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
-  target.style.setProperty("--press-x", `${x}%`);
-  target.style.setProperty("--press-y", `${y}%`);
-  target.classList.remove("glass-pressed");
-  requestAnimationFrame(() => target.classList.add("glass-pressed"));
-  window.setTimeout(() => target.classList.remove("glass-pressed"), 680);
-});
-
 appEvents.on("auth:authenticated", ({ user }) => {
   enterApp(user).catch((error) => toast(error.message || "进入调查室失败"));
 });
@@ -2051,7 +2000,9 @@ appEvents.on("auth:logout", ({ preserveReturnPath, broadcast }) => {
   showAuth(preserveReturnPath);
   if (broadcast) authChannel?.postMessage({ type: "logout" });
 });
-appEvents.on("navigation:view", ({ view }) => showPage(view));
+appEvents.on("navigation:view", ({ view }) => { void showPage(view); });
+appEvents.on("games:prepare", ({ gameId }) => { void openPreparation(gameId); });
+appEvents.on("games:activated", ({ gameId }) => { void openGame(gameId); });
 appEvents.on("sidebar:set", ({ collapsed, focusTarget }) => {
   setSidebarCollapsed(collapsed, focusTarget);
 });
@@ -2067,7 +2018,6 @@ appEvents.on("records:deleted", ({ gameId, title }) => {
   toast(`已删除案件“${title}”`);
 });
 appEvents.on("toast:show", ({ message }) => toast(message));
-els.expandSidebarBtn.addEventListener("click", () => setSidebarCollapsed(false, true));
 document.querySelectorAll(".compact-game-tab").forEach((button) => {
   button.addEventListener("click", () => setCompactGamePanel(button.dataset.panel));
   button.addEventListener("keydown", (event) => {
@@ -2082,25 +2032,7 @@ document.querySelectorAll(".compact-game-tab").forEach((button) => {
   });
 });
 compactGameMedia.addEventListener("change", syncCompactGamePanel);
-els.chooseFileBtn.addEventListener("click", () => els.scriptFileInput.click());
-els.uploadZone.addEventListener("dblclick", () => els.scriptFileInput.click());
-els.uploadZone.addEventListener("keydown", (event) => { if (event.key === "Enter") els.scriptFileInput.click(); });
-els.scriptFileInput.addEventListener("change", () => readScriptFile(els.scriptFileInput.files[0]));
-for (const eventName of ["dragenter", "dragover"]) els.uploadZone.addEventListener(eventName, (event) => { event.preventDefault(); els.uploadZone.classList.add("dragging"); });
-for (const eventName of ["dragleave", "drop"]) els.uploadZone.addEventListener(eventName, (event) => { event.preventDefault(); els.uploadZone.classList.remove("dragging"); });
-els.uploadZone.addEventListener("drop", (event) => readScriptFile(event.dataTransfer.files[0]));
-els.exampleScriptBtn.addEventListener("click", async () => {
-  try {
-    const preview = await api("/api/scripts/example");
-    state.script = null;
-    state.builtinScriptId = preview.script_id;
-    els.uploadTitle.textContent = "fog_harbor_clocktower.json";
-    els.uploadMeta.textContent = "内置悬疑案件 · JSON";
-    await inspectScript();
-  } catch (error) { els.scriptError.textContent = error.message; }
-});
-els.startGameBtn.addEventListener("click", startGame);
-els.leaveGameBtn.addEventListener("click", () => showPage("records"));
+els.leaveGameBtn.addEventListener("click", () => { void showPage("records"); });
 els.notebookAutoTab.addEventListener("click", () => setNotebookSection("automatic"));
 els.notebookCluesTab.addEventListener("click", () => setNotebookSection("clues"));
 els.notebookManualTab.addEventListener("click", () => setNotebookSection("manual"));

@@ -48,6 +48,14 @@ def active_mechanics(dm: DMEngine) -> list[dict[str, Any]]:
     ]
 
 
+def search_status(dm: DMEngine) -> dict[str,Any]:
+    search=dm.mechanic_registry.get('search')
+    state=dm._require_state()
+    if search is None:return {'remaining_ap':0,'targets':[]}
+    return {'remaining_ap':search.remaining_ap(state.current_stage_num,state.human_player_role_id),
+            'targets':search.available_targets(state.current_stage_num,state.human_player_role_id)}
+
+
 def build_game_init(
     dm: DMEngine,
     history_events: list[dict[str, Any]] | None = None,
@@ -66,6 +74,7 @@ def build_game_init(
         "dispatch": dm.get_latest_dispatch(),
         "whisper_status": dm.get_whisper_status(),
         "clues": dm.get_human_clues(),
+        'search_status':search_status(dm),
         "phase": dm.get_scene_summary(),
         "history_events": list(history_events or []),
         "sync": {
@@ -117,15 +126,17 @@ def build_phase_messages(dm: DMEngine) -> list[dict[str, Any]]:
                 "active_mechanics": active_mechanics(dm),
                 "whisper_status": dm.get_whisper_status(),
                 "clues": dm.get_human_clues(),
+                'search_status':search_status(dm),
             }
         )
         return messages
 
-    narration = (
-        dm.get_briefing_narration()
-        if phase == ScenePhase.BRIEFING
-        else dm.get_hosting_narration()
-    )
+    if phase == ScenePhase.OPENING:
+        narration = dm.get_opening_narration()
+    elif phase == ScenePhase.BRIEFING:
+        narration = dm.get_briefing_narration()
+    else:
+        narration = dm.get_hosting_narration()
     dm.record_dm_narration_for_notebooks(
         phase.value,
         summary["stage_title"],
@@ -161,24 +172,7 @@ def build_phase_messages(dm: DMEngine) -> list[dict[str, Any]]:
             "type": "dm_narration_end",
             "phase": phase.value,
             "can_continue": not dm.stage_resolution_pending(),
-            "continue_label": (
-                "接收我的角色剧本"
-                if phase == ScenePhase.BRIEFING
-                else (
-                    "完成最终指认后查看结局"
-                    if dm.stage_resolution_pending()
-                    and summary["stage"] >= summary["total_stages"]
-                    else (
-                        "完成本幕投票后继续"
-                        if dm.stage_resolution_pending()
-                        else (
-                            "查看终局复盘"
-                            if summary["stage"] >= summary["total_stages"]
-                            else "进入下一幕"
-                        )
-                    )
-                )
-            ),
+            "continue_label": summary["continue_label"],
         }
     )
     return messages

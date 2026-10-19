@@ -5,11 +5,14 @@ from string import Formatter
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from dm.task_evaluator import validate_task_checks
+from .script_schema import ScriptDocument
 
 
 class ScriptValidationError(ValueError):
-    """Raised when a script JSON file misses required MVP fields."""
+    """Raised when script structure, permissions or runtime references are invalid."""
 
 
 class ScriptLoader:
@@ -44,6 +47,10 @@ class ScriptLoader:
             self._text(meta[field], f"script_meta.{field}")
         self._integer(meta["total_stages"], "script_meta.total_stages", 1)
         self._strings(meta["supported_skills"], "script_meta.supported_skills", nonempty=True)
+        tags = meta.get("tags", [])
+        self._strings(tags, "script_meta.tags")
+        if len(tags) > 12 or any(not tag.strip() or len(tag) > 24 for tag in tags):
+            raise ScriptValidationError("tags 最多 12 个，每个标签需要 1 至 24 个字符")
         if not set(meta["supported_skills"]).issubset({"narrative", "deduction", "faction"}):
             raise ScriptValidationError("script_meta.supported_skills contains unsupported skills")
         self._text(script["story_background"], "story_background")
@@ -65,6 +72,8 @@ class ScriptLoader:
             role_id = role["role_id"]
             for field in ("role_id", "role_name", "public_identity"):
                 self._text(role[field], f"role.{field}")
+            if role_id in {"dm", "*"}:
+                raise ScriptValidationError(f"role_id uses a reserved permission identifier: {role_id}")
             if not isinstance(role["human_playable"], bool):
                 raise ScriptValidationError("role.human_playable must be boolean")
             self._object(role["stage_knowledge"], f"{role_id}.stage_knowledge")
@@ -104,6 +113,172 @@ class ScriptLoader:
             self._integer(constraint.get("until_stage"), "hard_constraint.until_stage", 1)
             self._strings(constraint.get("keywords"), "hard_constraint.keywords", nonempty=True)
             self._text(constraint.get("message"), "hard_constraint.message")
+
+        self._validate_contract(script, role_ids)
+
+    @staticmethod
+    def json_schema() -> dict[str, Any]:
+        """Return the same versioned authoring schema used by typed validation."""
+        return ScriptDocument.model_json_schema()
+
+    def _validate_contract(self, script: dict[str, Any], role_ids: set[str]) -> None:
+        # Legacy files are parsed through the same model, without modifying the
+        # caller's dictionary or silently adding a version to persisted content.
+        versioned = "schema_version" in script
+        if versioned and script["schema_version"] != "1.0":
+            raise ScriptValidationError("Unsupported schema_version; expected 1.0")
+        try:
+            ScriptDocument.model_validate({"schema_version": "1.0", **script})
+        except ValidationError as exc:
+            errors = "; ".join(
+                f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
+                for error in exc.errors(include_input=False, include_url=False)
+            )
+            raise ScriptValidationError(errors) from exc
+
+        meta = script["script_meta"]
+        total = meta["total_stages"]
+        expected_stages = {f"stage_{stage}" for stage in range(1, total + 1)}
+        skills = meta["supported_skills"]
+        self._unique(skills, "script_meta.supported_skills")
+        recommended = meta.get("recommended_player_role")
+        if recommended is not None and not any(
+            role["role_id"] == recommended and role["human_playable"]
+            for role in script["roles"]
+        ):
+            raise ScriptValidationError("recommended_player_role must reference a human-playable role")
+
+        block_ids: dict[str, tuple[dict[str, Any], set[str]]] = {}
+        for role in script["roles"]:
+            role_id = role["role_id"]
+            if set(role["stage_knowledge"]) != expected_stages:
+                raise ScriptValidationError(f"{role_id}.stage_knowledge must contain exactly the declared stages")
+            for stage_key, knowledge in role["stage_knowledge"].items():
+                containing_stage = int(stage_key.removeprefix("stage_"))
+                for block in knowledge.get("blocks", []):
+                    previous = block_ids.get(block["block_id"])
+                    if previous is not None:
+                        previous_block, containing_roles = previous
+                        # Existing saved games repeated an identical public
+                        # block in different role documents. Preserve those
+                        # unversioned snapshots; new authoring uses unique IDs.
+                        if (versioned or block["visibility"] != "public"
+                                or block != previous_block or role_id in containing_roles):
+                            raise ScriptValidationError(f"Duplicate block_id: {block['block_id']}")
+                        containing_roles.add(role_id)
+                    else:
+                        block_ids[block["block_id"]] = (block, {role_id})
+                    self._stage_range(block["unlock_stage"], total, "info block.unlock_stage")
+                    if block["unlock_stage"] < containing_stage:
+                        raise ScriptValidationError("info block.unlock_stage cannot precede its containing stage")
+                    if block["visibility"] == "self_only" and block["owner_role"] != role_id:
+                        raise ScriptValidationError("self_only info block owner_role must match its containing role")
+                    if block["visibility"] == "dm_only" and block["owner_role"] != "dm":
+                        raise ScriptValidationError("dm_only info block owner_role must be dm")
+
+        truth = script["truth"]
+        if not set(truth.get("role_arcs", {})).issubset(role_ids):
+            raise ScriptValidationError("truth.role_arcs references an unknown role")
+        if truth.get("culprit_role_id") is not None and truth["culprit_role_id"] not in role_ids:
+            raise ScriptValidationError("truth.culprit_role_id references an unknown role")
+        flow = script.get("stage_flow")
+        if script.get("opening") is not None and not flow:
+            raise ScriptValidationError("opening requires a nonempty stage_flow")
+        if flow and set(flow) != expected_stages:
+            raise ScriptValidationError("stage_flow must contain exactly the declared stages")
+        if versioned and "deduction" in skills:
+            if not flow:
+                raise ScriptValidationError("versioned deduction scripts require stage_flow")
+            if not truth.get("evidence_chain"):
+                raise ScriptValidationError("versioned deduction scripts require truth.evidence_chain")
+
+        enabled = script.get("mechanics_enabled", [])
+        self._unique(enabled, "mechanics_enabled")
+        mechanics = script.get("mechanics_config", {})
+        if not set(mechanics).issubset(enabled):
+            raise ScriptValidationError("mechanics_config contains a disabled mechanic")
+        search = mechanics.get("search", {})
+        clues: dict[str, tuple[int, int]] = {}
+        for target in search.get("search_targets", []):
+            unlock = target.get("unlock_stage", 1)
+            self._stage_range(unlock, total, "search target.unlock_stage")
+            for position, clue in enumerate(target.get("clues", []), start=1):
+                clues[clue["id"]] = (unlock, position)
+        for value in mechanics.get("whisper", {}).get("role_available_from_stage", {}).values():
+            self._stage_range(value, total, "whisper availability stage")
+        for constraint in script.get("hard_constraints", []):
+            self._stage_range(constraint["until_stage"], total, "hard_constraint.until_stage")
+
+        def check_clue(clue_id: str, stage: int) -> None:
+            if clue_id not in clues:
+                raise ScriptValidationError(f"Unknown clue reference: {clue_id}")
+            unlock, position = clues[clue_id]
+            ap = search.get("ap_per_stage", [1])
+            available_ap = sum(
+                ap[min(index - 1, len(ap) - 1)]
+                for index in range(unlock, stage + 1)
+                if not flow or "search" in flow[f"stage_{index}"]["investigation"]["enabled_actions"]
+            )
+            if "search" not in enabled or available_ap < position:
+                raise ScriptValidationError(f"Clue {clue_id} is not reachable by stage {stage}")
+
+        for item in truth.get("evidence_chain", []):
+            self._unique(item["clue_ids"], "truth.evidence_chain.clue_ids")
+            for clue_id in item["clue_ids"]:
+                check_clue(clue_id, total)
+
+        for stage_key, config in (flow or {}).items():
+            stage = int(stage_key.removeprefix("stage_"))
+            actions = config["investigation"]["enabled_actions"]
+            self._unique(actions, f"stage_flow.{stage_key}.investigation.enabled_actions")
+            conditions = config["investigation"].get("end_conditions", {})
+            for counter, action in (("minimum_searches", "search"), ("minimum_whispers", "whisper")):
+                if conditions.get(counter, 0) and action not in actions:
+                    raise ScriptValidationError(f"{counter} requires the {action} action")
+            for checks in config.get("personal_task_checks", {}).values():
+                self._validate_task_references(checks, stage, actions, check_clue)
+            resolution = config["resolution"]
+            for vote_name in ("vote", "final_decision"):
+                vote = resolution.get(vote_name)
+                if vote is not None and vote_name == "final_decision" and stage != total:
+                    self._validate_vote_config(
+                        f"stage_flow.{stage_key}.resolution.final_decision", vote, role_ids,
+                        allow_penalty=False,
+                    )
+            penalty = (resolution.get("vote") or {}).get("penalty")
+            if penalty is not None:
+                target_stage = stage + penalty.get("target_stage_offset", 1)
+                self._stage_range(target_stage, total, "vote penalty target stage")
+                if penalty.get("completion_checks"):
+                    target_actions = flow[f"stage_{target_stage}"]["investigation"]["enabled_actions"]
+                    self._validate_task_references(penalty["completion_checks"], target_stage, target_actions, check_clue)
+
+    @staticmethod
+    def _unique(values: list[str], path: str) -> None:
+        if len(values) != len(set(values)):
+            raise ScriptValidationError(f"{path} must be unique")
+
+    @staticmethod
+    def _stage_range(stage: int, total: int, path: str) -> None:
+        if not 1 <= stage <= total:
+            raise ScriptValidationError(f"{path} must be within 1..{total}")
+
+    @staticmethod
+    def _validate_task_references(checks: list[dict[str, Any]], stage: int, actions: list[str], check_clue: Any) -> None:
+        for check in checks:
+            if check["type"] == "clue_disclosure":
+                if check.get("clue_id") is not None:
+                    check_clue(check["clue_id"], stage)
+                required_action = "whisper" if check["channel"] == "private" else "public_speech"
+                if required_action not in actions:
+                    raise ScriptValidationError(f"task clue disclosure requires the {required_action} action")
+            else:
+                for event in check["event_types"]:
+                    required_action = "search" if event == "search" else (
+                        "whisper" if "private" in event else "public_speech"
+                    )
+                    if required_action not in actions:
+                        raise ScriptValidationError(f"task event {event} requires the {required_action} action")
 
     @staticmethod
     def _object(value: Any, path: str) -> None:
@@ -201,6 +376,8 @@ class ScriptLoader:
             return
         if not isinstance(flow, dict):
             raise ScriptValidationError("stage_flow must be an object")
+        if not flow:
+            return
 
         allowed_actions = {"public_speech", "search", "whisper"}
         for stage in range(1, total_stages + 1):

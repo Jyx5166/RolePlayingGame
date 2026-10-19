@@ -164,14 +164,14 @@ class SearchMechanic(MechanicBase):
         clue_id = str(clue["id"])
         if clue_id in self._found_by_role.get(role_id, set()):
             return False
-        if clue.get("exclusivity") == "shared":
+        if clue.get("exclusivity", "shared") == "shared":
             return True
         return clue_id not in self._exclusive_found_clues
 
     def _mark_found(self, role_id: str, clue: dict[str, Any]) -> None:
         clue_id = str(clue["id"])
         self._found_by_role.setdefault(role_id, set()).add(clue_id)
-        if clue.get("exclusivity") != "shared":
+        if clue.get("exclusivity", "shared") != "shared":
             self._exclusive_found_clues.add(clue_id)
 
     def _clue_by_id(self, clue_id: str) -> dict[str, Any] | None:

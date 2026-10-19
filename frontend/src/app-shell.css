@@ -1,0 +1,262 @@
+/* Keep preparation artwork local to its detail panel. */
+.app-view:has(#preparationView:not(.hidden)) {
+  background: #0b1414;
+}
+.app-view:has(#preparationView:not(.hidden))::before,
+.app-view:has(#preparationView:not(.hidden))::after {
+  display: none;
+}
+#preparationView {
+  max-width: 1600px;
+}
+/* The library, creator, archive, and personal center share the same shell. */
+.app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) {
+  background: radial-gradient(ellipse at 74% 0, #28302f66, transparent 55%),
+    linear-gradient(130deg, #111719, #0a1011 60%, #151614);
+}
+.app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden))::before {
+  display: block;
+  background: url("/static/assets/noir-case-desk.png") center / cover no-repeat;
+  opacity: 0.08;
+  filter: blur(3px);
+  pointer-events: none;
+}
+.app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden))::after {
+  display: block;
+  opacity: 0.5;
+}
+:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView).page-view {
+  width: calc(100% - 48px);
+  max-width: none;
+  margin: 0 24px;
+  padding: 20px 0 32px;
+}
+.app-sidebar {
+  background: linear-gradient(160deg, #0b1413, #0b1112 70%);
+}
+.app-sidebar .sidebar-brand {
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
+  padding-bottom: 30px;
+}
+.app-sidebar .sidebar-brand .brand-logo.small {
+  width: 56px;
+  height: 56px;
+}
+.app-sidebar .sidebar-brand strong {
+  color: #eee8d9;
+  font-size: 24px;
+  font-family: "Songti SC", "SimSun", serif;
+  letter-spacing: 3px;
+}
+.app-sidebar .sidebar-brand .sidebar-label > span {
+  color: #9da9a4;
+  font-size: 12px;
+}
+.app-sidebar .sidebar-account {
+  border-top: 1px solid #cad5c51a;
+  padding-top: 20px;
+}
+.app-sidebar .account-avatar {
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 25%, #635334, #181d19 68%);
+}
+.app-sidebar .personal-center-trigger {
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.app-sidebar .personal-center-trigger:hover,
+.app-sidebar .personal-center-trigger.is-active {
+  border-color: #d2b17c;
+  box-shadow: 0 0 0 3px #d2b17c21;
+}
+.app-sidebar .personal-center-trigger:focus-visible {
+  outline: 2px solid #e5c993;
+  outline-offset: 4px;
+}
+.app-sidebar .account-avatar::before,
+.app-sidebar .account-avatar-aura {
+  border-radius: 50%;
+}
+.app-sidebar .account-avatar::after {
+  top: auto;
+  right: 0;
+  bottom: 0;
+}
+.app-sidebar .sidebar-account .icon-button {
+  border-radius: 9px;
+}
+@media (min-width: 781px) {
+  .app-view.sidebar-collapsed .sidebar-brand {
+    grid-template-columns: 40px;
+  }
+  .app-view.sidebar-collapsed .sidebar-brand .brand-logo.small {
+    width: 40px;
+    height: 40px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) {
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .app-sidebar {
+    padding: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    background: linear-gradient(155deg, #171e1eeb, #0b1112f5 68%);
+    border-right-color: #c6b38724;
+    box-shadow: inset -1px 0 #ffffff04;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-brand {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 0;
+    padding: 20px 12px 24px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-brand .brand-logo.small {
+    width: 92px;
+    height: 92px;
+    border-radius: 17px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-brand > .sidebar-label {
+    display: none;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .app-sidebar nav {
+    gap: 5px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .nav-button {
+    position: relative;
+    width: 100%;
+    height: 106px;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    justify-items: center;
+    gap: 11px;
+    padding: 12px 6px;
+    border: 0;
+    border-radius: 0;
+    color: #bec3be;
+    box-shadow: none;
+    transition: background 160ms ease, color 160ms ease;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .nav-button svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.4;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .nav-button .sidebar-label {
+    font-size: 14px;
+    text-align: center;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .nav-button.active {
+    color: #f0d499;
+    background: linear-gradient(90deg, #d4ad6233, #d4ad6207);
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .nav-button.active::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: #d1af71;
+    content: "";
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account {
+    grid-template-columns: repeat(2, 34px);
+    justify-content: center;
+    justify-items: center;
+    gap: 12px 14px;
+    padding: 18px 12px 20px;
+    border-top: 0;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account > .account-avatar,
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account > .sidebar-label {
+    grid-column: 1 / -1;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account > .account-avatar {
+    width: 46px;
+    height: 46px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account > .sidebar-label {
+    width: 100%;
+    gap: 4px;
+    text-align: center;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account strong {
+    font-size: 12px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account .sidebar-label span {
+    font-size: 10px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account .icon-button {
+    width: 34px;
+    height: 34px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: #adb5ae;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account .icon-button:hover {
+    color: #efd398;
+    border-color: #c5a15c55;
+    background: #c5a15c12;
+  }
+  .app-view.sidebar-collapsed:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .app-view.sidebar-collapsed:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-brand {
+    padding: 20px 8px 24px;
+  }
+  .app-view.sidebar-collapsed:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-brand .brand-logo.small {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+  .app-view.sidebar-collapsed:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .nav-button {
+    height: 72px;
+    gap: 0;
+  }
+  .app-view.sidebar-collapsed:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account {
+    grid-template-columns: 34px;
+    padding-right: 0;
+    padding-left: 0;
+  }
+  .app-view.sidebar-collapsed:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .sidebar-account > .account-avatar {
+    width: 38px;
+    height: 38px;
+  }
+}
+@media (max-width: 780px) {
+  :is(#scriptLibraryView, #createView, #recordsView, #personalCenterView).page-view {
+    width: calc(100% - 28px);
+    margin-right: 14px;
+    margin-left: 14px;
+    padding-top: 18px;
+  }
+  .app-sidebar .sidebar-brand {
+    padding-bottom: 0;
+    gap: 8px;
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+  .app-sidebar .sidebar-brand .brand-logo.small {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  .app-sidebar .sidebar-brand strong {
+    font-size: 18px;
+  }
+  .app-sidebar .sidebar-account {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .app-sidebar .nav-button {
+    flex: 1;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 8px;
+  }
+  .app-view:has(:is(#scriptLibraryView, #createView, #recordsView, #personalCenterView):not(.hidden)) .app-sidebar .nav-button .sidebar-label {
+    width: auto;
+    color: inherit;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+}

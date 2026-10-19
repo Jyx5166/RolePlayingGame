@@ -1,4 +1,8 @@
 fastapi>=0.111
+pydantic>=2.7,<3
 uvicorn[standard]>=0.30
 httpx>=0.27
 python-dotenv>=1.0
+langgraph==1.2.15
+langgraph-checkpoint-sqlite==3.1.2
+PyYAML==6.0.3

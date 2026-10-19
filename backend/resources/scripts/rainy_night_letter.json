@@ -1,0 +1,667 @@
+{
+  "schema_version": "1.0",
+  "script_meta": {
+    "script_id": "rainy_night_letter",
+    "title": "雨夜来信",
+    "tags": [
+      "悬疑",
+      "推理",
+      "身份",
+      "信件"
+    ],
+    "total_stages": 2,
+    "supported_skills": [
+      "deduction"
+    ],
+    "recommended_player_role": "rnl_qin_he",
+    "provenance": {
+      "kind": "original",
+      "creator": "Codex AI 辅助原创",
+      "source": "根据 UI 概念图的标题与主题创作；未引用现成剧本正文。"
+    }
+  },
+  "story_background": "青岚旧邮政馆即将关闭，最后一个雨夜，馆长秦重邀请养女秦禾、投递员沈雨和档案助理林默整理十八年前的洪灾来信。20:58，三人发现他倒在办公室。稍后大厅取出一封封蜡挂号信，旁附“21:00秦重签收”的纸条。馆区入口因积水临时封闭，三人须在原始记录与私人秘密之间还原这个雨夜。",
+  "opening": {
+    "title": "开幕 · 雨夜来信",
+    "content": "青岚旧邮政馆即将关闭，最后一个雨夜，馆长秦重邀请养女秦禾、投递员沈雨和档案助理林默整理十八年前的洪灾来信。20:58，三人发现他倒在办公室。稍后大厅取出一封封蜡挂号信，旁附“21:00秦重签收”的纸条。馆区入口因积水临时封闭，三人须在原始记录与私人秘密之间还原这个雨夜。\n\n在这段故事中，你将与以下人物相遇：\n秦禾：旧邮政档案馆修复师，馆长秦重的养女；今晚协助整理洪灾遗留信件。\n沈雨：承包旧邮政馆寄递业务的投递员，秦重的老同事；今晚负责一封封蜡挂号信。\n林默：受公益律师委托的档案助理，协助追查洪灾失联儿童与补偿来信。\n\n这些公开身份构成了你们最初认识彼此的起点。每个人掌握的信息、经历和目标，将在各自的角色剧本中展开。请先阅读自己所扮演角色的私人剧本，再开启第一幕，逐步核对证词与线索。"
+  },
+  "roles": [
+    {
+      "role_id": "rnl_qin_he",
+      "role_name": "秦禾",
+      "human_playable": true,
+      "public_identity": "旧邮政档案馆修复师，馆长秦重的养女；今晚协助整理洪灾遗留信件。",
+      "personality": "敏感而细致，遇到家事容易急于辩护；愿意修正自己的判断，但要求对方展示原件。",
+      "hidden_goal": "查清养父的死因，保护洪灾来信免遭毁弃；你知道自己被收养，却不知道亲生家庭的姓名。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "rnl_qin_he_s1_1",
+              "type": "memory",
+              "content": "你二十七岁。十八年前青岚洪灾后，秦重收养了你，留下的唯一旧物是一张缺角合照。今晚20:20，你质问他为什么从不允许你看收养档案，他说“原件齐了，我会一起解释”。你摔碎杯子离开办公室，未伤及他；你承认争吵，却担心别人把它当成杀人动机。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_qin_he"
+            },
+            {
+              "block_id": "rnl_qin_he_s1_2",
+              "type": "fact",
+              "content": "20:35至20:57，你一直在玻璃修复室给六件纸张拍照，固定摄像机记录了连续工作过程。20:40左右你听到服务走廊有人走动，隔着雨声不能识别人。20:58，你与林默、沈雨一同进入秦重办公室，发现他倒在桌边；门未反锁，桌上的黄铜压信器不见了。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_qin_he"
+            },
+            {
+              "block_id": "rnl_qin_he_s1_3",
+              "type": "objective",
+              "content": "先核实来信与所谓21:00签收是否为同一份东西。你只知道自身行踪，不知道其他人的证据；不要把看不清的人影说成确定的凶手。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_qin_he"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "rnl_qin_he_s2_1",
+              "type": "memory",
+              "content": "重新整理旧照片时，你记起秦重常叫合照中另一个孩子“小默”。照片背面写着“林家二童，临时安置”，不是“秦家二童”。这个记忆能提供查档方向，不能独自证明你与林默的关系。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_qin_he"
+            },
+            {
+              "block_id": "rnl_qin_he_s2_2",
+              "type": "fact",
+              "content": "你修复黄铜压信器时做过缺损描摹，记得右侧叶饰有一道旧焊线；案发前它仍完整放在秦重桌上。你没有携走压信器。你愿意公开争吵经过，也愿意用留存描摹核对实际找到的碎片。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_qin_he"
+            },
+            {
+              "block_id": "rnl_qin_he_s2_3",
+              "type": "objective",
+              "content": "把私人身世问题与杀人证据分开。核对完整寄递记录、声音记录及压信器碎片；若收养文件能被取出，再决定向林默说明你的旧照片。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_qin_he"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "rnl_shen_yu",
+      "role_name": "沈雨",
+      "human_playable": true,
+      "public_identity": "承包旧邮政馆寄递业务的投递员，秦重的老同事；今晚负责一封封蜡挂号信。",
+      "personality": "亲切健谈，习惯用行话建立权威；被问及记录的来源时会转而谈多年交情。",
+      "hidden_goal": "隐藏你杀害秦重及伪造21:00签收的事实，避免旧洪灾补偿款挪用被追究。你可以撒谎，但无法改变可核对的实物记录。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "rnl_shen_yu_s1_1",
+              "type": "fact",
+              "content": "你是凶手。十八年前，你利用投递工作截留两名林家孤儿的补偿来信，并冒领款项。秦重今晚拿到原始领取底单，准备连同认亲材料送出。20:41你从服务走廊进办公室，要求他销毁底单；20:43争执中，你拿桌上黄铜压信器打击他的头部，确认他不再回应后把压信器装入自己的锁扣邮袋。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_shen_yu"
+            },
+            {
+              "block_id": "rnl_shen_yu_s1_2",
+              "type": "memory",
+              "content": "20:47你离开办公室。20:55你在寄递台用可手调时间的旧红章制作“21:00秦重签收”纸条，再把提前封好的挂号信投入后墙进信口。你让纸条看起来像收件人还活着的证明。20:57你回到大厅，称自己刚从雨中投递归来；实际上你没有离开馆区。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_shen_yu"
+            },
+            {
+              "block_id": "rnl_shen_yu_s1_3",
+              "type": "objective",
+              "content": "把调查集中在秦禾的争吵或林默索要家事文件上。你知道秦重的录音笔通常只录口述，不知道它今天是否开着；不要声称掌握别人尚未展示的搜证结果。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_shen_yu"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "rnl_shen_yu_s2_1",
+              "type": "memory",
+              "content": "你更仔细地回想收拾现场的动作：压信器撞到桌角时叶饰断裂，你来不及找齐碎片；邮袋隔层可能留有金属屑。为走湿滑的后墙小路，你穿着左鞋前掌曾补成三角缺口的雨靴，今天无人借穿。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_shen_yu"
+            },
+            {
+              "block_id": "rnl_shen_yu_s2_2",
+              "type": "fact",
+              "content": "你截留的洪灾原信不是告发杀人的预言，而是林家亲属请求安置方让两个孩子认亲、并确认补偿到账的来信。秦重当年相信你“地址不明”的解释，收养秦禾后一直寻找另一个孩子。你刚杀了他，不代表他当年参与了挪款。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_shen_yu"
+            },
+            {
+              "block_id": "rnl_shen_yu_s2_3",
+              "type": "objective",
+              "content": "你可以质疑一件物证的解释，却不能宣称原件已经被销毁或制造新的检验结果。面对相互独立的行踪、碎片与寄递记录，选择继续辩解或承认，并说明你为何不愿让原信寄出。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_shen_yu"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "rnl_lin_mo",
+      "role_name": "林默",
+      "human_playable": true,
+      "public_identity": "受公益律师委托的档案助理，协助追查洪灾失联儿童与补偿来信。",
+      "personality": "谨慎、措辞精确，习惯先保存副本；涉及自己的身世时会刻意保持冷淡。",
+      "hidden_goal": "找出当年未送达来信的去向，确认自己失散妹妹是否仍在世；隐瞒你曾未经许可复制索引。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "rnl_lin_mo_s1_1",
+              "type": "memory",
+              "content": "你三十岁，青岚洪灾后被送至北岸安置所，成年后更名林默。你记得妹妹小禾，但只保留父亲林澄的旧照片。你向秦重申领亲属档案，被要求先完成授权手续。20:25你偷看并拍下收养索引，拍照时将阅览台封签撕开，怕被指控盗取档案。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_lin_mo"
+            },
+            {
+              "block_id": "rnl_lin_mo_s1_2",
+              "type": "fact",
+              "content": "20:37至20:57，你坐在入口阅览室扫描经授权的一批补偿底单；入口顶摄能连续看到你的座位和双手。20:55你隔着内墙听见寄递台红章被按了一下，不能断定是谁。20:58你与另两人进入办公室发现尸体。秦重没有在你面前亲笔签过21:00纸条。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_lin_mo"
+            },
+            {
+              "block_id": "rnl_lin_mo_s1_3",
+              "type": "objective",
+              "content": "先说明你为什么来馆，但可以保留偷拍索引的秘密。收养索引的缺页与死亡时间是不同问题；要分别搜证，不要以秦禾的家庭关系直接推定她杀人。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "rnl_lin_mo"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "rnl_lin_mo_s2_1",
+              "type": "memory",
+              "content": "你记起洪灾后安置表使用“林默生”作为你的原名，妹妹登记为“林禾”；秦重在20:30给你的授权留言是“秦禾有一张同底片照片，别急着逼她”。你没有见过完整收养移交表，因此此时只能提出核对。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_lin_mo"
+            },
+            {
+              "block_id": "rnl_lin_mo_s2_2",
+              "type": "fact",
+              "content": "你私自拍的索引页保留了2008年“沈雨，补偿代领人”的栏目，但没有签名原件。你知道拍照行为可能让你失去这份工作，仍愿在原件核对时交出照片。你从未碰过秦重办公室的压信器，也没有邮袋钥匙。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_lin_mo"
+            },
+            {
+              "block_id": "rnl_lin_mo_s2_3",
+              "type": "objective",
+              "content": "若搜证取得原始安置、代领文件，公开可验证的部分，避免把认亲愿望当作鉴定结论。用连续影像说明你的不在场，并与秦禾共同决定原信交还谁。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "rnl_lin_mo"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "stage_flow": {
+    "stage_1": {
+      "title": "第一幕 · 信比人晚到",
+      "public_briefing": "雨封住了旧邮政馆。20:58，秦重被发现倒在办公室；21:05，大厅整理出一封封蜡挂号信和标有21:00的签收纸条。秦禾、沈雨、林默是今晚留馆的三人。请先核对纸条意味着什么，并分别说明自己的行踪。",
+      "public_tasks": [
+        "辨别外封登记、投递和签收纸条是不是同一个时间概念。",
+        "各自说明20:20至20:58的行踪，并标明哪些环节有原始记录。",
+        "查找袭击痕迹，区分争吵动机与实际作案证据。"
+      ],
+      "personal_tasks": {
+        "rnl_qin_he": "承认与养父争吵，保留你能核对的修复记录；先调查签收纸条是否能证明他在21:00仍活着。",
+        "rnl_shen_yu": "说明你负责投递的流程，设法让21:00纸条成为讨论中心，同时留意现场是否留下你带走压信器的痕迹。",
+        "rnl_lin_mo": "解释档案申请目的，核对办公室录音和自己扫描工作的时间；决定是否承认偷拍索引。"
+      },
+      "personal_task_checks": {
+        "rnl_qin_he": [
+          {
+            "label": "本幕完成至少一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ],
+        "rnl_shen_yu": [
+          {
+            "label": "本幕完成至少一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ],
+        "rnl_lin_mo": [
+          {
+            "label": "本幕完成至少一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 900,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 12,
+          "interval_seconds": 45,
+          "max_turns": 5,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第一幕 · 信比人晚到 · 证据整理",
+        "metric": {
+          "key": "evidence_contribution",
+          "label": "证据贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场搜证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 6
+          },
+          {
+            "label": "公开质询",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "线索披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ]
+      },
+      "dm_hosting": "窗上的雨痕遮住了院墙，寄递台的红章仍停在一个惹人怀疑的时刻。请把已公开的记录与未经验证的推测分别列出，每人还有一次补充行踪的机会。"
+    },
+    "stage_2": {
+      "title": "第二幕 · 未寄出的名字",
+      "public_briefing": "第一轮证词已经封存。现可复核完整影像、邮袋封存物以及洪灾原信；新取得的材料仍需由持有人公开，才能进入共同讨论。最终指认前，请回答谁能接近秦重、如何处理凶器，以及那张签收纸条为何会出现。",
+      "public_tasks": [
+        "把录音与独立校时记录对齐，不用手调红章代替真实时间。",
+        "核对不在场影像、邮袋封存链及凶器断口，排除至少一名主要嫌疑人。",
+        "解释原信涉及的利益冲突，并区分家庭秘密与杀人责任。",
+        "最终给出凶手、袭击时段、伪造回执经过和支持证据。"
+      ],
+      "personal_tasks": {
+        "rnl_qin_he": "用可核对的物证解释压信器缺损；若取得安置原件，决定是否公开你的身世，避免让情绪代替指认。",
+        "rnl_shen_yu": "回应20:40进入方向、邮袋保管经过和红章时间来源；你可以继续辩解，但不能把尚无依据的冒用说法当作事实。",
+        "rnl_lin_mo": "交代偷拍索引的动机，以完整原件核实身份；用连续影像与现场物证排除错误指认。"
+      },
+      "personal_task_checks": {
+        "rnl_qin_he": [
+          {
+            "label": "本幕完成至少一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ],
+        "rnl_shen_yu": [
+          {
+            "label": "本幕完成至少一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ],
+        "rnl_lin_mo": [
+          {
+            "label": "本幕完成至少一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 1200,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 12,
+          "interval_seconds": 45,
+          "max_turns": 5,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第二幕 · 未寄出的名字 · 证据整理",
+        "metric": {
+          "key": "evidence_contribution",
+          "label": "证据贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场搜证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 6
+          },
+          {
+            "label": "公开质询",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "线索披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "final_decision": {
+          "prompt": "请以可核对的物证和时间线说明作案过程，再最终指认凶手。",
+          "eligible_role_ids": [
+            "rnl_qin_he",
+            "rnl_shen_yu",
+            "rnl_lin_mo"
+          ],
+          "correct_verdict": "指认成立。完整真相将说明凶手、作案过程，以及被隐瞒的其他秘密。",
+          "incorrect_verdict": "最终指认未能成立。{selected_role_name}并非凶手，案件以错误指认告终；未闭合的证据链留下了真正作案者。",
+          "reveal_truth_on_correct": true
+        }
+      },
+      "dm_hosting": "雨声渐弱，三个人却都无法回到来馆前的心境。请先陈述已经公开的证据，再分别提出能够被证伪的作案解释；证据链是否闭合，将由最后指认检验。"
+    }
+  },
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [
+        6,
+        13
+      ],
+      "search_targets": [
+        {
+          "id": "rnl_target_office",
+          "name": "馆长办公室",
+          "description": "查看桌边、门口和现场封存清单。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "rnl_clue_body",
+              "content": "现场初检：秦重有一次新鲜头部钝器损伤，倒地时左手抓着衣袖布线；无其他新鲜搏斗伤。门锁完好且处于未上锁状态，窗户内栓和纱网完整。桌面压信器的旧位置只有积尘轮廓，黄铜器物不在原位。这里只能确定有他人袭击的迹象，不能从体温推算精确死亡分钟。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_recorder",
+              "content": "录音笔原件从桌下取出，文件连续、没有剪接。20:35录到与大厅服务器同一声校时提示；20:41录到开门，秦重说“底单已经归档，我不会再替你解释”；20:43有重物撞击、椅子倒地和短促痛呼，此后无秦重说话声。录音中另一人未发言，不能凭声音识别人。文件留有门打开后渐远的脚步声。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "rnl_target_letter",
+          "name": "大厅挂号信与签收纸条",
+          "description": "核对外封、封蜡、纸条及进信口记录。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "rnl_clue_receipt",
+              "content": "外封是秦重20:31登记封存的一封旧信，封蜡未重新熔开；旁边另附红章纸条“21:00，秦重签收”。签收处是姓名橡皮章，不是手写签名。纸条上印着“内部补录，非实时回执”，馆内制度卡也明确该旧章的时间可手调。因此21:00是纸条宣称的时间，不是秦重此刻仍活着的证明。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_letter",
+              "content": "完整外封的登记卡写着：旧信来自林澄亲属，投递对象为“北岸安置所林家二童”，补偿批次Q-08；秦重另写“请按原件通知当事人，勿再转交代领人”。信正文仍封存，当前不能断定里面写了谁的罪行。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "rnl_target_desk",
+          "name": "寄递台",
+          "description": "查看手调红章、柜台记录及馆内时钟。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "rnl_clue_stamp",
+              "content": "寄递台旧红章的数字轮停在21:00，数字1右侧有固定裂纹，与签收纸条一致。自动服务日志却记录20:55拉开红章柜、20:56合柜，使用沈雨当天领取的独立钥匙；馆内真实时钟由服务器校准。钥匙领取单附沈雨签名，无借出登记，但单凭钥匙仍不能排除有人冒用。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_conflicts",
+              "content": "桌上三份预约原件：秦禾20:20约谈收养信息；林默20:25申请亲属档案、20:37开始授权扫描；沈雨20:40补交Q-08代领底单。秦重在预约边写“今晚寄出全部原件副本”。三个预约说明利益冲突，不构成任何人的杀人证明。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "rnl_target_backup",
+          "name": "连续影像与后墙进信口",
+          "description": "第二轮可复核封存的完整影像及雨后痕迹。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "rnl_clue_alibis",
+              "content": "修复室与阅览室的连续原始影像经同一服务器校时：秦禾20:35至20:57一直在修复台前，林默20:37至20:57一直在扫描桌前，二人均未离开视野；到办公室的唯一馆内路线须先经过这两间房的可见出口。录音里的袭击时段落在上述连续影像中。两人的争吵和偷拍秘密不能推翻这个不在场证明。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_route",
+              "content": "后墙进信口有独立光闸记录：20:55一份邮件从馆外小路投入，20:57由大厅自动落件。泥地上往返的一组鞋印，左前掌有三角补片缺口；登记保管的三双当晚鞋子中，仅沈雨雨靴吻合。服务走廊备份单帧在20:40拍到沈雨携锁扣邮袋走向馆长办公室，而不是馆外大门。鞋印能证明投递路径，单帧能证明进入方向，两者都不能单独证明击打动作。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "rnl_target_bag",
+          "name": "封存邮袋与压信器残片",
+          "description": "核对邮袋封存链和缺损断口。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "rnl_clue_bag_custody",
+              "content": "入口固定影像与封存表可互证：沈雨20:40携本人锁扣邮袋进入服务走廊，20:57回大厅后一直手持，20:59当着二人的面交给到场馆区保安并签封；20:57至20:59连续影像中没有他人接触袋口。镜头未覆盖办公室内，不能据此宣称20:40至20:57的袋口全程可见。袋锁、封签均完好，袋钥匙在沈雨衣袋中。封存后由两名保安共同保管，开启取证全程拍摄。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_weapon",
+              "content": "邮袋夹层内找到带新鲜血迹的黄铜压信器和断裂叶饰。血迹检验与秦重一致；叶饰断面与办公室桌角残片物理拼合，秦禾案前修复描摹也记录了该器物旧焊线。秦重指间的新鲜袖线与沈雨外套袖口现存撕口纱线吻合。外套当晚由沈雨本人穿着，20:40走廊影像袖口完整，20:57大厅影像已撕裂。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "rnl_target_originals",
+          "name": "洪灾原信与安置档案",
+          "description": "第二轮解除旧信封存，核对当年原始底单。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "rnl_clue_fraud",
+              "content": "旧信正文请求安置所告知两个孩子：“我们汇出的安置款应由本人监护手续核验后领取，若尚未收到请复信。”随信原始银行回单及补偿签领底单互证：款项转入沈雨个人账户，他在代领栏亲笔签名；收养机构同期账簿从未收到该笔款。秦重的副本递送清单准备将三件原件送至公益律师。该组文件证明沈雨有被揭露的利益风险。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_family",
+              "content": "完整安置移交表及两张同底片家庭合照相符：林禾被秦重收养后登记为秦禾，林默生转至北岸安置所后登记为林默。移交表具同期机构章和连续编号，双方照片各缺的一角能拼合。秦重的手写说明记载：他曾相信沈雨“另一名孩子地址不明”的说法，直至本周档案合并才找到对照记录。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "rnl_clue_final_times",
+              "content": "大厅服务器原始声像备份记录20:35校时提示、20:43暴雷、20:58三人共同进入办公室；与录音笔中对应声音逐点一致。进信口20:55的光闸记录和20:57自动落件也采用同一服务器时间。除手调红章外，各记录没有五分钟或十七分钟的整体偏移；签收纸条无法把袭击后移到21:00。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 3,
+      "role_available_from_stage": {
+        "rnl_qin_he": 1,
+        "rnl_shen_yu": 1,
+        "rnl_lin_mo": 1
+      }
+    }
+  },
+  "truth": {
+    "culprit_role_id": "rnl_shen_yu",
+    "full_story": "凶手是沈雨。案件并无密室，也没有死者在21:00复活签信的奇迹。十八年前青岚洪灾后，沈雨利用投递与代领身份截留林家亲属寄来的补偿通知，将安置款转入自己账户，并以地址不明为由阻断两名孩子的联系。秦重收养秦禾，不知挪款实情；林默在另一安置所长大。本周合并档案让秦重找到原始回单、代领底单和双向移交表，他要同时完成认亲和披露挪用。沈雨20:40来到服务走廊，20:41进入办公室索要原件，20:43用黄铜压信器袭击秦重，造成致命头部损伤。压信器撞过桌角而断裂，沈雨把主体和一片叶饰藏入锁扣邮袋，遗漏桌角另一片；死者防御时抓裂他袖口。20:47沈雨离开，20:55以旧手调红章补录21:00并盖姓名章，再从后墙投进事先封好的旧信，伪装成秦重晚些时候签收。自动光闸与真实时钟没有配合这个谎言。20:58三人发现尸体，沈雨20:59交出仍锁闭的邮袋，形成可核对的封存链。秦禾的争吵和林默的偷拍都是真实秘密，但二人连续影像覆盖20:43袭击时段，均非凶手。完整结局应把原信副本交还秦禾和林默，将凶器、录音与补偿原件一并保全；两人的身世由移交原件确认，不需要靠凶手承认。",
+    "complete_timeline": {
+      "2008年洪灾后": "沈雨截留补偿来信并冒领款项；林禾被秦重收养为秦禾，林默生转至北岸后更名林默。",
+      "本周": "秦重完成档案合并，找到原信、代领回单和安置移交对照，预约公益律师接收副本。",
+      "20:20": "秦禾与秦重因收养资料争吵，摔杯后离开，未伤人。",
+      "20:25": "林默未经许可拍摄收养索引，造成阅览台封签破损。",
+      "20:31": "秦重将洪灾旧信封存，登记为待送原件。",
+      "20:35": "秦禾开始连续修复拍照；大厅和办公室录音笔录到同一校时提示。",
+      "20:37": "林默进入连续拍摄的阅览室，开始授权扫描。",
+      "20:40": "沈雨携锁扣邮袋走入通往办公室的服务走廊。",
+      "20:41": "沈雨进办公室索要代领底单，秦重拒绝销毁。",
+      "20:43": "沈雨用黄铜压信器袭击秦重；现场与录音留下击打、倒椅和痛呼，袖口被抓裂。",
+      "20:47": "沈雨装袋带走压信器，离开办公室。",
+      "20:55": "沈雨使用独立钥匙打开红章柜，手调21:00、加盖姓名章；林默听到按章声但未见操作者。沈雨将封信投入后墙进信口。",
+      "20:56": "沈雨关上红章柜。",
+      "20:57": "挂号信自动落入大厅收件格；沈雨携袋回大厅，秦禾和林默结束各自连续记录。",
+      "20:58": "三人一同发现秦重尸体，办公室未反锁。",
+      "20:59": "沈雨在二人目击下交出邮袋，由到场保安签封并共同保管。",
+      "21:05": "挂号信与21:00纸条被共同整理，造成表面时间矛盾。"
+    },
+    "role_arcs": {
+      "rnl_qin_he": "她以为养父故意隐瞒身世，争吵后又担心被当作凶手；连续修复影像洗清杀人嫌疑，完整移交表使她理解秦重曾受欺骗且一直寻找另一名孩子。她可以与林默认亲，也可以保留情绪，但不应替沈雨遮掩凶器。",
+      "rnl_shen_yu": "他以多年投递经验制造权威，企图用手调红章给死者补出一段存活时间；寄递日志、真实声音校时、携袋影像、凶器拼合和袖口撕裂逐层拆穿他的叙事。他的动机来自真实挪款风险，与两个孩子的身份相互关联。",
+      "rnl_lin_mo": "他担心未经授权拍照使自己失去工作，最初保留身世和索引秘密；最后须把这种违规与杀人分开，公开证据而不是逼秦禾接受关系。原信证明当年家人曾主动寻找他们，失联并非抛弃。"
+    },
+    "evidence_chain": [
+      {
+        "conclusion": "21:00签收纸条不构成死者当时仍活着的证明。",
+        "clue_ids": [
+          "rnl_clue_receipt",
+          "rnl_clue_stamp"
+        ],
+        "reasoning": "纸条明确是可手调的内部补录且姓名为橡皮章；20:55柜台真实日志与21:00数字轮不一致，故必须另用原始记录判断袭击时间。"
+      },
+      {
+        "conclusion": "袭击发生在20:43附近，真实记录没有整体时差。",
+        "clue_ids": [
+          "rnl_clue_recorder",
+          "rnl_clue_final_times"
+        ],
+        "reasoning": "连续录音包含开门、拒交底单、击打、倒椅与痛呼，后无死者发声；两端同一校时提示与暴雷均吻合服务器声像，因此不能用红章把这一系列事件移到21:00。"
+      },
+      {
+        "conclusion": "秦禾与林默虽有秘密，但在袭击时段均未到办公室。",
+        "clue_ids": [
+          "rnl_clue_alibis",
+          "rnl_clue_recorder",
+          "rnl_clue_conflicts"
+        ],
+        "reasoning": "连续可见影像覆盖袭击窗口并覆盖必须经过的出口，分别排除二人；预约争执或偷拍只能说明动机风险，不足以反驳客观不在场。"
+      },
+      {
+        "conclusion": "沈雨接近办公室、制造假投递路线，并处理了实际凶器。",
+        "clue_ids": [
+          "rnl_clue_route",
+          "rnl_clue_bag_custody",
+          "rnl_clue_weapon"
+        ],
+        "reasoning": "20:40影像直接记录本人向办公室走去；后墙足迹另证其投递路径。完整邮袋保管链排除发现后他人放入，袋内器物血迹与现场断片拼合确认凶器；同一时段由完整到撕裂的袖口及死者指间纱线构成独立接触证据。"
+      },
+      {
+        "conclusion": "沈雨的杀人动机是阻止挪款原件公开，家庭秘密不是其他人的杀人责任。",
+        "clue_ids": [
+          "rnl_clue_fraud",
+          "rnl_clue_family",
+          "rnl_clue_letter"
+        ],
+        "reasoning": "银行与代领原件独立证明沈雨收款及安置方未到账；待送清单说明即将揭露。完整移交表解释两个孩子的关系，也排除秦重与秦禾主动借身份吞款的最强替代动机。"
+      }
+    ]
+  },
+  "hard_constraints": []
+}

@@ -2,11 +2,27 @@
   "script_meta": {
     "script_id": "fog_harbor_clocktower",
     "title": "雾港档案·钟楼夜宴",
+    "tags": [
+      "悬疑",
+      "推理",
+      "密室"
+    ],
     "total_stages": 3,
-    "supported_skills": ["deduction"],
-    "recommended_player_role": "shen_zhiwei"
+    "supported_skills": [
+      "deduction"
+    ],
+    "recommended_player_role": "shen_zhiwei",
+    "provenance": {
+      "kind": "unknown",
+      "creator": "项目既有内置样例（作者未登记）",
+      "source": "原有《雾港档案·钟楼夜宴》剧本；本次仅规范字段和证据引用，未据此认定外部出处或授权。"
+    }
   },
   "story_background": "暴雨封锁雾港，收藏家陆绍庭在临潮公馆的档案室内离奇死亡。房门从内部反锁，壁炉里有未烧尽的账页，桌上的怀表停在二十三点二十六分。留在公馆里的四个人都与死者有秘密，也都没有完整的不在场证明。",
+  "opening": {
+    "title": "开幕 · 雾港夜宴",
+    "content": "暴雨笼罩雾港。雨水顺着临潮公馆的窗玻璃淌下，远处钟楼的轮廓隐没在雨幕里。今晚，收藏家陆绍庭与四个和他有着不同牵连的人齐聚这座公馆。一场夜宴，将几段原本纠缠在一起的人生留在了同一屋檐下。\n\n陆绍庭是这座公馆的主人。他留下的收藏、经营的家产，以及经手的遗嘱和基金会账目，将亲情、职业与利益连接在一起。对在场的人而言，他既是生活中无法绕开的一个人，也是一段各自有着不同理解的关系。\n\n沈知微是陆绍庭的养女，一名文物修复师，也是遗产的第一顺位继承人。顾临川是陆家的私人医生，负责陆绍庭多年的心脏病治疗。一个与他共享家庭身份，一个长期照料他的身体，他们都从自己的位置认识这位公馆主人。\n\n周既明担任陆家的法律顾问，负责遗嘱与基金会账目。许砚舟则是公馆的管家，熟悉宅邸钥匙、钟表和众人的生活习惯。法律文件里的安排与日常起居中的细节，让他们看见了这座公馆的另外两面。\n\n你们认识同一个陆绍庭，知道的却未必是同一个人。亲近不等于了解，熟悉也不等于信任。暴雨中的这场聚会，很快就会让这些关系面临新的追问；此刻，请先记住每个人的公开身份，以及他们与这座公馆的联系。\n\n在故事正式进入第一幕之前，你将先收到所扮演角色的私人剧本。请从角色的视角了解自己的经历、掌握的信息与个人目标。读完后，由你开启第一幕，面对这个夜晚接下来发生的事情。"
+  },
   "stage_flow": {
     "stage_1": {
       "title": "第一幕 · 暴雨封馆",
@@ -23,11 +39,24 @@
         "xu_yanzhou": "还原公馆的真实时间线，并证明档案室没有隐藏机关。"
       },
       "personal_task_checks": {
-        "xu_yanzhou": [{"label": "本幕至少完成一次搜证", "type": "activity_count", "event_types": ["search"], "minimum": 1}]
+        "xu_yanzhou": [
+          {
+            "label": "本幕至少完成一次搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          }
+        ]
       },
       "investigation": {
         "duration_seconds": 600,
-        "enabled_actions": ["public_speech", "search", "whisper"],
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
         "allow_manual_end": true,
         "autonomy": {
           "enabled": true,
@@ -55,26 +84,40 @@
         "scoring_rules": [
           {
             "label": "现场搜证",
-            "event_types": ["search"],
+            "event_types": [
+              "search"
+            ],
             "points_per_event": 2,
             "max_points": 4
           },
           {
             "label": "公开质询",
-            "event_types": ["public_speech", "public_response", "autonomous_public_speech", "autonomous_public_response"],
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
             "points_per_event": 1,
             "max_points": 2
           },
           {
             "label": "线索披露",
-            "event_types": ["clue_disclosure"],
+            "event_types": [
+              "clue_disclosure"
+            ],
             "points_per_event": 1,
             "max_points": 2
           }
         ],
         "vote": {
           "prompt": "谁的证词风险最高，需要在下一幕接受重点监视？",
-          "eligible_role_ids": ["shen_zhiwei", "gu_linchuan", "zhou_jiming", "xu_yanzhou"],
+          "eligible_role_ids": [
+            "shen_zhiwei",
+            "gu_linchuan",
+            "zhou_jiming",
+            "xu_yanzhou"
+          ],
           "penalty": {
             "label": "重点监视",
             "description": "下一幕搜证次数减少 1 次，并必须优先解释本幕证词中的矛盾。",
@@ -85,7 +128,12 @@
         },
         "final_decision": {
           "prompt": "综合现有证据，最终指认谁杀害了陆绍庭？",
-          "eligible_role_ids": ["shen_zhiwei", "gu_linchuan", "zhou_jiming", "xu_yanzhou"],
+          "eligible_role_ids": [
+            "shen_zhiwei",
+            "gu_linchuan",
+            "zhou_jiming",
+            "xu_yanzhou"
+          ],
           "correct_verdict": "最终指认成立。你们找到了真正的凶手，DM 将公开完整作案过程。",
           "incorrect_verdict": "最终指认未能成立。{selected_role_name}并非真正的凶手，案件以错误指认告终，真正的作案者仍藏在未被闭合的证据链后。",
           "reveal_truth_on_correct": true
@@ -108,11 +156,22 @@
         "xu_yanzhou": "公开你看到的药柜方向行踪，并继续校准公馆钟表。"
       },
       "personal_task_checks": {
-        "shen_zhiwei": [{"label": "本幕公开药瓶封签线索原文", "type": "clue_disclosure", "channel": "public", "clue_id": "clue_medicine_seal", "disclosure_mode": "truthful"}]
+        "shen_zhiwei": [
+          {
+            "label": "本幕公开药瓶封签线索原文",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "clue_id": "clue_medicine_seal",
+            "disclosure_mode": "truthful"
+          }
+        ]
       },
       "investigation": {
         "duration_seconds": 720,
-        "enabled_actions": ["public_speech", "search"],
+        "enabled_actions": [
+          "public_speech",
+          "search"
+        ],
         "allow_manual_end": true,
         "autonomy": {
           "enabled": true,
@@ -140,38 +199,65 @@
         "scoring_rules": [
           {
             "label": "现场搜证",
-            "event_types": ["search"],
+            "event_types": [
+              "search"
+            ],
             "points_per_event": 2,
             "max_points": 4
           },
           {
             "label": "公开质询",
-            "event_types": ["public_speech", "public_response", "autonomous_public_speech", "autonomous_public_response"],
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
             "points_per_event": 1,
             "max_points": 3
           },
           {
             "label": "线索披露",
-            "event_types": ["clue_disclosure"],
+            "event_types": [
+              "clue_disclosure"
+            ],
             "points_per_event": 2,
             "max_points": 4
           }
         ],
         "vote": {
           "prompt": "谁必须在最终幕首先公开一项此前隐瞒的信息？",
-          "eligible_role_ids": ["shen_zhiwei", "gu_linchuan", "zhou_jiming", "xu_yanzhou"],
+          "eligible_role_ids": [
+            "shen_zhiwei",
+            "gu_linchuan",
+            "zhou_jiming",
+            "xu_yanzhou"
+          ],
           "penalty": {
             "label": "强制陈述",
             "description": "最终幕必须正式公开一条此前未公开的搜证线索原文；未披露则该处罚任务未完成。个人叙事目标另行评审。",
             "target_stage_offset": 1,
             "search_ap_reduction": 0,
             "extra_task": "最终幕正式公开一条此前未公开的搜证线索原文。",
-            "completion_checks": [{"label": "公开新的真实搜证线索", "type": "clue_disclosure", "channel": "public", "disclosure_mode": "truthful", "new_public": true}]
+            "completion_checks": [
+              {
+                "label": "公开新的真实搜证线索",
+                "type": "clue_disclosure",
+                "channel": "public",
+                "disclosure_mode": "truthful",
+                "new_public": true
+              }
+            ]
           }
         },
         "final_decision": {
           "prompt": "综合现有证据，最终指认谁杀害了陆绍庭？",
-          "eligible_role_ids": ["shen_zhiwei", "gu_linchuan", "zhou_jiming", "xu_yanzhou"],
+          "eligible_role_ids": [
+            "shen_zhiwei",
+            "gu_linchuan",
+            "zhou_jiming",
+            "xu_yanzhou"
+          ],
           "correct_verdict": "最终指认成立。你们找到了真正的凶手，DM 将公开完整作案过程。",
           "incorrect_verdict": "最终指认未能成立。{selected_role_name}并非真正的凶手，案件以错误指认告终，真正的作案者仍藏在未被闭合的证据链后。",
           "reveal_truth_on_correct": true
@@ -195,7 +281,11 @@
       },
       "investigation": {
         "duration_seconds": 600,
-        "enabled_actions": ["public_speech", "search", "whisper"],
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
         "allow_manual_end": true,
         "autonomy": {
           "enabled": true,
@@ -223,32 +313,46 @@
         "scoring_rules": [
           {
             "label": "现场搜证",
-            "event_types": ["search"],
+            "event_types": [
+              "search"
+            ],
             "points_per_event": 3,
             "max_points": 6
           },
           {
             "label": "最终陈述",
-            "event_types": ["public_speech", "public_response", "autonomous_public_speech", "autonomous_public_response"],
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
             "points_per_event": 1,
             "max_points": 3
           },
           {
             "label": "线索披露",
-            "event_types": ["clue_disclosure"],
+            "event_types": [
+              "clue_disclosure"
+            ],
             "points_per_event": 2,
             "max_points": 4
           }
         ],
         "final_decision": {
           "prompt": "综合药瓶、账本、怀表与真实死亡时间，最终指认谁杀害了陆绍庭？",
-          "eligible_role_ids": ["shen_zhiwei", "gu_linchuan", "zhou_jiming", "xu_yanzhou"],
+          "eligible_role_ids": [
+            "shen_zhiwei",
+            "gu_linchuan",
+            "zhou_jiming",
+            "xu_yanzhou"
+          ],
           "correct_verdict": "最终指认成立。你们找到了真正的凶手，DM 恭喜仍坚持调查的人，并将公开完整作案过程。",
           "incorrect_verdict": "最终指认未能成立。{selected_role_name}并非真正的凶手，案件以错误指认告终，真正的作案者仍藏在未被闭合的证据链后。",
           "reveal_truth_on_correct": true
         }
       },
-      "dm_hosting": "证词已经结束，DM 封存所有公开发言、私聊记录和搜证结果。接下来由全体角色进行最终指认。DM 将根据投票给出明确结局；指认真正凶手后，才公开完整真相。"
+      "dm_hosting": "证词已经结束，DM 封存所有公开发言、私聊记录和搜证结果。接下来由全体角色进行最终指认。DM 将根据投票给出明确结局；最终指认完成后，无论正确或错误，都公开完整真相与所有角色秘密。"
     }
   },
   "roles": [
@@ -325,7 +429,7 @@
               "owner_role": "gu_linchuan"
             },
             {
-              "block_id": "public_s1_case",
+              "block_id": "gu_linchuan_public_s1_case",
               "type": "public",
               "content": "陆绍庭死于反锁的档案室，门窗没有破坏痕迹，书桌上的怀表停在二十三点二十六分。",
               "visibility": "public",
@@ -379,7 +483,7 @@
               "owner_role": "zhou_jiming"
             },
             {
-              "block_id": "public_s1_case",
+              "block_id": "zhou_jiming_public_s1_case",
               "type": "public",
               "content": "陆绍庭死于反锁的档案室，门窗没有破坏痕迹，书桌上的怀表停在二十三点二十六分。",
               "visibility": "public",
@@ -433,7 +537,7 @@
               "owner_role": "xu_yanzhou"
             },
             {
-              "block_id": "public_s1_case",
+              "block_id": "xu_yanzhou_public_s1_case",
               "type": "public",
               "content": "陆绍庭死于反锁的档案室，门窗没有破坏痕迹，书桌上的怀表停在二十三点二十六分。",
               "visibility": "public",
@@ -469,10 +573,17 @@
       }
     }
   ],
-  "mechanics_enabled": ["search", "whisper"],
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
   "mechanics_config": {
     "search": {
-      "ap_per_stage": [2, 2, 2],
+      "ap_per_stage": [
+        2,
+        2,
+        2
+      ],
       "search_targets": [
         {
           "id": "archive_desk",
@@ -555,13 +666,21 @@
     {
       "role_id": "*",
       "until_stage": 2,
-      "keywords": ["乌头碱", "调换急救药", "药瓶被调换"],
+      "keywords": [
+        "乌头碱",
+        "调换急救药",
+        "药瓶被调换"
+      ],
       "message": "第一阶段尚未完成药物检验，不能提前确认毒物或换药事实。"
     },
     {
       "role_id": "*",
       "until_stage": 3,
-      "keywords": ["顾临川是凶手", "凶手是顾临川", "侵吞义诊基金"],
+      "keywords": [
+        "顾临川是凶手",
+        "凶手是顾临川",
+        "侵吞义诊基金"
+      ],
       "message": "当前证据链尚未闭合，不能提前公布凶手与完整动机。"
     }
   ],
@@ -578,6 +697,32 @@
       "gu_linchuan": "从凭借专业身份控制局面，到被药物、账本与时间证据共同锁定。",
       "zhou_jiming": "从自保和观望，到交出私藏的账本照片补全证据链。",
       "xu_yanzhou": "从维护陆家体面，到承认钟表误差并纠正死亡时间。"
-    }
-  }
+    },
+    "evidence_chain": [
+      {
+        "conclusion": "密室可由提前调换急救药形成，不要求凶手在死亡时进入房间。",
+        "clue_ids": [
+          "clue_medicine_seal",
+          "clue_locked_door",
+          "clue_aconite"
+        ],
+        "reasoning": "封签重贴、药柜毒物与从内反锁且无破坏的门窗共同支持提前布置毒杀；药瓶封签本身不能单独指认凶手。"
+      },
+      {
+        "conclusion": "义诊基金账目提供顾临川的作案动机线索。",
+        "clue_ids": [
+          "clue_burned_ledger"
+        ],
+        "reasoning": "残账联系人缩写 G.L.C. 与顾临川相符，需要结合角色提供的账本照片及药柜行踪核对，不能只凭缩写定罪。"
+      },
+      {
+        "conclusion": "怀表显示时间必须校准后再用于比对证词。",
+        "clue_ids": [
+          "clue_clock_offset"
+        ],
+        "reasoning": "维护记录记录十四分钟误差，可将二十三点二十六分校准为二十三点四十分，再核对各角色不在场证明。"
+      }
+    ]
+  },
+  "schema_version": "1.0"
 }

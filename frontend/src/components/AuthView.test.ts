@@ -36,4 +36,26 @@ describe("AuthView", () => {
     expect(router.currentRoute.value.fullPath).toBe("/login");
     expect(wrapper.get("#passwordInput").attributes("autocomplete")).toBe("current-password");
   });
+
+  it("reveals the password without submitting and hides it when changing modes", async () => {
+    const router = createTestRouter();
+    await router.push("/login");
+    await router.isReady();
+    const wrapper = mount(AuthView, {
+      global: { plugins: [createPinia(), router] },
+    });
+
+    await wrapper.get("#passwordInput").setValue("test-password");
+    const toggle = wrapper.get(".auth-password-toggle");
+    expect(toggle.attributes("type")).toBe("button");
+    await toggle.trigger("click");
+    expect(wrapper.get("#passwordInput").attributes("type")).toBe("text");
+    expect(toggle.attributes("aria-label")).toBe("隐藏密码");
+    expect(toggle.attributes("aria-pressed")).toBe("true");
+
+    await wrapper.get("#registerTab").trigger("click");
+    await flushPromises();
+    expect(wrapper.get("#passwordInput").attributes("type")).toBe("password");
+    expect((wrapper.get("#passwordInput").element as HTMLInputElement).value).toBe("test-password");
+  });
 });

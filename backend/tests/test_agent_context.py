@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import json
 import unittest
 from dataclasses import FrozenInstanceError
 from pathlib import Path
@@ -40,13 +41,12 @@ class AgentContextTest(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(FrozenInstanceError):
             context.role_id = "lawyer"  # type: ignore[misc]
-        self.assertEqual(
-            context.to_llm_messages(),
-            [
-                {"role": "user", "content": "侦探：请说明你的时间线。"},
-                {"role": "user", "content": "按角色立场回应。"},
-            ],
-        )
+        messages = context.to_llm_messages()
+        quote = json.loads(messages[0]["content"].split("\n", 1)[1])
+        self.assertEqual(quote["quote"], "侦探：请说明你的时间线。")
+        self.assertEqual(quote["speaker_role_name"], "侦探")
+        self.assertEqual(messages[0]["role"], "user")
+        self.assertEqual(messages[1], {"role": "user", "content": "按角色立场回应。"})
 
     def test_third_party_cannot_receive_private_context(self) -> None:
         with self.assertRaises(ContextAccessError):

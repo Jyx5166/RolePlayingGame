@@ -8,9 +8,13 @@ class ContextBudgetError(ValueError):
     pass
 
 
-def estimate_tokens(messages: list[dict[str, str]]) -> int:
+def estimate_tokens(messages: list[dict[str, Any]]) -> int:
     # Conservative UTF-8 estimate, not provider-reported token usage.
-    return 8 + sum(len(message["content"].encode("utf-8")) + 16 for message in messages)
+    import json
+    return 8 + sum(len((message.get("content") or "").encode("utf-8")) + 16
+                   + sum(len(json.dumps(message[key], ensure_ascii=False).encode("utf-8"))
+                         for key in ("tool_calls", "reasoning_content") if key in message)
+                   for message in messages)
 
 
 @dataclass(frozen=True)

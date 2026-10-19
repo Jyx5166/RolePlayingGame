@@ -248,6 +248,8 @@ class AuthAndHistoryTest(unittest.TestCase):
                 / "fog_harbor_clocktower.json"
             ).read_text(encoding="utf-8")
         )
+        # This regression covers archives created before the independent opening.
+        mystery_script.pop("opening", None)
         creation = self.client.post(
             "/api/games",
             headers=headers,

@@ -5,13 +5,24 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.*
+!.env.example
 build/
 dist/
 node_modules/
 .npm-cache/
 frontend/app.js.map
 frontend/.build/
+frontend/.tmp/
 *.spec
-backend/data/*.db
-backend/data/*.db-*
-backend/data/verification/
+/backend/data/
+/data/
+/backend/reports/*
+!/backend/reports/README.md
+/logs/
+/.local/
+# 私有设计、开发记录和验证资料，仅保留本地。
+/private-docs/
+# 防止旧路径重新生成后被提交。
+/docs/
+/Projects/RolePlayingGame/docs/

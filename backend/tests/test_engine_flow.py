@@ -23,6 +23,7 @@ from registry.mechanic_registry import MechanicRegistry
 from registry.skill_registry import SkillRegistry
 from skill.narrative import NarrativeSkill
 from skill.deduction import DeductionSkill
+from backend.tests.script_fixtures import advance_to_investigation, single_stage_script
 
 
 def build_engine() -> DMEngine:
@@ -187,8 +188,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
 
         result = await dm.handle_mechanic_action(
             {"type": "search", "target_id": "archive_desk"}
@@ -207,8 +207,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         search = await dm.handle_mechanic_action(
             {"type": "search", "target_id": "archive_desk"}
         )
@@ -267,8 +266,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         secret = "我只在私下说：药柜钥匙昨晚曾经离开过我的口袋。"
 
         invitation = await dm.handle_whisper_action(
@@ -316,8 +314,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         state.autonomy_next_at = time.monotonic() - 1
 
         responses = await dm.run_autonomous_turn()
@@ -355,8 +352,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
     async def test_agent_search_can_keep_clue_without_communication_target(self) -> None:
         dm = build_engine()
         state = await dm.init_game("fog_harbor_clocktower", "shen_zhiwei", "deduction")
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         state.autonomy_next_at = time.monotonic() - 1
         decision = json.dumps({"action": "search", "target_role_id": "", "channel": "public",
             "content": "我先检查药瓶，再决定是否披露。", "search_target_id": "archive_desk", "disclosure": "keep",
@@ -431,11 +427,9 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
 
     async def test_scene_flow_requires_briefing_and_private_reveal_before_investigation(self) -> None:
         dm = build_engine()
-        state = await dm.init_game(
-            "fog_harbor_clocktower",
-            "shen_zhiwei",
-            "deduction",
-        )
+        script = dm.script_loader.load("fog_harbor_clocktower")
+        script.pop("opening", None)
+        state = await dm.init_game_from_script(script, "shen_zhiwei", "deduction")
 
         self.assertEqual(state.scene_phase, ScenePhase.BRIEFING)
         self.assertIn("暴雨封锁雾港", dm.get_briefing_narration())
@@ -465,8 +459,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
 
         await dm.handle_human_speech("我先核对停电时间。")
         await dm.handle_human_speech("请每个人说明自己的位置。")
@@ -509,8 +502,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
 
         state.autonomy_next_at = time.monotonic() - 1
         responses = await dm.run_autonomous_turn()
@@ -549,8 +541,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
 
         vote = await dm.request_investigation_end_vote()
 
@@ -587,8 +578,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
 
         vote = await dm.request_investigation_end_vote()
 
@@ -607,7 +597,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
                 / "fog_harbor_clocktower.json"
             ).read_text(encoding="utf-8")
         )
-        script["script_meta"]["total_stages"] = 1
+        script = single_stage_script(script)
         script["stage_flow"]["stage_1"]["resolution"]["final_decision"][
             "eligible_role_ids"
         ] = ["shen_zhiwei", "gu_linchuan"]
@@ -617,8 +607,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         dm.end_investigation("player_request")
 
         with patch.object(dm, "_call_agent", new=AsyncMock(return_value=("shen_zhiwei", False))):
@@ -642,8 +631,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         state.investigation_deadline_at = time.time() - 1
 
         self.assertEqual(dm.investigation_seconds_remaining(), 0)
@@ -657,8 +645,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         state.investigation_deadline_at = time.time() + 240
         state.autonomy_next_at = time.time() + 30
 
@@ -723,8 +710,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         dm.end_investigation("test")
         pending_snapshot = dm.export_runtime_snapshot()
 
@@ -777,22 +763,24 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
         self.assertFalse(restored.stage_resolution_pending())
 
     async def test_runtime_snapshot_round_trips_every_scene_phase(self) -> None:
+        script = build_engine().script_loader.load("fog_harbor_clocktower")
+        script.pop("opening", None)
         for expected_phase, transitions in (
             (ScenePhase.BRIEFING, 0),
             (ScenePhase.PRIVATE_REVEAL, 1),
             (ScenePhase.INVESTIGATION, 2),
         ):
             dm = build_engine()
-            await dm.init_game(
-                "fog_harbor_clocktower",
+            await dm.init_game_from_script(
+                deepcopy(script),
                 "shen_zhiwei",
                 "deduction",
             )
             for _ in range(transitions):
                 await dm.advance_scene_phase()
             restored = build_engine()
-            restored_state = await restored.init_game(
-                "fog_harbor_clocktower",
+            restored_state = await restored.init_game_from_script(
+                deepcopy(script),
                 "shen_zhiwei",
                 "deduction",
             )
@@ -800,13 +788,12 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             self.assertEqual(restored_state.scene_phase, expected_phase)
 
         hosting_dm = build_engine()
-        await hosting_dm.init_game(
-            "fog_harbor_clocktower",
+        await hosting_dm.init_game_from_script(
+            deepcopy(script),
             "shen_zhiwei",
             "deduction",
         )
-        await hosting_dm.advance_scene_phase()
-        await hosting_dm.advance_scene_phase()
+        await advance_to_investigation(hosting_dm)
         await hosting_dm.handle_whisper_action(
             {"type": "whisper_invite", "target_role_id": "gu_linchuan"}
         )
@@ -816,8 +803,8 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
         )
 
         restored_hosting = build_engine()
-        restored_state = await restored_hosting.init_game(
-            "fog_harbor_clocktower",
+        restored_state = await restored_hosting.init_game_from_script(
+            deepcopy(script),
             "shen_zhiwei",
             "deduction",
         )
@@ -834,8 +821,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
 
         self.assertIn(
             "专业可信度",
@@ -900,8 +886,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         state.autonomy_next_at = time.monotonic() - 1
 
         responses = await dm.run_autonomous_turn()
@@ -936,8 +921,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         dm.drain_persistence_events()
         state.autonomy_next_at = time.time() - 1
 
@@ -974,8 +958,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         dm.drain_persistence_events()
 
         human = await dm.handle_human_speech("顾临川，你怎么看现有证词？")
@@ -1007,8 +990,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         dm.drain_persistence_events()
         state.autonomy_next_at = time.time() - 1
 
@@ -1032,8 +1014,7 @@ class EngineFlowTest(IsolatedAsyncioTestCase):
             "shen_zhiwei",
             "deduction",
         )
-        await dm.advance_scene_phase()
-        await dm.advance_scene_phase()
+        await advance_to_investigation(dm)
         state.autonomy_turn_count = 4
         state.autonomy_next_at = time.monotonic() - 1
 

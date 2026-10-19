@@ -1,0 +1,1144 @@
+{
+  "schema_version": "1.0",
+  "script_meta": {
+    "script_id": "deep_sea_echo",
+    "title": "深海回声",
+    "tags": [
+      "悬疑",
+      "密室",
+      "深海"
+    ],
+    "total_stages": 3,
+    "supported_skills": [
+      "deduction"
+    ],
+    "recommended_player_role": "su_wen",
+    "provenance": {
+      "kind": "original",
+      "creator": "Codex AI 辅助原创",
+      "source": "根据UI概念图的标题与主题创作；未引用现成剧本正文。"
+    }
+  },
+  "story_background": "近海沟的深潜科考艇“回声号”接到暴风封航通知，四名船员与科考负责人钟望被困在水下观测任务中。钟望独自在隔音分析舱复核一段海底回声，舱门由他从内侧锁闭。二十二点二十五分，呼叫得不到回应，艇长与医务员按应急程序开门，发现他已经死亡。外部摄像连续记录了舱门无人进入，返回母船的窗口仍需等待。现场只有艇长、轮机工程师、声学研究员与医务员四人；他们必须先保护全艇的生命保障，再区分设备故障、冒险指令与真正的谋杀。",
+  "opening": {
+    "title": "开幕 · 深海回声",
+    "content": "近海沟的深潜科考艇“回声号”接到暴风封航通知，四名船员与科考负责人钟望被困在水下观测任务中。钟望独自在隔音分析舱复核一段海底回声，舱门由他从内侧锁闭。二十二点二十五分，呼叫得不到回应，艇长与医务员按应急程序开门，发现他已经死亡。外部摄像连续记录了舱门无人进入，返回母船的窗口仍需等待。现场只有艇长、轮机工程师、声学研究员与医务员四人；他们必须先保护全艇的生命保障，再区分设备故障、冒险指令与真正的谋杀。\n\n在这段故事中，你将与以下人物相遇：\n陆潮：回声号艇长，负责航线、舱门和全艇安全。钟望聘请你完成这次深潜。\n沈珂：回声号轮机工程师，维护供电、通风与声学舱检修接口。\n苏闻：声学研究员，钟望的学生，负责海底录音、采样标注与数据备份。\n陈澄：随艇医务员，钟望多年的同事，负责急救与人员健康记录。\n\n这些公开身份构成了你们最初认识彼此的起点。每个人掌握的信息、经历和目标，将在各自的角色剧本中展开。请先阅读自己所扮演角色的私人剧本，再开启第一幕，逐步核对证词与线索。"
+  },
+  "roles": [
+    {
+      "role_id": "lu_chao",
+      "role_name": "陆潮",
+      "human_playable": true,
+      "public_identity": "回声号艇长，负责航线、舱门和全艇安全。钟望聘请你完成这次深潜。",
+      "personality": "决断快，习惯先解决风险再解释原因；对导航很坦诚，对违规航线很防备。",
+      "hidden_goal": "查清死因并让全艇平安返航，同时尽可能保住你私自更改航线的职业秘密。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_lu_chao_s1_1",
+              "type": "memory",
+              "content": "21:40，钟望要求你把艇停在第三观测点。你曾为获取私人测绘报酬，把航线向一处禁采区偏移，但已经在21:45恢复原线。21:58你亲眼看见钟望带着工作板独自进入分析舱，22:03至22:24一直与苏闻在驾驶台。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "lu_chao"
+            },
+            {
+              "block_id": "deep_sea_echo_lu_chao_s1_2",
+              "type": "fact",
+              "content": "你的应急总钥匙可以解除分析舱门锁，不能控制它的局部通风回路。开舱时你只按了走廊的机械释锁装置，没有碰工程检修板。钟望身旁工作板的屏幕仍亮着，但你没有读取内容。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "lu_chao"
+            },
+            {
+              "block_id": "deep_sea_echo_lu_chao_s1_3",
+              "type": "objective",
+              "content": "先核对舱门与全艇空气是否正常；解释总钥匙的权限边界，并决定何时承认航线偏移。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "lu_chao"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_lu_chao_s2_1",
+              "type": "memory",
+              "content": "整理驾驶台纸图时，你想起21:47曾收到沈珂的口头报告：“分析舱风机例检结束，正常使用。”当时没有听到钟望要求停用分析舱。你不会据此断言沈珂作案，只能证明谁对设备做过交接。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "lu_chao"
+            },
+            {
+              "block_id": "deep_sea_echo_lu_chao_s2_2",
+              "type": "fact",
+              "content": "你的违规航线会污染本次学术采样的来源，却不会改变分析舱独立通风模式。全艇和局部舱使用两条不同电源与空气回路，这在艇上操作规程中有明确说明。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "lu_chao"
+            },
+            {
+              "block_id": "deep_sea_echo_lu_chao_s2_3",
+              "type": "objective",
+              "content": "公开航线偏移的起止时间，用导航与生命保障记录判断它能否造成单舱死亡；向工程师追问例检的交接范围。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "lu_chao"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_lu_chao_s3_1",
+              "type": "memory",
+              "content": "回顾交接，你确认自己21:50把驾驶权限交给苏闻时，将应急门钥匙挂回透明柜，直到22:25救援才取走。沈珂说“艇长钥匙什么都能开”，把门钥匙与工程控制权限混在一起；这是可核对的说法，不能只凭争执定罪。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "lu_chao"
+            },
+            {
+              "block_id": "deep_sea_echo_lu_chao_s3_2",
+              "type": "fact",
+              "content": "你有非法接单的责任，愿意承担纪律后果。你没有接触分析舱工程服务工具，也没有理由销毁钟望记录，因为你的航线修改已经在导航黑匣子中留下不可删记录。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "lu_chao"
+            },
+            {
+              "block_id": "deep_sea_echo_lu_chao_s3_3",
+              "type": "objective",
+              "content": "把门锁、导航与检修三条时间线并列；用独立证据说明最可疑的权限是否真的属于你。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "lu_chao"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "shen_ke",
+      "role_name": "沈珂",
+      "human_playable": true,
+      "public_identity": "回声号轮机工程师，维护供电、通风与声学舱检修接口。",
+      "personality": "技术解释细致，善用行业术语，受到质疑时会强调设备复杂性与共同责任。",
+      "hidden_goal": "掩盖你篡改海底采样数据和蓄意切换分析舱通风的行为，把调查引向航线违规或自然故障。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_shen_ke_s1_1",
+              "type": "memory",
+              "content": "你是作案者。钟望发现你替禁采公司把机器噪声标成天然回声，准备返航后交出原始文件。21:46你以风机例检为名，在工程服务状态下把分析舱切入只准无人检漏的封闭测试回流模式，使它接入储有低氧校准气的测试支路，并让显示灯仍保持“风机运行”；你知道这会让舱内氧含量持续下降，人员停留会陷入缺氧。你随后恢复外观并返回机舱。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "shen_ke"
+            },
+            {
+              "block_id": "deep_sea_echo_shen_ke_s1_2",
+              "type": "fact",
+              "content": "工程服务入口使用你的个人机械服务柄和掌纹核验；艇长门钥匙不具备此权限。你没有碰舱门，钟望是在完成你的“例检”后自行入舱。作案与航线偏移互不依赖，你可以撒谎，但不能真改游戏中的日志或销毁已经搜出的证物。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "shen_ke"
+            },
+            {
+              "block_id": "deep_sea_echo_shen_ke_s1_3",
+              "type": "objective",
+              "content": "尽量把局部死亡解释为违规航线下的意外；对可检验的技术问题保持前后一致，避免主动披露检修操作。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "shen_ke"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_shen_ke_s2_1",
+              "type": "memory",
+              "content": "你想起新换的模式位置记录器独立于控制台，它会保留实际阀位而非仅保存界面命令。你的计划只考虑了风机指示灯，没有处理独立记录器。你可以质疑解读，却不能把尚未搜出的日志内容当作自己已看到的事实。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "shen_ke"
+            },
+            {
+              "block_id": "deep_sea_echo_shen_ke_s2_2",
+              "type": "fact",
+              "content": "你常用的服务柄去年摔裂过定位齿，留下不规则缺口。你用它转动检修轴时有刮擦感，当时以为无关紧要。苏闻只参与声学数据标注，不掌握该柄。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "shen_ke"
+            },
+            {
+              "block_id": "deep_sea_echo_shen_ke_s2_3",
+              "type": "objective",
+              "content": "解释自己在21:46附近的检修目的；若日志被展示，尝试维持“短时测试后已恢复”的说法，而非凭空添加设备或嫌疑人。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "shen_ke"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_shen_ke_s3_1",
+              "type": "memory",
+              "content": "你确认生命保障手册写明：服务柄的专用齿位允许本地模式切换，测试支路储有只供无人检漏的低氧校准气，普通门钥匙形状不匹配。你还在返航材料中夹着禁采公司给你的结算便条，钟望的举报会同时暴露数据造假与收款。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "shen_ke"
+            },
+            {
+              "block_id": "deep_sea_echo_shen_ke_s3_2",
+              "type": "fact",
+              "content": "你知道自己的罪行，但不知道其他角色搜到了哪些物证，除非它们被公开或私聊告知。只要现场证据把实际模式、你的服务工具与检修身份连起来，单凭艇长的航线秘密不足以排除你的责任。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "shen_ke"
+            },
+            {
+              "block_id": "deep_sea_echo_shen_ke_s3_3",
+              "type": "objective",
+              "content": "面对最终质询，选择继续抵赖或承认自己的行动；只能依据自己知识与已经收到的证据回应，不替DM宣判。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "shen_ke"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "su_wen",
+      "role_name": "苏闻",
+      "human_playable": true,
+      "public_identity": "声学研究员，钟望的学生，负责海底录音、采样标注与数据备份。",
+      "personality": "敏感而理性，习惯把观察和推论分开；遇到导师名誉问题容易迟疑。",
+      "hidden_goal": "查清钟望的死亡，同时承认自己的署名错误，保住真实原始数据。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_su_wen_s1_1",
+              "type": "memory",
+              "content": "钟望曾要求你删掉一段看起来像钻机的回声，你误以为是正常降噪，按指令覆盖了报告中的标注；你留有原始备份，因此不确定导师是否也卷入造假。21:55他给你留言“入舱复核，返航再谈”，21:58独自入舱。22:03至22:24你在驾驶台与陆潮共同监听，不见舱门方向。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "su_wen"
+            },
+            {
+              "block_id": "deep_sea_echo_su_wen_s1_2",
+              "type": "fact",
+              "content": "21:48你从走廊路过，听见工程检修板发出一次金属轻响，但没有看见操作的人。你熟悉分析舱的隔音用途，不具备通风检修权限。海底回声和机械通风声是不同来源。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "su_wen"
+            },
+            {
+              "block_id": "deep_sea_echo_su_wen_s1_3",
+              "type": "objective",
+              "content": "保护并对照原始声学文件；将确实听到的声响与自己的猜测分开，询问钟望入舱前谁做过检修。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "su_wen"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_su_wen_s2_1",
+              "type": "memory",
+              "content": "你想起钟望昨晚曾说“不要让署名替别人背账”。这让你怀疑他让你保留原始数据是为了调查，但这仍是语意推测。你用私人工作板记录过21:49的监听状态：一段持续通风低频声在例检后消失，而艇外回声仍在。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "su_wen"
+            },
+            {
+              "block_id": "deep_sea_echo_su_wen_s2_2",
+              "type": "fact",
+              "content": "你愿意承认错误标注。你的声学工作板只能读传感数据，不能写空气回路设置。若别人把“你能编辑录音”当作“你能控制通风”的证据，应要求他们展示接口权限。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "su_wen"
+            },
+            {
+              "block_id": "deep_sea_echo_su_wen_s2_3",
+              "type": "objective",
+              "content": "公开自己的标注失误；比较风机界面与实际空气数据，避免把设备仍响着当成空气仍流动。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "su_wen"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_su_wen_s3_1",
+              "type": "memory",
+              "content": "你回想起来，禁采噪声频谱与你曾参加过的一次设备演示相似，给出这一经验只能帮助理解材料，不能代替文件来源证明。钟望出事前没有与你讨论凶手或告知完整调查结果。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "su_wen"
+            },
+            {
+              "block_id": "deep_sea_echo_su_wen_s3_2",
+              "type": "fact",
+              "content": "你掌握的是自己的备份与收到的公开线索，无法自行宣布机舱日志或举报草稿内容。你希望最终指认同时解释密室、死亡原因和数据造假的关系，不能只按谁的秘密最难听来投票。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "su_wen"
+            },
+            {
+              "block_id": "deep_sea_echo_su_wen_s3_3",
+              "type": "objective",
+              "content": "组织至少两项独立证据支持作案者身份；特别检验艇长钥匙是否能完成实际致死操作。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "su_wen"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "chen_cheng",
+      "role_name": "陈澄",
+      "human_playable": true,
+      "public_identity": "随艇医务员，钟望多年的同事，负责急救与人员健康记录。",
+      "personality": "稳重，表达谨慎，不愿以有限观察给出确定结论；有强烈的职业负罪感。",
+      "hidden_goal": "查清本次死亡，承认自己曾淡化钟望的工作过劳记录，不让医疗旧事误导案件。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s1_1",
+              "type": "memory",
+              "content": "钟望有轻度哮喘，你曾为让航次如期开行，把他的过劳写成“状态良好”，但没有改药或给他使用镇静剂。21:50你送应急包到驾驶台，22:00后在生活区整理健康档案。22:25你随陆潮救援，按规定进行了复苏，未能成功。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "chen_cheng"
+            },
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s1_2",
+              "type": "fact",
+              "content": "你在首次救援看见钟望没有明显外伤，舱内空气令人胸闷，因此退出并要求通风。没有化验前，你不能断言是哮喘、毒物或缺氧。你随身的急救包封签在救援前保持完整。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "chen_cheng"
+            },
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s1_3",
+              "type": "objective",
+              "content": "完成现场与药品的基础检查；说明初步观察的局限，防止把既往病史直接当成死因。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "chen_cheng"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s2_1",
+              "type": "memory",
+              "content": "你想起钟望21:30曾说今晚药量正常，没有急性发作。你记录服药时在场，且急救包内同批药品仍有封装样本，可以核对，而不需要相信你的口供。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "chen_cheng"
+            },
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s2_2",
+              "type": "fact",
+              "content": "分析舱的传感采样可以独立验证空气变化，尸体表现只能做补充。即使某人有药品接触，也应先看是否有真实的给药证据，不能在调查未完成时新增中毒推论。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "chen_cheng"
+            },
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s2_3",
+              "type": "objective",
+              "content": "比对健康观察、药品记录与舱内传感数据；提出需要排除的死因，而不替尚未获得的检验结果下结论。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "chen_cheng"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s3_1",
+              "type": "memory",
+              "content": "你决定公开曾淡化健康风险的行为。你的违规值得调查，但钟望的既往病史不能解释一个舱室在特定时段异常、全艇却正常的差异。你开舱时站在走廊，看到工程师随后要求大家先别碰检修板，你不知道这句话是否出于安全考虑。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "chen_cheng"
+            },
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s3_2",
+              "type": "fact",
+              "content": "你可以依据已展示的仪器和现场记录判断死因，与陆潮复核应急开门顺序；你没有权力进入他人的私人记忆。最终结论应区分你失职的背景责任与真正致死的行为。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "chen_cheng"
+            },
+            {
+              "block_id": "deep_sea_echo_chen_cheng_s3_3",
+              "type": "objective",
+              "content": "把可观察死因与作案权限分别说明；若证据足够，支持同时成立的死亡机制和身份链，而不为自己洗掉过往责任。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "chen_cheng"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "stage_flow": {
+    "stage_1": {
+      "title": "第一幕 · 封闭的舱门",
+      "public_briefing": "回声号保持安全深度，外部救援暂时无法抵达。四人已经封存钟望的分析舱和相关设备；舱门外的连续画面显示，钟望入舱后无人通过门口。大家需要先查明死亡是否威胁全艇，再记录各人的行动。",
+      "public_tasks": [
+        "确认分析舱的锁闭方式与应急开门过程。",
+        "分别记录入舱、检修和救援时段的行动，保留未知区间。",
+        "检查全艇与局部舱的基础空气、供电和健康材料。"
+      ],
+      "personal_tasks": {
+        "lu_chao": "先核对舱门与全艇空气是否正常；解释总钥匙的权限边界，并决定何时承认航线偏移。",
+        "shen_ke": "尽量把局部死亡解释为违规航线下的意外；对可检验的技术问题保持前后一致，避免主动披露检修操作。",
+        "su_wen": "保护并对照原始声学文件；将确实听到的声响与自己的猜测分开，询问钟望入舱前谁做过检修。",
+        "chen_cheng": "完成现场与药品的基础检查；说明初步观察的局限，防止把既往病史直接当成死因。"
+      },
+      "personal_task_checks": {
+        "lu_chao": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "shen_ke": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "su_wen": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "chen_cheng": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 720,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 20,
+          "interval_seconds": 45,
+          "max_turns": 3,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第一幕 · 封闭的舱门 · 调查结算",
+        "metric": {
+          "key": "investigation_contribution",
+          "label": "调查贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场取证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          },
+          {
+            "label": "证据展示",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 2,
+            "max_points": 6
+          },
+          {
+            "label": "公开核对",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          }
+        ]
+      },
+      "dm_hosting": "舱门留下的是一段没有来客的录像，走廊之外却还有各自的工作路径。请把已找到的材料摆在一起，先说清观察，再保留尚未回答的问题。"
+    },
+    "stage_2": {
+      "title": "第二幕 · 风机仍在转",
+      "public_briefing": "公共区保持安全，调查进入分析舱的局部设备、声学备份和科考资料。通风界面、真实空气状态与人员权限需要逐项核对；有人承认过往违规，也可能有人继续隐瞒。请用可复核材料检验第一幕的说法。",
+      "public_tasks": [
+        "检验指示灯与实际空气回路是否一致。",
+        "确定异常属于单舱还是全艇，比较各钥匙与接口的权限。",
+        "查清科考资料争议，但把经济动机与致死操作分开。"
+      ],
+      "personal_tasks": {
+        "lu_chao": "公开航线偏移的起止时间，用导航与生命保障记录判断它能否造成单舱死亡；向工程师追问例检的交接范围。",
+        "shen_ke": "解释自己在21:46附近的检修目的；若日志被展示，尝试维持“短时测试后已恢复”的说法，而非凭空添加设备或嫌疑人。",
+        "su_wen": "公开自己的标注失误；比较风机界面与实际空气数据，避免把设备仍响着当成空气仍流动。",
+        "chen_cheng": "比对健康观察、药品记录与舱内传感数据；提出需要排除的死因，而不替尚未获得的检验结果下结论。"
+      },
+      "personal_task_checks": {
+        "lu_chao": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "shen_ke": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "su_wen": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "chen_cheng": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 840,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 20,
+          "interval_seconds": 45,
+          "max_turns": 3,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第二幕 · 风机仍在转 · 调查结算",
+        "metric": {
+          "key": "investigation_contribution",
+          "label": "调查贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场取证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          },
+          {
+            "label": "证据展示",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 2,
+            "max_points": 6
+          },
+          {
+            "label": "公开核对",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          }
+        ]
+      },
+      "dm_hosting": "风机的声响、空气的变化与科考报告属于不同的记录。请用你们手中的证据核对它们，给每一种解释留下可被检验的位置。"
+    },
+    "stage_3": {
+      "title": "第三幕 · 回声的署名",
+      "public_briefing": "艇上恢复了工程服务工具和离线备份的检查条件，最后一轮搜证现在开放。四人需要将门锁、空气变化、检修权限与科考争议拼成同一条解释；最终指认必须指出谁实施了致死操作，并排除最强的替代解释。",
+      "public_tasks": [
+        "用两项独立证据核对实际操作者。",
+        "检验艇长航线违规是否足以造成分析舱死亡。",
+        "给出包含密室、机制、行动窗口与动机的最终解释。"
+      ],
+      "personal_tasks": {
+        "lu_chao": "把门锁、导航与检修三条时间线并列；用独立证据说明最可疑的权限是否真的属于你。",
+        "shen_ke": "面对最终质询，选择继续抵赖或承认自己的行动；只能依据自己知识与已经收到的证据回应，不替DM宣判。",
+        "su_wen": "组织至少两项独立证据支持作案者身份；特别检验艇长钥匙是否能完成实际致死操作。",
+        "chen_cheng": "把可观察死因与作案权限分别说明；若证据足够，支持同时成立的死亡机制和身份链，而不为自己洗掉过往责任。"
+      },
+      "personal_task_checks": {
+        "lu_chao": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "shen_ke": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "su_wen": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "chen_cheng": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 900,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 20,
+          "interval_seconds": 45,
+          "max_turns": 3,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第三幕 · 回声的署名 · 调查结算",
+        "metric": {
+          "key": "investigation_contribution",
+          "label": "调查贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场取证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          },
+          {
+            "label": "证据展示",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 2,
+            "max_points": 6
+          },
+          {
+            "label": "公开核对",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          }
+        ],
+        "final_decision": {
+          "prompt": "请根据可核实的证据，最终指认《深海回声》的作案者。",
+          "eligible_role_ids": [
+            "lu_chao",
+            "shen_ke",
+            "su_wen",
+            "chen_cheng"
+          ],
+          "correct_verdict": "指认成立：服务操作记录与受损工具痕迹指向同一名工程师，导航违规不能解释独立舱的异常。DM 将揭示完整作案过程。",
+          "incorrect_verdict": "你们指认了{selected_role_name}，但这一判断与案件的关键物证冲突。调查以错误指认结束；现场和证物继续封存，真实作案者的责任尚未被正确确认。",
+          "reveal_truth_on_correct": true
+        }
+      },
+      "dm_hosting": "返航之前，四个人需要给这间密闭舱一个完整的解释。请展示你已获得的依据，回应彼此的关键质询，再作出最后判断。"
+    }
+  },
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [
+        4,
+        4,
+        4
+      ],
+      "search_targets": [
+        {
+          "id": "sea_door",
+          "name": "分析舱门与外部录像",
+          "description": "检查锁闭规则、门沿和门口连续画面。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "sea_door_record",
+              "content": "外部连续录像记录钟望21:58独自入舱，门内旋钮随即锁闭，直到22:25救援无人进出。门沿无破坏或穿线痕迹。舱门操作规程说明内部锁闭仅隔绝走廊，空气由独立工程回路供给；陆潮22:25使用机械应急钥匙开门。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_safety",
+          "name": "生命保障总控",
+          "description": "核对全艇供电、公共区空气与告警。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "sea_global_air",
+              "content": "独立生命保障记录显示21:40至22:30全艇总供气和公共区含氧量正常，无断电或外部进水；分析舱有自己的局部切换回路。原始导航黑匣子另显示21:40至21:45发生过航线偏移，此后恢复，偏移未触发供气告警。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_body",
+          "name": "初检与随艇药品",
+          "description": "按急救规程复核现场观察和现存药品。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "sea_medical",
+              "content": "急救记录标明无明显致命外伤，随艇药包救援前封签完整，钟望使用的药片留有同批样本。初检不能单独排除全部疾病或毒物；便携检测器在首次开舱后记录分析舱氧含量显著低于公共区，之后随应急通风恢复。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_schedule",
+          "name": "科考交接簿",
+          "description": "检查当班人员的书面交接与设备使用顺序。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "sea_handover",
+              "content": "纸质交接簿由钟望和沈珂分别签名：21:35预约分析舱，21:43开始例检，21:49工程师沈珂将分析舱标记为“检查完成，可投入使用”。钟望21:55写下“复核原始回声”。四名船员均在艇上，没有其他人员或远程接入安排。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_monitor",
+          "name": "分析舱独立采样器",
+          "description": "读取隔离供电的空气与模式记录。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "sea_air_curve",
+              "content": "分析舱独立采样器的只读曲线显示21:46局部模式从“正常换气”切为“封闭测试回流”，没有恢复记录；测试支路开始送入低氧校准气，氧含量在钟望21:58入舱前已经下降，入舱后继续降低，至22:17低于舱内标定的危险阈值。采样器使用独立电源，与风机显示灯无关。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "sea_loop_manual",
+              "content": "同处的艇上检修手册明确：封闭测试回流接入专供无人检漏的低氧校准气支路，只允许空舱短时测试；它不是普通室内空气的循环，入舱前必须恢复正常换气并核验空气。风机运转指示不代表新鲜空气进入；模式切换必须在舱外工程服务入口本地完成。门钥匙、声学工作板和导航控制台均没有切换权限。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_audio",
+          "name": "声学工作板备份",
+          "description": "比对监听原始文件与分析报告。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "sea_audio_raw",
+              "content": "苏闻工作板自动保留的原始录音中，工程区金属轻响集中于21:46至21:48；此后原有换气低频特征消失，海底回声仍持续。已提交报告把明显机器作业声标作天然回声，编辑历史显示沈珂先提供了修订标注，苏闻随后写入报告。这证明资料争议，不能单独证明谋杀。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_workdesk",
+          "name": "钟望的工作板",
+          "description": "检查死者自己的未发送材料与文件目录。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "sea_report_draft",
+              "content": "钟望未发送的举报草稿附有沈珂与禁采公司结算往来扫描件及原始频谱，计划返航后提交。草稿同时标注苏闻的署名责任和陆潮航线异常，并明确将三项分别调查。钟望最近保存文件时间22:08，内容是对照原始录音，没有任何远程切换空气的命令。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_service_tool",
+          "name": "封存服务工具",
+          "description": "核对当班登记、专用工具与检修面板痕迹。",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "sea_tool_match",
+              "content": "服务工具登记与21:30当班照片显示：沈珂领用的S-04模式服务柄定位齿已有独特缺口，陆潮领用的D-01门钥匙齿形不同。检修轴软金属见证垫上的新刮痕与S-04缺口位置、间距逐项吻合；其他三人没有领用可匹配的服务柄，S-04一直登记在沈珂名下且无交接。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_service_backup",
+          "name": "服务入口离线审计",
+          "description": "核对本地认证记录和记录器的完整性。",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "sea_operator_log",
+              "content": "独立服务入口审计记录显示21:46:12由沈珂的当班掌纹核验通过，个人服务柄S-04在位，执行“切入封闭测试回流”。审计同时保存核验现场缩略图，图中操作者为沈珂，未用代理身份。模式记录与审计来自两套不同只读存储，序列连续；全艇自21:30至救援无第二次服务核验或模式恢复。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sea_navigation_backup",
+          "name": "驾驶台连续记录",
+          "description": "用驾驶台画面复核航线、钥匙与最强替代嫌疑。",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "sea_captain_alibi",
+              "content": "驾驶台录像与导航操作流水一致：陆潮21:40至21:45操作航线，21:46仍站在驾驶台，21:50将门钥匙挂回透明柜；22:03至22:24与苏闻共同监听。分析舱致死模式于21:46被工程入口本地切换，驾驶台无法控制该模式。陆潮的航线违规真实存在，但不能代替致死操作证据。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "sea_payment",
+              "content": "返航资料中有禁采公司给沈珂的结算便条，付款理由为“对声纹报告的技术校正”，金额与钟望举报附件相同。便条有沈珂收款签名；它独立支持灭口动机，但需要与空气模式和操作者证据共同使用。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 3,
+      "role_available_from_stage": {
+        "lu_chao": 1,
+        "shen_ke": 1,
+        "su_wen": 1,
+        "chen_cheng": 1
+      }
+    }
+  },
+  "truth": {
+    "culprit_role_id": "shen_ke",
+    "full_story": "沈珂收取禁采公司的报酬，将机器开采声伪装成天然海底回声。钟望发现数据差异，既追究学生苏闻的草率署名，也把航线违规与工程师的数据造假分别记录，准备返航举报。沈珂在得知分析舱预约后，利用例检机会于21:46从舱外工程入口把通风切为只准无人检漏使用的封闭测试回流，让储有低氧校准气的支路逐步改变分析舱空气，并以风机仍运转的指示灯掩盖真实空气状态。21:49他假称例检完成，让钟望正常入舱；钟望自行反锁隔音门，因此形成无需凶手进门的密室。局部氧含量从切换时就因低氧测试气进入而下降，不是依靠钟望在短时间内耗尽舱内氧；钟望入舱后逐步陷入缺氧并死亡，公共区仍安全。凶手没有用药、没有操纵时钟，也不需要航线偏移。\n沈珂试图让艇长非法改航线承担责任，但两者属于不同系统。独立采样器证明实际模式和危险空气曲线；服务审计保存沈珂本人掌纹、现场图像和服务柄编号，另一条物证路径通过服务柄缺齿与见证垫新刮痕吻合印证操作。门口录像证明无人后续进入，驾驶台录像则排除陆潮在关键本地操作时段去工程入口。数据文件和付款凭证提供动机，而不取代作案证据。船上只有四名嫌疑角色，独立存储无远程入口，不存在故事外的第五名作案者。\n陆潮承担航线违规，苏闻承担错误署名，陈澄承担淡化过劳的专业失职；这些秘密解释他们的迟疑，却不是本次致死机制。正确指认后封存证据并等待返航调查；错误指认留下真实工程破坏未被归责的结局。",
+    "complete_timeline": {
+      "前一周": "沈珂收取禁采公司的报酬，提供误导声学标注。",
+      "当天21:30": "四人当班，服务柄S-04登记给沈珂，门钥匙D-01登记给陆潮，工具状态留有照片。",
+      "21:35": "钟望预约分析舱复核原始回声。",
+      "21:40—21:45": "陆潮私自偏航后恢复，公共区空气与总供气正常。",
+      "21:43": "沈珂开始分析舱例检。",
+      "21:46:12": "沈珂本人在工程入口核验掌纹，以S-04将分析舱切入封闭测试回流，低氧校准气开始改变舱内空气。",
+      "21:49": "沈珂写下可用交接；实际模式未恢复。",
+      "21:58": "钟望独自入舱并从内侧锁门。",
+      "22:08": "钟望在工作板保存复核文件，没有控制空气回路。",
+      "22:17": "独立采样器记录局部氧含量跌入危险范围，钟望随后因缺氧死亡。",
+      "22:25": "陆潮与陈澄按应急程序开门、复苏并通风，未能救回钟望。"
+    },
+    "role_arcs": {
+      "lu_chao": "曾违规改航线谋取私利，因此不愿公开导航记录；调查让他区分真正的安全责任和被嫁祸的工程操作，承认职业违规并保护全艇。",
+      "shen_ke": "数据造假获利被钟望发现，预先切换舱外通风模式杀人；利用艇长秘密制造替代解释，却被独立审计与工具痕迹双重印证。",
+      "su_wen": "误信技术修订而错误署名，以为导师也可能有问题；保留的原始数据帮助揭露造假，在认错后坚持用设备证据找凶手。",
+      "chen_cheng": "为了航次淡化同事过劳记录，担心哮喘和药物让自己被指控；通过谨慎初检和独立仪器区分既往失职与本次工程谋杀。"
+    },
+    "evidence_chain": [
+      {
+        "conclusion": "密室不要求凶手进入：钟望自行锁门，致死来源属于独立工程回路。",
+        "clue_ids": [
+          "sea_door_record",
+          "sea_loop_manual"
+        ],
+        "reasoning": "连续门口录像与锁闭规则排除出入和藏线机关；手册表明空气可在舱外改变，门锁并不能证明设备安全。"
+      },
+      {
+        "conclusion": "致死机制是例检时切入封闭测试回流后持续缺氧，排除全艇故障作为解释。",
+        "clue_ids": [
+          "sea_air_curve",
+          "sea_global_air",
+          "sea_medical",
+          "sea_loop_manual"
+        ],
+        "reasoning": "独立模式与空气曲线给出切换—低氧测试气进入—氧含量下降链，并明确下降在入舱前开始；开舱初检补强局部缺氧，公共区正常与支路规则排除导航或总供气失灵。"
+      },
+      {
+        "conclusion": "沈珂本人实施关键切换，两条独立记录相互印证。",
+        "clue_ids": [
+          "sea_operator_log",
+          "sea_tool_match",
+          "sea_air_curve"
+        ],
+        "reasoning": "个人掌纹与现场图像确认本地身份，专用柄缺口和见证垫新痕从实体工具路径独立确认，模式曲线确认操作生效且未恢复。"
+      },
+      {
+        "conclusion": "最强替代嫌疑陆潮确有违规，但没有能力或窗口完成致死切换。",
+        "clue_ids": [
+          "sea_captain_alibi",
+          "sea_tool_match",
+          "sea_loop_manual",
+          "sea_global_air"
+        ],
+        "reasoning": "驾驶台连续画面覆盖21:46，门钥匙不匹配工程服务柄，导航无法写通风模式；短时偏航与单舱死亡不构成因果链。"
+      },
+      {
+        "conclusion": "数据造假举报构成沈珂灭口动机，不能只靠动机指认。",
+        "clue_ids": [
+          "sea_report_draft",
+          "sea_payment",
+          "sea_audio_raw"
+        ],
+        "reasoning": "原始频谱和编辑历史证明资料争议，举报附件与实际付款相互吻合；身份结论仍由服务审计与工具痕迹承担。"
+      }
+    ]
+  },
+  "hard_constraints": []
+}

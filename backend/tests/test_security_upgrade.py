@@ -217,7 +217,7 @@ class SecurityUpgradeTest(unittest.TestCase):
         self.assertEqual(game_list_schema["type"], "array")
 
     def test_case_routes_serve_spa_shell_without_cache(self) -> None:
-        for path in ("/login", "/register", "/cases/new", "/cases", "/cases/123"):
+        for path in ("/login", "/register", "/cases/new", "/cases", "/cases/123", "/personal-center"):
             with self.subTest(path=path):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)

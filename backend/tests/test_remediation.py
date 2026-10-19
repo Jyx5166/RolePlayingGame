@@ -18,6 +18,8 @@ from agent.context import AgentContextBroker
 from backend.tests.test_engine_flow import build_engine, FailingFactory
 from fastapi.testclient import TestClient
 from main import create_app
+from backend.tests.script_fixtures import single_stage_script, advance_to_investigation
+from loader.script_loader import ScriptValidationError
 
 
 def secret_block(marker: str, *, stage: int = 1, owner: str = "gu_linchuan", scope: str = "self_only") -> dict:
@@ -66,7 +68,11 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
             secret_block("DM_SECRET", owner="dm", scope="dm_only"),
             secret_block("OTHER_ROLE_SECRET", owner="xu_yanzhou"),
         ])
-        await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
+        with self.assertRaises(ScriptValidationError):
+            await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
+        # Historical payloads can predate import validation; the runtime must still filter.
+        with patch.object(self.dm.script_loader, "validate", return_value=None):
+            await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
         self.assertNotIn("DM_SECRET", self.prompt())
         self.assertNotIn("OTHER_ROLE_SECRET", self.prompt())
 
@@ -91,8 +97,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
         await self.dm.advance_stage()
         await self.dm.advance_stage()
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.end_investigation("timeout")
         from ws.handlers import build_phase_messages
         payload = str(build_phase_messages(self.dm))
@@ -101,6 +106,12 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("incorrect_verdict", str(self.dm.get_scene_summary()))
 
     async def test_dm_background_and_hosting_are_available_to_actual_agent_context(self) -> None:
+        import json
+        def input_memories(context):
+            return [record["content"]
+                    for message in self.dm.agent_pool.get("gu_linchuan")._build_messages(context)
+                    if message["content"].startswith("[ROLE_MEMORY_DATA]\n")
+                    for record in json.loads(message["content"].split("\n", 1)[1])]
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
         from ws.handlers import build_phase_messages
         build_phase_messages(self.dm)
@@ -108,31 +119,32 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         context = self.dm._build_agent_context(
             role_id="gu_linchuan", channel="public", purpose="dm_public_test", instruction="Respond.", instruction_source="dm_test",
         )
-        actual = str(self.dm.agent_pool.get("gu_linchuan")._build_messages(context))
-        self.assertIn(self.script["story_background"], actual)
-        self.assertIn(self.script["stage_flow"]["stage_1"]["public_briefing"], actual)
-        self.assertEqual(sum(self.script["story_background"] in item["content"] for item in self.dm.state.public_history), 1)
+        actual = input_memories(context)
+        self.assertIn(self.script["opening"]["content"], actual)
+        self.assertNotIn(self.script["stage_flow"]["stage_1"]["public_briefing"], actual)
+        self.assertEqual(sum(self.script["opening"]["content"] in item["content"] for item in self.dm.state.public_history), 1)
         self.dm.restore_runtime_snapshot(self.dm.export_runtime_snapshot())
         build_phase_messages(self.dm)
-        self.assertEqual(sum(self.script["story_background"] in item["content"] for item in self.dm.state.public_history), 1)
+        self.assertEqual(sum(self.script["opening"]["content"] in item["content"] for item in self.dm.state.public_history), 1)
         self.dm.state.public_history.extend({"role": "user", "content": "Recent public claim"} for _ in range(20))
         await self.dm.advance_scene_phase()
+        await self.dm.advance_scene_phase()
+        build_phase_messages(self.dm)
         await self.dm.advance_scene_phase()
         self.dm.end_investigation("timeout")
         build_phase_messages(self.dm)
         context = self.dm._build_agent_context(
             role_id="gu_linchuan", channel="public", purpose="dm_host_test", instruction="Respond.", instruction_source="dm_test",
         )
-        actual = str(self.dm.agent_pool.get("gu_linchuan")._build_messages(context))
+        actual = input_memories(context)
         self.assertIn(self.dm.get_hosting_narration(), actual)
-        self.assertIn(self.script["story_background"], actual)
+        self.assertIn(self.script["opening"]["content"], actual)
 
     async def test_agents_cannot_use_public_channel_in_search_only_phase(self) -> None:
         import time
         self.script["stage_flow"]["stage_1"]["investigation"]["enabled_actions"] = ["search"]
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         with self.assertRaises(ValueError):
             await self.dm.handle_human_speech("Disallowed")
         initial = len(self.dm.state.public_history)
@@ -147,8 +159,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_expired_stage_blocks_human_and_agent_search_without_clue(self) -> None:
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.state.investigation_deadline_at = time.time() - 1
         with self.assertRaisesRegex(ValueError, "结束"):
             await self.dm.handle_mechanic_action({"type": "search", "target_id": "archive_desk"})
@@ -166,8 +177,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
     async def test_failed_agent_vote_leaves_decision_pending_without_synthetic_ballots(self) -> None:
         self.dm.llm_factory = FailingFactory()
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.end_investigation("timeout")
         with self.assertRaisesRegex(ValueError, "投票"):
             await self.dm.cast_stage_vote("gu_linchuan")
@@ -179,8 +189,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_negated_candidate_id_is_not_a_valid_ballot(self) -> None:
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.end_investigation("timeout")
         from unittest.mock import AsyncMock
         with patch.object(self.dm, "_call_agent", new=AsyncMock(return_value=("Do not select gu_linchuan; choose no one.", False))):
@@ -189,14 +198,17 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.dm.stage_resolution_pending())
 
     async def test_tie_rule_is_published_and_does_not_favor_human_ballot(self) -> None:
-        self.script["script_meta"]["total_stages"] = 1
+        self.script = single_stage_script(self.script)
         self.script["stage_flow"]["stage_1"]["resolution"]["final_decision"]["eligible_role_ids"] = ["shen_zhiwei", "gu_linchuan"]
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.end_investigation("timeout")
         self.assertEqual(self.dm.get_stage_resolution()["vote"]["tie_breaker"], "role_id_order")
-        result = await self.dm.cast_stage_vote("shen_zhiwei")
+        from unittest.mock import AsyncMock
+        with patch.object(self.dm, "_call_agent", new=AsyncMock(side_effect=[
+            ("shen_zhiwei", False), ("gu_linchuan", False), ("gu_linchuan", False),
+        ])):
+            result = await self.dm.cast_stage_vote("shen_zhiwei")
         self.assertEqual([item["votes"] for item in result["vote"]["tally"]], [2, 2])
         self.assertEqual(result["vote"]["selected_role_id"], "gu_linchuan")
         self.assertIn("平票", result["vote"]["outcome_text"])
@@ -210,10 +222,9 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
                     self.dm.script_loader.validate(self.script)
 
     async def test_failed_ending_does_not_commit_vote_or_allow_replay(self) -> None:
-        self.script["script_meta"]["total_stages"] = 1
+        self.script = single_stage_script(self.script)
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.end_investigation("timeout")
         final = self.dm.script["stage_flow"]["stage_1"]["resolution"]["final_decision"]
         final["correct_verdict"] = final["incorrect_verdict"] = "结果 {unknown}"
@@ -230,8 +241,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
             "gu_linchuan": [{"label": "搜证一次", "type": "activity_count", "event_types": ["search"], "minimum": 1}],
         }
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         await self.dm.handle_mechanic_action({"type": "search", "target_id": "unknown"})
         self.assertEqual(self.dm._role_task_results("shen_zhiwei", 1)[1]["status"], "failed")
         await self.dm.handle_mechanic_action({"type": "search", "target_id": "archive_desk"})
@@ -250,8 +260,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
         await self.dm.advance_stage()
         await self.dm.advance_stage()
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         self.dm.state.penalties.append({
             "source_stage": 2, "target_stage": 3, "target_role_id": "shen_zhiwei", "extra_task": "公开新的真实线索", "label": "强制披露",
             "completion_checks": [{"type": "clue_disclosure", "label": "新的公开线索", "channel": "public", "disclosure_mode": "truthful", "new_public": True}],
@@ -270,8 +279,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         import asyncio
         from unittest.mock import AsyncMock
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         await self.dm.handle_whisper_action({"type": "whisper_invite", "target_role_id": "gu_linchuan"})
         async def slow_reply(*args):
             await asyncio.sleep(1)
@@ -288,8 +296,7 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         import asyncio
         from unittest.mock import AsyncMock
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         async def slow_reply(*args):
             await asyncio.sleep(1)
             return "LATE_REPLY"
@@ -302,9 +309,9 @@ class KnowledgeRemediationTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(any(event.get("event_type") == "autonomous_private_response" for event in self.dm.state.persistence_events))
 
     async def test_legacy_restore_backfills_only_already_published_dm_information(self) -> None:
+        self.script.pop("opening", None)
         await self.dm.init_game_from_script(self.script, "shen_zhiwei", "deduction")
-        await self.dm.advance_scene_phase()
-        await self.dm.advance_scene_phase()
+        await advance_to_investigation(self.dm)
         snapshot = self.dm.export_runtime_snapshot()
         for payload in snapshot["agents"].values():
             payload.pop("public_announcements")
@@ -458,8 +465,7 @@ class APIRemediationTest(unittest.TestCase):
                     "category": "mystery", "mode": "deduction", "player_role_id": "shen_zhiwei", "script_id": "fog_harbor_clocktower",
                 }).json()["id"]
                 dm = self.client.app.state.game_service.sessions[game_id]
-                asyncio.run(dm.advance_scene_phase())
-                asyncio.run(dm.advance_scene_phase())
+                asyncio.run(advance_to_investigation(dm))
                 ticket = self.client.post(f"/api/v1/games/{game_id}/ws-ticket", headers=self.headers).json()["ticket"]
                 with self.client.websocket_connect(f"/ws/v1/games/{game_id}?ticket={ticket}") as ws:
                     ws.receive_json()
@@ -498,8 +504,7 @@ class APIRemediationTest(unittest.TestCase):
         dm = service.sessions[game_id]
         async def complete():
             for stage in range(1, 4):
-                await dm.advance_scene_phase()
-                await dm.advance_scene_phase()
+                await advance_to_investigation(dm)
                 dm.end_investigation("timeout")
                 result = await dm.cast_stage_vote("gu_linchuan")
                 service.record_responses(game_id, dm, [{"type": "stage_resolution", "resolution": result}])
@@ -522,8 +527,7 @@ class APIRemediationTest(unittest.TestCase):
         game_id = created["id"]
         dm = self.client.app.state.game_service.sessions[game_id]
         import asyncio
-        asyncio.run(dm.advance_scene_phase())
-        asyncio.run(dm.advance_scene_phase())
+        asyncio.run(advance_to_investigation(dm))
         ticket = self.client.post(f"/api/v1/games/{game_id}/ws-ticket", headers=self.headers).json()["ticket"]
         with self.client.websocket_connect(f"/ws/v1/games/{game_id}?ticket={ticket}") as ws:
             ws.receive_json()
@@ -568,8 +572,7 @@ class APIRemediationTest(unittest.TestCase):
         }).json()
         game_id = created["id"]
         dm = self.client.app.state.game_service.sessions[game_id]
-        asyncio.run(dm.advance_scene_phase())
-        asyncio.run(dm.advance_scene_phase())
+        asyncio.run(advance_to_investigation(dm))
         stored = self.client.app.state.store.record_realtime_events(game_id, "seed-cursor", [{"type": "hint", "content": "seed"}])
         ticket = self.client.post(f"/api/v1/games/{game_id}/ws-ticket", headers=self.headers).json()["ticket"]
         with self.client.websocket_connect(f"/ws/v1/games/{game_id}?ticket={ticket}&after_event_id={stored[0]['event_id']}") as ws:
@@ -651,13 +654,13 @@ class APIRemediationTest(unittest.TestCase):
                 ws.send_json(command)
                 result = ws.receive_json()
             self.assertEqual(result["kind"], "error")
-            self.assertEqual(dm.state.scene_phase.value, "briefing")
+            self.assertEqual(dm.state.scene_phase.value, "opening")
             persisted = self.client.get(f"/api/v1/games/{game_id}").json()
-            self.assertEqual(persisted["current_phase"], "briefing")
+            self.assertEqual(persisted["current_phase"], "opening")
             self.assertFalse(any(item["type"] == "phase_changed" for item in persisted["events"]))
             ws.send_json(command)
             self.assertEqual(ws.receive_json()["event_id"], result["event_id"])
-            self.assertEqual(dm.state.scene_phase.value, "briefing")
+            self.assertEqual(dm.state.scene_phase.value, "opening")
             ws.send_json({**command, "request_id": "atomic-phase-retry"})
             self.assertEqual(ws.receive_json()["type"], "phase_changed")
             self.assertEqual(dm.state.scene_phase.value, "private_reveal")

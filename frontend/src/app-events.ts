@@ -1,7 +1,9 @@
 export interface FrontendEventMap {
   "auth:authenticated": { user: { id: number; username: string } };
   "auth:logout": { preserveReturnPath: boolean; broadcast: boolean };
-  "navigation:view": { view: "create" | "records" };
+  "navigation:view": { view: "create" | "records" | "library" | "profile" };
+  "games:prepare": { gameId: number };
+  "games:activated": { gameId: number };
   "sidebar:set": { collapsed: boolean; focusTarget: boolean };
   "records:open": { gameId: number };
   "records:deleted": { gameId: number; title: string };

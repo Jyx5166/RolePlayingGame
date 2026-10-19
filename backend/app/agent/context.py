@@ -3,7 +3,10 @@ from __future__ import annotations
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
+import json
+import re
 from typing import Any, Literal
+from runtime.contracts import RuntimeScope
 
 
 class ContextAccessError(ValueError):
@@ -35,8 +38,18 @@ class ContextMessage:
     source_type: str
     source_key: str
     recipients: tuple[str, ...] = ()
+    speaker_role_id: str = ""
+    speaker_role_name: str = ""
 
     def to_llm_message(self) -> dict[str, str]:
+        if self.source_type in {"public_history", "private_history"}:
+            # A different character's assistant turn is quoted evidence, never
+            # an assistant turn made by the receiving character.
+            return {"role": "user", "content": "[QUOTED_DIALOGUE]\n" + json.dumps({
+                "source_key": self.source_key, "speaker_role_id": self.speaker_role_id or "unknown",
+                "speaker_role_name": self.speaker_role_name or "unknown",
+                "epistemic_status": "unverified_testimony", "quote": self.content,
+            }, ensure_ascii=False, separators=(",", ":"))}
         return {"role": self.role, "content": self.content}
 
     def to_audit_record(self) -> dict[str, Any]:
@@ -47,6 +60,8 @@ class ContextMessage:
             "source_type": self.source_type,
             "source_key": self.source_key,
             "recipients": list(self.recipients),
+            "speaker_role_id": self.speaker_role_id,
+            "speaker_role_name": self.speaker_role_name,
         }
 
 
@@ -57,10 +72,13 @@ class AgentContext:
     channel: str
     purpose: str
     messages: tuple[ContextMessage, ...]
+    runtime_scope: RuntimeScope | None = None
 
     def __post_init__(self) -> None:
         if not self.role_id:
             raise ContextAccessError("AgentContext 缺少接收角色")
+        if self.runtime_scope is not None and self.runtime_scope.actor_role_id != self.role_id:
+            raise ContextAccessError("上下文运行范围与接收角色不匹配")
         if self.stage < 1:
             raise ContextAccessError("AgentContext 阶段无效")
         for message in self.messages:
@@ -86,6 +104,7 @@ class AgentContext:
 
     def to_audit_record(self, system_prompt: str) -> dict[str, Any]:
         return {
+            "runtime_scope": self.runtime_scope.model_dump() if self.runtime_scope else None,
             "role_id": self.role_id,
             "stage": self.stage,
             "channel": self.channel,
@@ -106,6 +125,7 @@ class AgentContextBroker:
         if not normalized:
             raise ValueError("AgentContextBroker 至少需要一个有效角色")
         self._role_ids = frozenset(normalized)
+        self.runtime_scopes: dict[str, RuntimeScope] = {}
 
     def build(
         self,
@@ -179,6 +199,7 @@ class AgentContextBroker:
             channel=channel,
             purpose=purpose,
             messages=tuple(messages),
+            runtime_scope=self.runtime_scopes.get(role_id),
         )
 
     def with_role_instruction(
@@ -204,6 +225,7 @@ class AgentContextBroker:
             channel=context.channel,
             purpose=purpose,
             messages=(*context.messages, message),
+            runtime_scope=context.runtime_scope,
         )
 
     def _require_role(self, role_id: str) -> None:
@@ -234,11 +256,18 @@ class AgentContextBroker:
         content = str(raw.get("content", "")).strip()
         if not content:
             raise ContextAccessError(f"{source_type} 包含空消息")
+        speaker_id = str(raw.get("actor_role_id") or raw.get("sender_role_id") or "")
+        speaker_name = str(raw.get("actor_role_name") or raw.get("sender_role_name") or "")
+        if not speaker_name:
+            prefix = re.match(r"^([^\n:：]{1,40})[:：]", content)
+            speaker_name = prefix.group(1).strip() if prefix else ""
         return ContextMessage(
-            role=raw_role,
+            role="user",
             content=content,
             scope=scope,
             source_type=source_type,
             source_key=source_key,
             recipients=recipients,
+            speaker_role_id=speaker_id,
+            speaker_role_name=speaker_name,
         )

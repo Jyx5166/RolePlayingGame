@@ -4,7 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>剧镜 · AI 剧本杀</title>
-    <link rel="stylesheet" href="/static/styles.css?v=a355f4629444b1b7" />
+    <link rel="icon" type="image/svg+xml" href="/static/assets/jujing-favicon.svg" />
+    <link rel="stylesheet" href="/static/styles.css?v=b424263319719445" />
+    <link rel="stylesheet" href="/static/app.css?v=72ac1dcf93860dff" />
   </head>
   <body>
     <div id="vueRoot"></div>
@@ -14,86 +16,17 @@
       <aside id="appSidebar" class="app-sidebar"></aside>
 
       <main class="workspace">
-        <section id="createView" class="page-view">
-          <header class="page-header">
-            <div>
-              <p class="case-label">NEW INVESTIGATION</p>
-              <h2>建立新案件</h2>
-              <p>导入案件剧本，选择你的调查身份。</p>
-            </div>
-            <div class="step-indicator" aria-label="建局步骤">
-              <span class="active"><b>01</b>案件剧本</span>
-              <span><b>02</b>调查身份</span>
-              <span><b>03</b>进入现场</span>
-            </div>
-          </header>
-
-          <section class="case-cover">
-            <div class="case-cover-copy">
-              <span class="confidential-stamp">MVP CASE</span>
-              <p>内置案件</p>
-              <h3>雾港档案·钟楼夜宴</h3>
-              <span>暴雨 · 密室 · 四名嫌疑人</span>
-            </div>
-            <button id="exampleScriptBtn" class="cover-action" type="button">
-              <span>载入内置案件</span>
-              <b>→</b>
-            </button>
-          </section>
-
-          <div class="case-protocol">
-            <div><span>案件类型</span><strong id="selectedCategoryText">悬疑推理</strong></div>
-            <div><span>调查模式</span><strong id="selectedModeText">推理对抗</strong></div>
-            <div><span>主持方式</span><strong>DM + 角色 Agent</strong></div>
-          </div>
-          <div id="categoryGrid" class="hidden"></div>
-          <div id="modeControl" class="hidden"></div>
-
-          <section class="form-section">
-            <div class="section-heading">
-              <span>01</span>
-              <div><h3>案件剧本</h3><p>JSON 案件档案</p></div>
-            </div>
-            <div>
-              <div id="uploadZone" class="upload-zone" tabindex="0" aria-label="上传案件剧本">
-                <input id="scriptFileInput" type="file" accept=".json,application/json" hidden />
-                <div class="upload-symbol" aria-hidden="true">⇧</div>
-                <div class="upload-copy">
-                  <strong id="uploadTitle">拖入案件文件，或从本机选择</strong>
-                  <span id="uploadMeta">JSON · 最大 5 MB</span>
-                </div>
-                <button id="chooseFileBtn" class="secondary-button" type="button">选择文件</button>
-              </div>
-              <p id="scriptError" class="form-error" aria-live="polite"></p>
-            </div>
-          </section>
-
-          <section id="scriptPreview" class="form-section hidden">
-            <div class="section-heading">
-              <span>02</span>
-              <div><h3>调查身份</h3><p>其余角色由 Agent 接管</p></div>
-            </div>
-            <div>
-              <div class="script-summary">
-                <div><span>案件</span><strong id="previewTitle">-</strong></div>
-                <div><span>调查阶段</span><strong id="previewStages">-</strong></div>
-                <div><span>涉案角色</span><strong id="previewRoles">-</strong></div>
-                <div><span>角色 Agent</span><strong id="previewAgents">-</strong></div>
-              </div>
-              <div id="roleOptions" class="role-options"></div>
-              <button id="startGameBtn" class="primary-button start-button" type="button">
-                <span>启动 DM，进入案发现场</span><b>→</b>
-              </button>
-            </div>
-          </section>
-        </section>
+        <section id="scriptLibraryView" class="page-view hidden"></section>
+        <section id="createView" class="page-view hidden"></section>
+        <section id="preparationView" class="page-view hidden"></section>
 
         <section id="recordsView" class="page-view hidden"></section>
+        <section id="personalCenterView" class="page-view hidden"></section>
 
+        <section id="modernGameView" class="page-view hidden"></section>
         <section id="gameView" class="page-view game-view hidden">
           <header class="game-toolbar">
             <button id="leaveGameBtn" class="icon-button bordered" type="button" title="返回案件档案" aria-label="返回案件档案">←</button>
-            <button id="expandSidebarBtn" class="icon-button bordered sidebar-toggle-button" type="button" title="显示导航栏" aria-label="显示导航栏" aria-controls="appSidebar" aria-expanded="false">›</button>
             <div class="game-title-block">
               <p class="case-label" id="gameModeLabel">INVESTIGATION</p>
               <h2 id="gameTitle">-</h2>
@@ -316,15 +249,19 @@
             <div id="auditReasoningEntries" class="audit-entry-list"></div>
           </section>
           <section>
-            <div class="audit-section-heading"><span>ACTION TIMELINE</span><strong>操作时间线</strong></div>
-            <div id="auditStageResults" class="audit-entry-list audit-stage-results"></div>
-            <div id="auditOperations" class="audit-entry-list audit-operations"></div>
-            <div class="audit-section-heading audit-context-heading"><span>MODEL INPUT LEDGER</span><strong>Agent 上下文审计</strong></div>
-            <div id="auditAgentContexts" class="audit-entry-list audit-agent-contexts"></div>
+            <div id="auditRoleDetails">
+              <div class="audit-section-heading"><span>ACTION TIMELINE</span><strong>操作时间线</strong></div>
+              <div id="auditStageResults" class="audit-entry-list audit-stage-results"></div>
+              <div id="auditOperations" class="audit-entry-list audit-operations"></div>
+              <div class="audit-section-heading audit-context-heading"><span>MODEL INPUT LEDGER</span><strong>Agent 上下文审计</strong></div>
+              <div id="auditAgentContexts" class="audit-entry-list audit-agent-contexts"></div>
+            </div>
+            <div class="audit-section-heading audit-context-heading"><span>EXECUTION LEDGER</span><strong>本局运行与函数调用</strong></div>
+            <div id="auditExecutionLogs" class="audit-entry-list audit-agent-contexts"></div>
           </section>
         </div>
       </section>
     </div>
-    <script src="/static/app.js?v=02a1937836a30c17"></script>
+    <script src="/static/app.js?v=71063b902f58936d"></script>
   </body>
 </html>

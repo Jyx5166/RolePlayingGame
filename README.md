@@ -1,418 +1,249 @@
-# 剧镜 · AI 悬疑推理 MVP
+# 剧镜 · AI 剧本杀
 
-剧镜是一个以 AI 角色 Agent 驱动的悬疑推理 Web 项目。玩家登录后导入结构化案件、选择一个角色亲自扮演；DMEngine 掌握完整剧本和真相，为其余角色创建独立子 Agent，并以确定性规则控制阶段、知识分发、投票和终局。目前 DM 主持文案来自剧本预设，前端逐段展示，不是大模型实时生成的智能 DM。
+剧镜是由 AI 角色 Agent 驱动的悬疑推理 Web 项目。玩家从剧本库选择案件和一个角色，DM 与其他角色共同推进调查、搜证、秘密询问、阶段投票和最终指认。剧本创作有独立的导入、AI 草稿、编辑、审稿与发布流程。
 
-当前版本优先把“悬疑推理 + 推理对抗”做成可完整体验的 Web MVP。Windows 启动器可以一键启动本地服务并打开页面；真正嵌入独立窗口的原生桌面壳将在 Web 主流程成熟后继续开发。
+当前以悬疑推理和 `deduction` 模式为主。Windows 启动器启动本地服务并打开浏览器，前端由 FastAPI 同源托管。
 
-## 当前形态
+## 当前能力
 
-- 前端：Vue 3 + Vue Router + Pinia；认证与 AppShell 已组件化，案件页面通过 legacy DOM 适配层渐进迁移。
-- 后端：FastAPI 提供 REST API、WebSocket 和静态资源托管。
-- AI：OpenAI-compatible 接口，已支持 DeepSeek；无密钥时可使用 Echo 模式开发测试。
-- 数据：SQLite 本地保存用户、登录会话、案件、游戏进度和事件记录。
-- Windows：可双击批处理启动，也可使用 PyInstaller 构建本地启动程序。
-- MVP 范围：只开放悬疑推理题材和 deduction 推理对抗模式。
+- 案件与角色：六个内置案件，独立游戏编号、剧本版本和工作流快照；全剧开幕、选角、私人剧本与逐幕调查。
+- 多 Agent：LangGraph 编排 DM 和角色，原生 Function Calling 通过工具网关校验权限；角色持有独立任务、记忆和私有线索。
+- 调查与结局：公开交流、搜证、私聊、线索披露、结束投票、阶段结算、最终指认及终局角色审计。
+- 创作与档案：JSON 导入、Schema 与语义校验、AI 创作任务和发布；按用户隔离案件、手记、事件与调用日志，支持暂停和恢复。
+- 技术栈：Vue 3、Vue Router、Pinia、TanStack Query、TypeScript、Vite；FastAPI、Pydantic、SQLite、LangGraph。
+- 模型接入：Echo 离线模式和 OpenAI-compatible API。离线回归、历史真实模型验收和当前模型质量分别记录。
 
-## 核心流程
+内置推理案件为《雾港档案·钟楼夜宴》《雨夜来信》《末班列车》《深海回声》《旧宅回廊》《无声剧院》。《西游记·火焰山》作为旧叙事样例保留，不加入推理剧本库。来源信息见各剧本的 `script_meta.provenance`；旧样例未登记的来源不作补充推定。
 
-```text
-注册 / 登录
-  → 上传 JSON 案件或载入内置案件
-  → 后端校验剧本、模式和可扮演角色
-  → 玩家选择 1 个角色
-  → DM Agent 读取完整真相
-  → 为其他 N - 1 个角色创建独立子 Agent
-  → DM 全屏逐段展示预设故事背景、本幕背景和公开任务
-  → 向玩家发放所选角色的私人剧本与个人任务
-  → 开放本幕配置的公开询问 / 搜证 / 秘密询问
-  → 玩家和角色 Agent 搜到线索后，可保密、如实分享或扭曲后分享
-  → 角色 Agent 即使没有真人触发，也会按个人任务自主交流或搜证
-  → 实时显示真人调查进度；倒计时归零，或全员结束投票严格过半
-  → DM 主持收束本幕，按真实操作量化每个角色的阶段成果
-  → 真人与角色 Agent 分别投票，DM 公布票型并执行下一幕处罚 / 任务
-  → 按剧本配置重复“开场 / 私人剧本 / 调查 / 主持”
-  → 最终幕强制完成最终指认，DM 必须发布对应结局
-  → 指认正确则祝贺玩家并公开完整真相；错误则形成错误结局且不泄露真凶
-  → 公开全部角色的线索本、推理结论和操作时间线
-  → 事件与角色记录保存到当前用户
-```
+## 源码部署（Windows）
 
-内置案件为《雾港档案·钟楼夜宴》：4 个可扮演角色、3 个角色 Agent、3 个调查阶段和 5 个分阶段搜证地点。
-三个调查阶段分别配置可用操作、倒计时和结束条件，因此不同幕可以关闭私聊、改变搜证要求或采用不同的主持内容。
+以下 PowerShell 命令均从仓库根目录执行。需要 Python 3.10+、Node.js 22.12+ 和 npm。
 
-## 已实现能力
-
-| 模块 | 当前能力 |
-| --- | --- |
-| 用户系统 | 注册、登录、退出、PBKDF2-SHA256 密码哈希、随机会话令牌；数据库令牌摘要不能用于登录 |
-| 用户隔离 | 每个用户只能读取自己的案件和事件记录 |
-| 剧本导入 | 上传 UTF-8 JSON、嵌套结构与基本可运行校验、角色预览；内置案件只传白名单 ID，全文留在后端 |
-| DM 编排 | 读取完整剧本、四阶段状态机、预设主持文案逐段展示、情报投递、审计记录和终局复盘 |
-| 角色 Agent | 按剧本动态创建，持有独立任务、阶段知识、私聊记忆、私有线索和全体公开角色表，并可自主交流或搜证 |
-| 身份识别 | 所有 Agent 在处理发言、私聊和行动前，先按 `role_id` 确认行动者角色、公开身份与操控者类型 |
-| 知识边界 | 读取、注入与恢复共用阶段 / 所有者校验；公开 DM 公告进入实际模型输入；已知边界有负向回归，不等于证明模型绝不泄密 |
-| 公开询问 | 玩家发言后由回合管理器选择有限数量的角色回应 |
-| 搜证 | 每个角色按剧本配置和当前阶段独立获得行动次数；线索归获得者私有 |
-| 线索披露 | 玩家和 Agent 均可继续保密、如实公开、扭曲后公开，或在已建立的私聊中定向分享 |
-| 秘密询问 | 角色可自主接受或拒绝；私聊上下文不进入公开历史 |
-| Agent 自主行动 | 调查期按任务主动公聊、私聊或搜证，并自主决定是否以及如何披露所得线索 |
-| 阶段推进 | DM 开场、私人发本、限时调查、全员结束投票、DM 收束按剧本循环；Agent 不会替真人触发提前收束 |
-| 结束投票 | 真人点击后自动投同意票，其余角色 Agent 独立表态；同意票严格超过总角色数一半才结束 |
-| 阶段量化 | 每幕按真实搜证、发言、回应和线索披露事件为所有角色结算增量与累计成果 |
-| 集体决策 | 严格解析每个角色的选票，失败不代投且整轮可重试；提前公布固定平票规则，执行下一幕限制或任务 |
-| 任务判定 | 正式行动次数与线索披露可规则判定；个人叙事目标单列为需人工评审，不把贡献分当任务成功 |
-| 最终裁决 | 最终幕必须完成指认；DM 对照隐藏真相发布正确或错误结局，只有正确时公开完整真相 |
-| 线索记录本 | 自动记录案件背景、DM 信息、角色剧本、任务、搜证与直接交流；玩家手记按真实幕次/环节保存修订，旧未知幕次明确标记 |
-| 上下文与记忆 | 按角色/接收者/幕数过滤结构化事实、证词与推断；词法取回旧档案，固定 system 与动态 user 数据分层，总预算及省略来源可审计 |
-| 调用观测 | 独立记录模型准备、完成、失败和取消尝试，不随游戏回滚抹掉；版本、耗时、usage 与提交状态可复盘，缺失数据不补造 |
-| 终局角色审计 | 案件结束后按角色对照搜证原文、对外说法、披露方式、推理记录和全部操作，局中禁止访问 |
-| 案件档案 | SQLite 事务保存事件、快照与命令幂等结果，失败恢复内存；跨服务重启继续、分页续传、查看与两步确认删除 |
-| 模型接入 | Echo 与 OpenAI-compatible 两种 Provider，支持超时和可读错误 |
-| UI/UX | DM 全屏主持、私人剧本、悬疑工作台、半透明 Liquid Glass、角色身份头像，以及公聊声纹、私聊双人链路、搜证扫描三套动态状态 |
-
-## Agent 架构
-
-```mermaid
-flowchart LR
-    U["玩家"] --> FE["Web 前端"]
-    FE -->|"REST：认证、剧本、档案"| API["FastAPI"]
-    FE -->|"WebSocket：局内事件"| API
-    API --> GS["GameService"]
-    GS --> DB[("SQLite")]
-    GS --> DM["DM Agent / DMEngine"]
-    DM --> PM["PermissionMatrix<br/>知识边界"]
-    DM --> TM["TurnManager<br/>发言调度"]
-    DM --> ME["Mechanics<br/>搜证、私聊、处罚"]
-    DM --> RS["Stage Resolution<br/>量化、投票、裁决"]
-    DM --> RP["ReplayEngine<br/>条件化终局复盘"]
-    DM --> A1["角色 Agent 1"]
-    DM --> A2["角色 Agent 2"]
-    DM --> AN["角色 Agent N"]
-    A1 --> LLM["DeepSeek / OpenAI-compatible LLM"]
-    A2 --> LLM
-    AN --> LLM
-```
-
-DMEngine 是唯一持有完整 `truth` 的编排者。角色子 Agent 不共享完整剧本，只接收自己的身份、目标、已解锁知识和授权对话。读取、实际 Prompt 和快照恢复均校验边界；这属于应用层隔离，不是独立安全沙箱，也不保证自然语言模型不会猜测或编造。
-
-DM 负责控制自主行动频率、轮换行动角色和校验知识边界；具体交流对象、公开或私下频道、是否搜证以及线索披露策略由本轮角色 Agent 根据个人任务自主决定。System Prompt 只保留固定玩法与身份识别/信任协议；公开角色表、个人目标和授权记忆以 `ROLE_MEMORY_DATA` 动态 user 数据输入。收到结构化 `OBSERVED_EVENT` 后先确认行动者身份，再结合关系、任务与知识边界作出反应。
-
-案件内档案保存不等于每轮全量输入。`AgentInstance.prepare()` 按权限检查并取回相关旧记录，保留当前必要信息，最终消息检查预算；必要任务过大时明确失败，不静默截掉事实。证词和自我推断保持未核实；取回使用词法匹配，不是向量语义检索，也不是跨案件长期学习。
-
-真实搜证内容只写入获得者的私有线索账本和 DM 审计。其他角色在局中只会收到持有人实际发布的“对外说法”，不会知道它是原文还是扭曲版本。Agent 间私聊在游戏过程中只写入双方私密记忆和受控审计，真人只能看到发生了私下交流，不会看到内容。案件结束后，终局角色审计才开放原始线索、披露说法、推理结论、公开/私下交流和操作时间线，用于评估子 Agent 是否保持角色一致性和有效调查能力。
-
-## 目录结构
-
-```text
-RolePlayingGame/
-├── frontend/
-│   ├── index.html                  # 登录、建案、档案和局内工作台
-│   ├── styles.css                 # 悬疑视觉与 Liquid Glass 交互
-│   ├── app.js                     # Vite 生成的生产兼容入口
-│   ├── package.json               # 前端构建、类型检查和测试命令
-│   ├── vite.config.ts             # 开发代理与生产 IIFE 构建
-│   ├── src/
-│   │   ├── App.vue                # Vue 壳层与 Teleport 挂载
-│   │   ├── components/            # 认证页与应用侧栏组件
-│   │   ├── stores/                # auth/ui Pinia stores
-│   │   ├── legacy-app.js          # 现有页面渲染与交互，待逐页组件化
-│   │   ├── api-client.ts          # REST v1、CSRF 与统一错误
-│   │   ├── router.ts              # Vue Router 资源路由与安全返回路径
-│   │   ├── state.ts               # 集中状态初始模型
-│   │   └── ws-protocol.ts         # WS 命令、校验、去重与续传归约
-│   └── assets/                    # 本地视觉资源
-├── backend/
-│   ├── app/
-│   │   ├── main.py                # FastAPI 入口和接口
-│   │   ├── game_service.py        # 游戏创建、会话恢复和持久化协调
-│   │   ├── dm/                    # DM 编排、权限、回合、校验和复盘
-│   │   ├── agent/                 # 角色 Agent 与 AgentPool
-│   │   ├── mechanics/             # 搜证、秘密询问
-│   │   ├── skill/                 # narrative、deduction、faction
-│   │   ├── llm/                   # Echo 与 OpenAI-compatible 客户端
-│   │   └── storage.py             # SQLite 数据访问
-│   ├── config/
-│   │   ├── .env                   # 本机配置，不进入版本控制
-│   │   └── .env.example           # 配置模板
-│   ├── resources/scripts/         # 内置案件与回归测试剧本
-│   ├── data/                      # 源码运行时数据库
-│   ├── tests/                     # 单元与集成测试
-│   └── requirements.txt
-├── desktop/
-│   ├── launch_desktop.py          # 源码模式的一键启动入口
-│   ├── desktop_launcher.py        # PyInstaller 打包入口
-│   └── build_windows_exe.ps1      # PyInstaller 构建脚本
-├── docs/                          # 需求、架构、设计与实现复盘
-├── 启动桌面版.bat
-└── README.md
-```
-
-FastAPI 继续同源托管 `frontend/index.html`、`styles.css` 和构建后的 `app.js`。日常前端开发可使用 Vite 开发服务器；Vite 将 `/api` 与 `/ws` 代理到本机 8000 端口，生产和桌面版本不引入跨域依赖。
-
-## 快速启动
-
-运行环境建议使用 Python 3.10 或更高版本、Node.js 22 或更高版本。
-
-### 1. 安装依赖
+### 1. 安装依赖并构建前端
 
 ```powershell
-python -m pip install -r backend\requirements.txt
-Set-Location frontend
-npm.cmd ci
-npm.cmd run build
-Set-Location ..
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+npm.cmd --prefix frontend ci
+npm.cmd --prefix frontend run build
 ```
 
-### 2. 配置模型
+生产构建生成 `frontend/app.js`、`frontend/app.css`，并更新 HTML 内的资源版本号。`frontend/.build/` 是中间产物；日常修改在 `frontend/src/` 中完成，构建后再访问后端服务。
 
-后端启动时自动读取 [backend/config/.env](backend/config/.env)，系统环境变量优先于文件配置。若本机还没有该文件，可从模板创建：
+### 2. 创建本地配置
 
 ```powershell
-Copy-Item backend\config\.env.example backend\config\.env
+if (-not (Test-Path backend\config\.env)) {
+    Copy-Item backend\config\.env.example backend\config\.env
+}
 ```
 
-使用 DeepSeek 等 OpenAI-compatible 服务时填写：
-
-```dotenv
-LLM_PROVIDER=openai_compatible
-LLM_MODEL=你的模型ID
-LLM_BASE_URL=https://api.deepseek.com
-LLM_TIMEOUT_SECONDS=120
-LLM_API_KEY=你的API_KEY
-```
-
-上下文保护默认配置如下，可在同一个 `.env` 中调整；输入、输出和安全余量之和不得超过配置窗口：
-
-```dotenv
-# 应用预算，不是宣称当前模型只有这个窗口
-LLM_CONTEXT_WINDOW=32768
-LLM_INPUT_TOKEN_LIMIT=23000
-LLM_MAX_OUTPUT_TOKENS=8192
-LLM_TOKEN_SAFETY_MARGIN=1024
-# 留空不覆盖服务商默认行为；不是所有兼容服务都支持该参数
-LLM_REASONING_EFFORT=
-```
-
-输入使用 UTF-8 字节保守估算，不是服务商精确 tokenizer；实际 usage 单独保存。输出截断明确失败，不执行为完整行动。默认思考模式在上述额度下的整局行为仍需新局验证。
-
-只调试业务流程、不调用付费模型时可使用：
-
-```dotenv
-LLM_PROVIDER=echo
-```
-
-认证默认使用 HttpOnly Session Cookie。公网生产环境必须配置：
-
-```dotenv
-APP_ENV=production
-COOKIE_SECURE=true
-```
-
-生产环境必须通过 HTTPS 访问；浏览器写操作同时校验 CSRF token。开发环境使用同源 HTTP Cookie，方便在 `127.0.0.1` 调试。
-
-不要把真实 API Key 写入前端、`.env.example` 或提交记录。`.gitignore` 已忽略所有 `.env` 文件。
-
-调查阶段的角色自主行动会自动产生模型请求。可通过剧本中的 `autonomy.initial_delay_seconds`、`interval_seconds` 和 `max_turns` 控制调用节奏与单幕上限。
+模板默认 `LLM_PROVIDER=echo`，无需密钥即可调试流程。已有 `.env` 请按[配置模板](backend/config/.env.example)补充所需项，保留自己的密钥和连接配置。
 
 ### 3. 启动服务
 
 ```powershell
-python -m uvicorn main:app --app-dir backend\app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn main:app --app-dir backend\app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-打开 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)。健康检查地址为 [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)。
+打开[应用首页](http://127.0.0.1:8000/)，使用[健康检查](http://127.0.0.1:8000/health)确认服务返回 `{"status":"ok"}`。生产资源由同一服务的 `/static/` 提供。
 
-需要前端热更新时，保持后端 8000 端口运行，并在另一个终端执行：
+Windows 也可双击根目录的 [start-local.bat](start-local.bat)。它优先使用 `.venv` 中的 Python，启动本地 Web 服务后打开默认浏览器；关闭启动窗口会停止其启动的服务。
+
+### 4. 部署验收
+
+服务启动后，在另一个 PowerShell 终端检查健康状态和页面资源：
 
 ```powershell
-Set-Location frontend
-npm.cmd run dev
+Invoke-RestMethod http://127.0.0.1:8000/health
+@('/', '/static/app.js', '/static/app.css', '/static/styles.css') | ForEach-Object {
+    $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000$_" -UseBasicParsing
+    '{0}: {1}' -f $_, $response.StatusCode
+}
 ```
 
-然后打开 Vite 输出的本地地址。生产入口仍以 FastAPI 的 8000 端口为准。
+健康检查应返回 `status: ok`，四个页面或资源请求均应为 `200`。随后在浏览器注册或登录，确认剧本库可打开、能选角并进入调查。`/health` 只检查应用可响应；真实模型连通性、游戏效果和部署负载需要另外验证。
 
-## Windows 点开即用
+### 前端热更新
 
-双击 `启动桌面版.bat` 会启动本地 FastAPI 服务并打开系统默认浏览器。命令窗口需要保持开启，关闭窗口会停止本地服务。
-
-构建 PyInstaller 版本前先安装 PyInstaller，并确保 Node.js/npm 可用。构建脚本会先执行 `npm ci` 和前端生产构建，再调用 PyInstaller，避免打包过期资源：
+保持后端 8000 端口运行，在另一个终端执行：
 
 ```powershell
-python -m pip install pyinstaller
-powershell -ExecutionPolicy Bypass -File desktop\build_windows_exe.ps1
+npm.cmd --prefix frontend run dev
 ```
 
-构建产物：
+访问 Vite 输出的地址（默认 5173）。开发代理将 `/api`、`/ws` 和 `/static/assets` 转发到 `127.0.0.1:8000`；如果改动后端端口，也需调整 [vite.config.ts](frontend/vite.config.ts) 中的代理目标。
+
+## 环境配置
+
+后端默认读取 `backend/config/.env`，**进程环境变量优先**，修改后需重启服务。全部变量、默认值及注释参考见 [backend/config/.env.example](backend/config/.env.example)。
+
+### 模型 API
+
+在本机 `.env` 中配置兼容服务，例如：
+
+```dotenv
+LLM_PROVIDER=openai_compatible
+LLM_MODEL=your-model-id
+LLM_BASE_URL=https://your-provider.example/v1
+LLM_API_KEY=your-api-key
+LLM_TIMEOUT_SECONDS=120
+```
+
+客户端在 `LLM_BASE_URL` 后追加 `/chat/completions`。根地址是否包含 `/v1` 取决于供应商接口，不要填写完整请求路径。模板同时保留本地 Ollama 的连接参考；实际使用时需替换模型名、地址和密钥。
+
+| 变量 | 默认值 | 用途 |
+| --- | --- | --- |
+| `LLM_CONTEXT_WINDOW` | `32768` | 应用侧配置窗口 |
+| `LLM_INPUT_TOKEN_LIMIT` | `23000` | 输入预算上限 |
+| `LLM_MAX_OUTPUT_TOKENS` | `8192` | 输出预留 |
+| `LLM_TOKEN_SAFETY_MARGIN` | `1024` | 安全余量 |
+| `LLM_REASONING_EFFORT` | 留空 | 可选供应商参数 |
+
+输入上限、输出预留和安全余量之和不得超过配置窗口。输入采用 UTF-8 字节保守估算，实际 usage 独立记录；配置窗口不会自动识别模型真实容量。调查期 Agent 自主行动会产生模型调用，频率和每幕上限还受剧本 `investigation.autonomy` 配置控制。
+
+### Cookie 与监听地址
+
+`APP_ENV=production` 且未显式设置 `COOKIE_SECURE` 时，后端自动启用 Secure Cookie。生产环境使用 HTTPS；本地 HTTP 开发保留 `APP_ENV=development`。使用 Cookie 会话的已认证写操作同时校验 CSRF token。
+
+启动器在读取 `.env` 前决定监听地址和端口，因此 `APP_HOST`、`APP_PORT` 应在启动前设为**进程环境变量**：
+
+```powershell
+$env:APP_HOST = '127.0.0.1'
+$env:APP_PORT = '8000'
+.\start-local.bat
+```
+
+直接使用 uvicorn 时，以命令行 `--host`、`--port` 为准。
+
+### 配置文件与数据路径
+
+| 用途 | 源码运行 | PyInstaller 打包运行 |
+| --- | --- | --- |
+| 默认配置文件 | `backend/config/.env` | `<数据目录>/config/.env` |
+| 默认数据库 | `backend/data/app.db` | `%LOCALAPPDATA%/AIMurderMystery/app.db` |
+| 工作流配置 | `backend/config/workflow.yaml` | 包内 `backend/config/workflow.yaml` |
+
+游戏工作流还会使用同一数据目录中的 `app.workflow.db`。数据目录需要当前运行账户具有写权限，迁移和备份应覆盖整个目录。
+
+可在启动前设置 `AI_MURDER_MYSTERY_ENV_FILE` 指定另一份配置文件，或设置 `AI_MURDER_MYSTERY_DATA_DIR` 指定数据目录；建议使用绝对路径。配置位置在导入时确定，把 `AI_MURDER_MYSTERY_ENV_FILE` 写进 `.env` 不会切换本次读取的文件。打包时要从自定义数据目录读取 `config/.env`，也需提前设置数据目录环境变量。
+
+真实密钥保存在本机 `.env` 或独立配置文件中。`.env` 及其本地变体、运行数据和本地归档均由 Git 忽略，`.env.example` 作为无真实凭据的参考文件保留。
+
+### 游戏工作流
+
+[backend/config/workflow.yaml](backend/config/workflow.yaml) 管理游戏回合额度、工具调用次数、连接恢复和模型参数。调整前确认所用服务商支持相应参数，并评估模型调用额度。
+
+工作流中非空 `reasoning_effort` 优先于环境变量，当前为 `none`；服务商需要支持该参数。每局保存创建时的工作流快照，修改 YAML 只影响后续创建的游戏。兼容路径 `validated_action_json` 显式配置，不静默降级。
+
+## 目录结构与命名
 
 ```text
-dist\AIMurderMysteryDesktop\AIMurderMysteryDesktop.exe
+RolePlayingGame/
+├── backend/
+│   ├── app/                    # FastAPI、领域规则及 Agent 实现
+│   ├── config/                 # .env.example、workflow.yaml 与本机 .env
+│   ├── resources/              # 内置剧本与 JSON Schema
+│   ├── tests/                  # 单元、集成测试及 fixtures
+│   ├── verification/           # 专项检查与人工验收工具
+│   ├── reports/                # 本地生成报告，默认忽略
+│   ├── data/                   # 本地运行数据，忽略
+│   └── requirements.txt
+├── frontend/
+│   ├── src/                    # Vue/TypeScript 源码、页面样式及测试
+│   │   ├── components/         # 页面与共享组件
+│   │   ├── queries/            # 服务端状态与查询
+│   │   ├── stores/             # Pinia 状态
+│   │   └── legacy-app.js       # 迁移中的 DOM 交互适配
+│   ├── assets/                 # Logo、头像、封面与参考资源
+│   ├── scripts/                # 构建资源同步工具
+│   ├── index.html              # 同源页面入口
+│   ├── styles.css              # 既有全局样式
+│   └── app.js / app.css        # 构建后的生产入口
+├── launcher/                   # 本地 Web 启动器与 Windows 打包脚本
+├── private-docs/               # 本地私有资料，忽略，不随代码分发
+├── logs/                       # 本地服务日志，忽略
+├── .local/                     # 本地归档与私有文件，忽略
+├── build/ / dist/              # 打包中间产物与发行目录，忽略
+├── start-local.bat             # Windows 双击启动本地 Web 服务
+└── README.md
 ```
 
-源码运行时数据库位于 `backend/data/app.db`；打包运行时数据库位于：
+| 文件类型 | 命名规范 |
+| --- | --- |
+| 文档、CSS、TS/JS 模块和普通资源 | 小写英文 `kebab-case` |
+| Python 模块、测试、剧本 ID | `snake_case`，测试使用 `test_*.py` |
+| Vue 组件 | `PascalCase.vue`，对应测试 `PascalCase.test.ts` |
+| PowerShell、批处理入口 | 小写英文 `kebab-case` |
+| 开发记录与新增验收批次 | `YYYY-MM-DD-topic.md` 或 `YYYY-MM-DD/topic/` |
+| 文档索引 | `README.md` |
 
-```text
-%LOCALAPPDATA%\AIMurderMystery\app.db
+文档正文继续使用中文，既有模块名和剧本 ID 保持其接口含义。历史设计和验收资料集中保留在本地 `private-docs/`，不影响部署。
+
+2026-10-19 整理时，嵌套的 `Projects/RolePlayingGame/` 快照及根目录旧 `data/` 已完整保留到 `.local/archive/2026-10-19/`；当前运行数据库仍在 `backend/data/`。旧 `backend/test_reports/` 整体迁为 `backend/reports/`，根服务日志集中到 `logs/`。
+
+## 测试与验证
+
+```powershell
+.\.venv\Scripts\python.exe -m backend.tests.run_isolated --report backend/reports/backend-regression.json
+npm.cmd --prefix frontend run typecheck
+npm.cmd --prefix frontend test
+npm.cmd --prefix frontend run build
+node --check frontend/app.js
 ```
 
-## 剧本格式
+后端隔离入口使用临时数据库并强制 Echo，避免写入日常案件或调用付费模型。单项回归可增加 `--pattern test_script_schema.py`。报告用途和命名见 [backend/reports/README.md](backend/reports/README.md)。
 
-上传文件必须是 UTF-8 JSON。最小结构包括：
+`backend/verification/` 中的专项工具各有参数和数据要求，部分会调用真实模型或启动独立服务。默认回归无需私有文档；人工专项检查可能依赖本机保存的验收数据。自动化通过不等于真实模型整局叙事质量、成本或生产负载通过。
 
-```text
-script_meta.script_id
-script_meta.title
-script_meta.total_stages
-script_meta.supported_skills
-story_background
-roles[]
-roles[].role_id
-roles[].role_name
-roles[].human_playable
-roles[].public_identity
-roles[].stage_knowledge
-truth
+## Windows 本地 Web 启动器打包
+
+Windows 打包版启动本地服务并打开系统默认浏览器。它使用浏览器承载界面，尚未提供独立桌面窗口。
+
+在已安装项目依赖的环境中执行：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install pyinstaller
+powershell -ExecutionPolicy Bypass -File launcher/build-windows-exe.ps1
 ```
 
-可选的 `mechanics_enabled` 和 `mechanics_config` 用于启用搜证、私聊次数和角色登场阶段等规则。`stage_flow.stage_N` 用于声明每一幕的公开背景、公开任务、个人任务、调查规则、DM 收束词和阶段结算。最终幕必须配置 `final_decision`，`truth.culprit_role_id` 保存只供 DM 判定的真实凶手。玩家选择一个 `human_playable` 角色后，其余角色各创建一个子 Agent。
+构建脚本先安装前端依赖并构建资源，再调用 PyInstaller。已安装且无需重新安装 npm 依赖时可增加 `-SkipDependencyInstall`。发行入口为 `dist/JujingLauncher/JujingLauncher.exe`，分发时保留同目录的 `_internal`；本机 `.env` 不打入发行包。
 
-```text
-stage_flow.stage_N.title
-stage_flow.stage_N.public_briefing
-stage_flow.stage_N.public_tasks[]
-stage_flow.stage_N.personal_tasks.{role_id}
-stage_flow.stage_N.investigation.duration_seconds
-stage_flow.stage_N.investigation.enabled_actions[]
-stage_flow.stage_N.investigation.end_conditions
-stage_flow.stage_N.investigation.end_conditions.actor_scope
-stage_flow.stage_N.investigation.end_conditions.auto_end
-stage_flow.stage_N.investigation.autonomy.enabled
-stage_flow.stage_N.investigation.autonomy.initial_delay_seconds
-stage_flow.stage_N.investigation.autonomy.interval_seconds
-stage_flow.stage_N.investigation.autonomy.max_turns
-stage_flow.stage_N.investigation.autonomy.allow_private
-stage_flow.stage_N.resolution.title
-stage_flow.stage_N.resolution.metric.{key,label,unit,initial}
-stage_flow.stage_N.resolution.scoring_rules[]
-stage_flow.stage_N.resolution.vote
-stage_flow.stage_N.resolution.vote.eligible_role_ids[]
-stage_flow.stage_N.resolution.vote.penalty
-stage_flow.stage_N.resolution.final_decision
-stage_flow.stage_N.dm_hosting
-truth.culprit_role_id
-```
+分发整个 `dist/JujingLauncher/` 目录，接收方解压后双击 EXE。默认 Echo 模式可直接试运行；接入模型服务时，在接收方的 `%LOCALAPPDATA%/AIMurderMystery/config/.env` 中参照公开的 `.env.example` 填写配置，或在启动前设置 `AI_MURDER_MYSTERY_ENV_FILE` 指向独立配置。不要分发开发者本机的密钥、数据库或私有文档。
 
-`scoring_rules[].event_types` 把真实局内事件映射为分值，`points_per_event` 和 `max_points` 控制单项计分。普通幕可使用 `vote.penalty` 配置目标幕、搜证行动点削减和额外任务；最终幕使用 `final_decision` 配置候选角色与正确 / 错误结局文案。角色 Agent 只获得候选人、公开经历和自己的私有目标，不会收到 `truth.culprit_role_id`。
+数据目录名 `AIMurderMystery` 与 `AI_MURDER_MYSTERY_*` 环境变量继续保留，用于兼容已有配置和案件；启动器名称调整不会迁移或重置用户数据。
 
-`end_conditions.actor_scope` 默认为 `human`，表示建议进度只统计真人操作；设为 `all` 才统计所有角色。`auto_end` 只能为 `false`，导入拒绝 `true`。操作次数达成仅提示建议目标；调查只能在倒计时归零，或真人发起的全员结束投票严格过半时结束。超时后的新行动及迟到的模型回复不作为有效行动执行。
+## 部署注意事项
 
-个人任务文本不自动等于可判定目标。`stage_flow.stage_N.personal_task_checks.{role_id}[]` 与 `stage_flow.stage_N.resolution.vote.penalty.completion_checks[]` 可声明行动次数或正式线索披露规则，细节见内置案件与整改记录。未声明规则的叙事目标标为“需人工评审”；`new_public` 根据正式披露记录判定，不解析聊天中的同义转述。正确 / 错误结局模板及其他角色任务详情不在局中下发给玩家。
+- **单进程运行**：使用 `--workers 1`。游戏会话、WebSocket 连接和创作任务包含进程内状态；避免同时启动多个实例指向同一数据目录。日常使用不要开启 `--reload`，代码重载会中断正在进行的任务。
+- **前端资源更新**：修改前端源码后重新执行 `npm.cmd --prefix frontend run build`，并一起更新 `index.html`、`app.js`、`app.css`、`styles.css` 和 `assets/`。HTML 的版本号由构建工具生成。Windows 发行包需重新构建。
+- **模型配置与费用**：初次部署先使用 Echo 检查流程，再配置真实模型。确认模型 ID、API 根地址、工具调用及 `reasoning_effort` 参数兼容；API 地址会自动追加 `/chat/completions`。角色自主行动也会产生付费请求，按剧本与工作流配置控制频率和额度。
+- **配置与端口**：进程环境变量优先于 `.env`，修改后重启服务。启动器端口需通过进程环境变量指定；直接使用 uvicorn 时使用 `--port`。Vite 开发代理默认指向后端 8000 端口。先确认端口占用情况，保持同一服务只启动一次。
+- **对外访问**：当前启动命令提供本机 HTTP 服务。对外部署需通过支持 WebSocket 升级和长连接的 HTTPS 反向代理，在同一域名下转发页面、`/static/`、`/api/` 和 `/ws/`；保持后端监听本机地址。使用 `APP_ENV=production` 和 Secure Cookie，并在实际 HTTPS 地址检查登录与实时连接。仓库未附带反向代理、证书或系统服务配置。
+- **备份与升级**：暂停游戏、停止服务后备份整个实际数据目录，包括 `app.db`、`app.workflow.db` 及目录内其他运行文件；另行妥善备份私有 `.env` 和当前 `workflow.yaml`。升级前完成备份，升级后重新安装依赖、构建前端并执行部署验收。恢复数据时也应先停服。
+- **提交与分发范围**：真实密钥、SSH 私钥、数据库、日志、生成报告和内部设计资料仅本地保存。`.gitignore` 负责排除指定文件，已进入 Git 历史的内容不会因此消失。开源源码仍会展示实际实现，请按计划公开的范围检查提交内容。
 
-完整示例见 [backend/resources/scripts/fog_harbor_clocktower.json](backend/resources/scripts/fog_harbor_clocktower.json)。
+## 剧本与接口
 
-## 接口概览
+新剧本使用 UTF-8 JSON，显式声明 `schema_version: "1.0"`。类型定义位于 [script_schema.py](backend/app/loader/script_schema.py)，导出的 [JSON Schema](backend/resources/schema/script.schema.json) 也可登录后通过 `GET /api/v1/scripts/schema` 获取。导入、AI 创作、发布和开局共用服务端结构及语义校验。
+
+内置完整样例见 [fog_harbor_clocktower.json](backend/resources/scripts/fog_harbor_clocktower.json)。剧本包含角色逐幕知识、个人任务、`stage_flow`、线索机制、真相时间线和 `truth.evidence_chain`；聊天、手记、投票和运行事件保存在每局数据中。
 
 | 接口 | 用途 |
 | --- | --- |
-| `GET /health` | 服务健康检查 |
-| `POST /api/v1/auth/register` | 注册并创建 HttpOnly Cookie 会话 |
-| `POST /api/v1/auth/login` | 登录并创建 HttpOnly Cookie 会话 |
-| `POST /api/v1/auth/logout` | 撤销当前会话并清除 Cookie |
-| `GET /api/v1/me` | 获取当前用户和 CSRF token |
-| `POST /api/v1/scripts/inspect` | 校验并预览上传剧本 |
-| `GET /api/v1/scripts/example` | 获取内置案件安全预览，不含全文与真相 |
-| `POST /api/v1/games` | 创建游戏并启动 DM |
-| `GET /api/v1/games` | 查询当前用户案件 |
-| `GET /api/v1/games/{game_id}` | 查询案件及领域事件 |
-| `GET /api/v1/games/{game_id}/events` | 按 `after_event_id` 增量查询实时事件 |
-| `DELETE /api/v1/games/{game_id}` | 删除当前用户案件及其关联记录 |
-| `GET /api/v1/games/{game_id}/notebook` | 获取玩家自动归档、私有搜证线索与推理手记 |
-| `PUT /api/v1/games/{game_id}/notebook/manual` | 保存玩家推理手记 |
-| `GET /api/v1/games/{game_id}/role-records` | 结局后查看全部角色记录 |
-| `POST /api/v1/games/{game_id}/ws-ticket` | 获取 30 秒一次性 WebSocket 票据 |
-| `WS /ws/v1/games/{game_id}?ticket=...&after_event_id=...` | 建立版本化实时连接并按游标续传 |
+| `GET /health` | 健康检查 |
+| `/api/v1/auth/*`、`GET /api/v1/me` | 注册、登录、会话与 CSRF |
+| `GET /api/v1/scripts`、`POST /api/v1/scripts/inspect` | 剧本库与导入校验 |
+| `POST /api/v1/game-preparations`、`POST /api/v1/games/{game_id}/activate` | 创建游戏准备与选角开局 |
+| `/api/v1/authoring-jobs`、`/api/v1/authoring-jobs/{job_id}/*` | AI 创作、查询、取消与发布 |
+| `/api/v1/games`、`/api/v1/games/{game_id}/*` | 案件、手记、事件、暂停、导出与终局记录 |
+| `POST /api/v1/games/{game_id}/ws-ticket` | 一次性 WebSocket 票据 |
+| `WS /ws/v1/games/{game_id}` | 版本化局内通信与事件续传 |
 
-`/api/v1` 错误统一返回 `code`、`message`、`request_id`、`details`；响应头同时携带
-`X-Request-ID`。WebSocket v1 使用严格命令/事件信封，每个客户端命令携带
-`request_id`，每个持久化服务端事件携带单调递增的 `event_id`。
+运行后可在 [OpenAPI 文档](http://127.0.0.1:8000/docs)查看具体方法、参数和响应。v1 错误统一包含 `code`、`message`、`request_id` 和 `details`；WebSocket 使用命令请求 ID 和递增事件 ID 协调幂等与续传。
 
-## 运行测试
+## 本地私有资料
 
-```powershell
-python -m backend.tests.run_isolated
-Set-Location frontend
-npm.cmd run typecheck
-npm.cmd test
-npm.cmd run build
-Set-Location ..
-node --check frontend\app.js
-```
+`private-docs/` 统一保存需求与路线图、架构设计、UI 概念与生成提示词、开发复盘、工程评估、验收截图和模型运行证据。该目录已由 `.gitignore` 排除，不随开源仓库克隆或发行包分发；本机索引位于 `private-docs/README.md`。
 
-2026-10-05 核心整改阶段的历史结果（记忆后续整改见下方）：
-
-- 127 项 Python 单元 / 集成测试、20 项前端测试通过；类型检查、生产构建、JS 语法及 Python 编译检查通过。
-- 新增负向测试覆盖未来 / 他人 / DM 信息、旧秘密模板、过期行动、失败投票、无效结局、保存故障、摘要凭据与非法剧本。
-- 真实 WebSocket 测试确认 1000 条积压分 5 页续传，随后实时事件不跳号；保存故障后同 ID 不重复执行，新 ID 才重新尝试。
-- Echo 浏览器完成三幕，验证严格过半结束票、处罚、正式线索披露、量化子目标、最终指认及全部角色记录。错误指认分支由后端回归覆盖。
-- 实测 1280×720、1024×768、390×844、320×568 调查布局；窄屏输入可达、页面无横向溢出，桌面侧栏收起 / 恢复正常。
-- 原 8000 地址日常升级测试发现旧 JS 缓存问题，已增加构建内容哈希和缓存再验证，复测内置案件加载成功。
-- 长推理期间发送不推进游标的心跳，增量重连后重新同步当前阶段；待确认命令仅在当前幕次 / 环节内用原 ID 重试，主动退出或页面刷新不自动重放。
-
-专项过程、故障复现和截图见 [整改执行与逐项验收记录](docs/engineering/17-整改执行与逐项验收记录.md)。以上自动化和 Echo 结果不是 DeepSeek 质量、单局成本或生产负载结论；真实模型日常验收另行记录。
-
-同日使用现有 DeepSeek 配置在新 QA 案件完成三幕：最终顾临川 3 票、沈知微 1 票，明确结局与四角色记录可打开，保留 48 条已完成调用输入。运行中有修复介入和自然断线，不是首次无干预通过；详见 [日常真实验收](docs/engineering/18-日常场景真实模型验收.md)。
-
-同日文档 20 的历史记忆整改结果：157 项后端、21 项前端测试通过；类型检查、构建、语法和编译通过，15 项记忆诊断通过。30 个合成输入检查与万条私人档案预算/取回检查通过，不代表真实语义召回率。当时授权的 6 次短 DeepSeek 请求严格 5 PASS、1 FAIL（答案字段格式，未核实标签正确），实际 usage 4421 tokens，无重试、无追加调用、未改生产配置。原地址旧案件复盘桌面/移动走查通过，完整证据和限制见 [记忆整改与验收](docs/engineering/20-上下文与记忆整改及完整验收.md)；当时没有运行整改后的付费完整新局。
-
-后续用户将验收上限提高至 100 次：本批实际 72 次（71 完成、1 取消），加上述 6 次共 78 次。生产默认参数原案三幕完整完成，未热修运行中的规则，最终 3:1 指认；额外错判、自然超时、重启恢复、真实断线取消及幂等检查完成。12 项短记忆检查严格 10 PASS / 2 FAIL，失败均为答案字段扩写，未核实标签正确，原始 FAIL 保留。终局 QA 桌面/移动记录走查通过。
-
-真实测试又发现总请求超时缺失、保密搜证错误要求接收者，已先复现再修复；最终 169 项后端、21 项前端回归通过，完整 Echo 20 PASS / 1 NOT_RUN。最后两个补丁之后没有再跑付费完整原案，不能据此宣称所有真实行为通过。真实局没有成功的 AI 搜证；案件事实编造、串行指认约 191 秒、错判后全角色审计暴露凶手仍待处理。详见 [百次额度验收与客观评估](docs/engineering/21-百次额度真实模型完整验收与客观评估.md)，不标 M2–M5 完成。
-
-## 视觉与交互
-
-界面采用冷黑案发现场、旧纸文字、黄铜线索色、暗红行动色和雾绿在线状态。玻璃材质主要用于导航、工具栏、输入区和临时状态；证词、情报和角色记录使用更厚的阅读材质，避免背景穿透影响长文本。
-
-按钮、角色选项和上传区域使用不对称曲率。点击时会从真实指针位置产生短暂的冷白、雾绿与暗红扩散，并完成压缩、偏斜和恢复。系统开启“减少动态效果”时，动画会自动降级。
-
-角色头像使用统一的身份色和末字印记，不依赖固定剧本图片，因此上传自定义角色后仍能稳定生成。角色公开发言时头像产生声纹脉冲，搜证时出现纵向扫描，私聊期间双方头像在询问记录顶部持续显示并以同频呼吸提示保密链路；历史消息只播放短动画，不会永久闪烁。
-
-左下账户头像使用独立的在线状态动效：登录后持续显示低强度五段频谱和在线信标；进入剧本演绎后，头像内部切换为雾绿、冷蓝、黄铜和暗红组成的动态思考波形。动效只表达状态，不自动播放声音；系统开启“减少动态效果”时同样会停止持续动画。
-
-DM 开场、私人剧本和 DM 收束使用独立全屏场景，调查环节才显示操作工作台。DM 收束页会列出各角色贡献分、计分原因、候选人、票型和处罚；只显示当前玩家的私有任务结果，终局才开放全部角色记录。窗口宽度大于 1180px 时同时展示三栏；紧凑窗口使用等宽分段标签。正文 14px、角色说明和任务标签 12px、发言输入 16px。桌面可从账户区隐藏导航并从标题栏恢复，移动端保留顶部导航。
-
-## MVP 边界
-
-- 当前是单机本地账户，不是云端多用户服务。
-- 一局游戏当前由 1 名真人玩家和 N - 1 个 AI 角色组成。
-- 上传格式暂时只支持结构化 JSON，不解析 PDF、Word 或纯文本剧本。
-- Windows 启动器当前打开系统浏览器，不是最终原生桌面窗口。
-- 已完成操作保存版本化快照；服务端不会从快照恢复尚未提交的 LLM 执行。同一页面的待确认命令可在同幕同环节重连后按原 ID 重试，刷新或退出页面不保留该队列。
-- 调查倒计时和 Agent 自主调度使用持久化绝对时间；系统时间被人为大幅修改时，剩余时间也会随之变化。
-- 快照保存在本机 SQLite 中，当前属于本地应用级数据保护，不是加密的云端多租户存储。
-- narrative、faction 等底层 Skill 仍保留，但没有在当前 MVP 前台开放。
-- 个人叙事任务尚无自动语义裁判及完整人工评审工作台。
-- 长推理仍会阻塞真人命令，分幕投票串行等待。失败/取消尝试独立审计与真人手记幕次/修订已补齐；硬崩溃或磁盘不可写时终态仍可能未知，留存/加密及账单对账尚未实现。
-- Provider 总请求时限和保密搜证接收者校验已补回归；最终补丁后的完整付费原案仍未复验。角色可新增未设定的证据细节，不能以正确指认代替事实来源和扮演质量检查。
-- 错判复盘正文不公开真相，但全角色记录及实际输入仍可揭示真凶；玩家复盘与开发者审计尚未分权，需明确终局秘密公开规则。
-- 记忆取回当前为词法匹配，语义召回、模型引用核验、长局档案增长治理与多实例测试仍待完成。内置凶手初始目标已包含换药概况，药物与完整过程第二幕补发；起始知情粒度仍需按剧本设定明确。
-- 游戏页与建案页仍以 legacy DOM 适配层实现；缺少仓库内完整浏览器 E2E / CI、多局真实模型评测、负载及全面无障碍验收。
-- 已识别的构建工具依赖公告、备份恢复与公网费用滥用防护仍需单独处理，不能视为生产就绪。
-
-## 项目文档
-
-- [需求分析](docs/剧本杀-需求分析文档.md)
-- [系统设计](docs/剧本杀-系统设计文档.md)
-- [UI/UX 设计稿](docs/剧镜-UI-UX设计稿.md)
-- [工程视角评估文档](docs/engineering/README.md)
-- [全面检查与客观评估](docs/engineering/16-项目全面检查与客观评估.md)
-- [整改执行与逐项验收记录](docs/engineering/17-整改执行与逐项验收记录.md)
-- [日常场景真实模型验收](docs/engineering/18-日常场景真实模型验收.md)
-- [上下文与记忆评估基线](docs/engineering/19-上下文与记忆系统评估验证.md)
-- [上下文与记忆整改及完整验收](docs/engineering/20-上下文与记忆整改及完整验收.md)
-- [百次额度真实模型完整验收与客观评估](docs/engineering/21-百次额度真实模型完整验收与客观评估.md)
-- [实施方案](docs/剧本杀-实施方案.md)
-- [全流程架构图](docs/剧本杀-全流程架构图.md)
-- [知识边界隔离](docs/剧本杀-知识边界隔离.md)
-- [实现过程记录](docs/实现过程记录.md)
-- [悬疑推理 MVP 后续开发路线与跟进](docs/悬疑推理MVP-后续开发路线.md)
-
-实现过程记录按模块持续整理了设计决策、实现步骤、实际问题、解决方式、测试结果和可复用开发经验。
+公开使用和部署以本 README、[环境变量示例](backend/config/.env.example)、[工作流配置](backend/config/workflow.yaml)、[剧本 Schema](backend/resources/schema/script.schema.json)及运行后的 OpenAPI 文档为准。

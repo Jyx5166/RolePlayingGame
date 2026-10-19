@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
-from typing import Any, Awaitable, TypeVar
+from typing import Any, Awaitable, Callable, TypeVar
 
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
@@ -43,14 +43,20 @@ async def await_with_heartbeat(
     operation: Awaitable[T],
     game_id: int,
     protocol_v1: bool,
+    *, on_tick: Callable[[], Awaitable[None]] | None = None,
 ) -> T:
     task = asyncio.ensure_future(operation)
+    last_heartbeat = asyncio.get_running_loop().time()
     try:
         while True:
-            done, _ = await asyncio.wait({task}, timeout=HEARTBEAT_INTERVAL_SECONDS)
+            done, _ = await asyncio.wait({task}, timeout=0.1 if on_tick else HEARTBEAT_INTERVAL_SECONDS)
+            if on_tick:
+                await on_tick()
             if done:
                 return task.result()
-            await send_connected(ws, heartbeat_message(game_id, protocol_v1))
+            if asyncio.get_running_loop().time()-last_heartbeat>=HEARTBEAT_INTERVAL_SECONDS:
+                await send_connected(ws, heartbeat_message(game_id, protocol_v1))
+                last_heartbeat=asyncio.get_running_loop().time()
     finally:
         if not task.done():
             task.cancel()

@@ -1,0 +1,1314 @@
+{
+  "schema_version": "1.0",
+  "script_meta": {
+    "script_id": "old_house_corridor",
+    "title": "旧宅回廊",
+    "tags": [
+      "悬疑",
+      "推理",
+      "遗产"
+    ],
+    "total_stages": 3,
+    "supported_skills": [
+      "deduction"
+    ],
+    "recommended_player_role": "jiang_li",
+    "provenance": {
+      "kind": "original",
+      "creator": "Codex AI 辅助原创",
+      "source": "根据UI概念图的标题与主题创作；未引用现成剧本正文。"
+    }
+  },
+  "story_background": "姜家旧宅的修复验收与遗嘱说明安排在同一晚。宅主姜慎宣布，次日将逐件复核收藏、重新处分旧宅，引起继承人、律师、管家与修复师的不安。二十点十五分，他被发现倒在北回廊楼梯下，扶手一段松脱，众人最初以为他失足坠楼。山路因塌方封闭，警方要求五名在场者保护现场，等待道路恢复。宅内没有其他来客；长期互相隐瞒的账、遗嘱与修复旧事，现在都成了他们必须面对的疑点。",
+  "opening": {
+    "title": "开幕 · 旧宅回廊",
+    "content": "姜家旧宅的修复验收与遗嘱说明安排在同一晚。宅主姜慎宣布，次日将逐件复核收藏、重新处分旧宅，引起继承人、律师、管家与修复师的不安。二十点十五分，他被发现倒在北回廊楼梯下，扶手一段松脱，众人最初以为他失足坠楼。山路因塌方封闭，警方要求五名在场者保护现场，等待道路恢复。宅内没有其他来客；长期互相隐瞒的账、遗嘱与修复旧事，现在都成了他们必须面对的疑点。\n\n在这段故事中，你将与以下人物相遇：\n姜梨：姜慎的养女，文史专业毕业，回旧宅协助整理家族档案。\n姜峤：姜慎的侄子，经营周转困难的古玩店，长期期待旧宅财产能解决债务。\n唐棠：家族律师，负责旧宅捐赠意向与多版遗嘱的效力审查。\n孟岚：旧宅管家，服务姜家二十年，管理钥匙、门禁与日常护理。\n裴砚：旧宅修复师，负责北回廊墙面、楼梯与藏品的修复验收。\n\n这些公开身份构成了你们最初认识彼此的起点。每个人掌握的信息、经历和目标，将在各自的角色剧本中展开。请先阅读自己所扮演角色的私人剧本，再开启第一幕，逐步核对证词与线索。"
+  },
+  "roles": [
+    {
+      "role_id": "jiang_li",
+      "role_name": "姜梨",
+      "human_playable": true,
+      "public_identity": "姜慎的养女，文史专业毕业，回旧宅协助整理家族档案。",
+      "personality": "观察细，感情克制，对被质疑继承资格尤其敏感，但愿意为了事实承担代价。",
+      "hidden_goal": "查明父亲死亡并争取保存旧宅，避免自己擅自复制遗嘱被当成杀人准备。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_jiang_li_s1_1",
+              "type": "memory",
+              "content": "19:20你与父亲因旧宅处置争吵。他并非要取消你的养女身份，而是考虑把宅子捐成公共档案馆。你未经许可拍过一份旧遗嘱，照片仍在自己手机里。19:55至20:12，你与唐棠在东书房整理捐赠条款，彼此都能证明这一段行踪。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "jiang_li"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_li_s1_2",
+              "type": "fact",
+              "content": "你知道北回廊的墙面近期由裴砚修复，楼梯与扶手也在同一验收清单中。你没有看到父亲如何倒下，20:15听见孟岚呼喊后才赶到楼梯口。父亲出事前没有把最终遗嘱交给你。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "jiang_li"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_li_s1_3",
+              "type": "objective",
+              "content": "分别检查坠落现场与旧宅处置材料；说明自己与父亲的真实分歧，不把继承人的秘密等同于凶手证据。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "jiang_li"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_jiang_li_s2_1",
+              "type": "memory",
+              "content": "你想起19:40父亲对你说“房子怎么留可以谈，验收必须明算”。当时你以为他在谈修缮预算，现在意识到他可能将收藏验收和遗嘱分开。你与唐棠讨论时，裴砚曾把一只长木箱从门外推向北回廊，你不知道箱内是什么。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "jiang_li"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_li_s2_2",
+              "type": "fact",
+              "content": "你手机上的遗嘱照片有自动上传时间19:28，早于死亡；照片记录的是旧版，不足以证明后来谁会继承。你担心公开照片被追责，但删掉照片会破坏调查。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "jiang_li"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_li_s2_3",
+              "type": "objective",
+              "content": "公开自己的遗嘱照片和时间，核对修复工具如何进入北回廊；把父亲最后的工作安排与继承争吵分开。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "jiang_li"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_jiang_li_s3_1",
+              "type": "memory",
+              "content": "你愿意在警方到来后放弃以旧遗嘱优势争夺房产。父亲真正留下的要求是核对家族收藏是否应当归还，未必能让任何继承人获利。你希望孟岚也能说明她藏过什么，而不是把她的沉默简单当成杀人。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "jiang_li"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_li_s3_2",
+              "type": "fact",
+              "content": "你可以交出自己的手机与东书房行踪作核对；对其他人是否触碰武器，只能依据实际获得的线索。最后指认应同时解释上层回廊的异常和楼梯下的场景。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "jiang_li"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_li_s3_3",
+              "type": "objective",
+              "content": "把上层现场、修复工具与连续行动资料连接成证据链，检验最强替代嫌疑是否具有同样的行动窗口。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "jiang_li"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "jiang_qiao",
+      "role_name": "姜峤",
+      "human_playable": true,
+      "public_identity": "姜慎的侄子，经营周转困难的古玩店，长期期待旧宅财产能解决债务。",
+      "personality": "反应快，善辩，遇到经济问题容易虚张声势；对家族感情又并非全无真心。",
+      "hidden_goal": "避免债务与私翻文件曝光，同时找出真正凶手，使自己不因继承动机承担谋杀罪。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s1_1",
+              "type": "memory",
+              "content": "你欠了一笔近期到期的债，19:35向叔父索要资助遭拒，气话是“你死后房子总要有人接”。20:01你溜进南侧档案房找抵押文件，直到20:13才出来，随后在院井旁洗去手上的红色印泥。你没有去北回廊，但这段时间无人全程陪伴。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "jiang_qiao"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s1_2",
+              "type": "fact",
+              "content": "你翻文件使用的是档案房红印泥，夹走一张尚未签署的产权询价页，页上有你自己的指印。你知道裴砚与叔父曾争论一件古董，但没有听清内容。你确有继承动机，因此需要物证而非只靠否认。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "jiang_qiao"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s1_3",
+              "type": "objective",
+              "content": "核对南侧档案房和楼梯现场，说明红色手印来源；尽量保住债务隐私，但不要编造其他人作案。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "jiang_qiao"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s2_1",
+              "type": "memory",
+              "content": "回忆翻档案的过程，你在20:08听到北侧一声闷响，以为是修复搬动家具。你当时站在南档案房内，声音无法确定来自哪层或何种物体。你注意到叔父的最新财产条款旁写了“收藏复核后生效”，因此所谓巨额现成遗产可能并不存在。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "jiang_qiao"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s2_2",
+              "type": "fact",
+              "content": "你今天穿的是黑色橡胶底皮鞋，进宅时被要求踩了防潮检验纸，留下足底样本。你没有修复工具领用资格，但管家知道你偷翻文件，可能会为了自保质疑你。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "jiang_qiao"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s2_3",
+              "type": "objective",
+              "content": "交出带红印泥的纸页并接受鞋底对照；说明自己听到的声音只是观察，避免把它加工成目击证词。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "jiang_qiao"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s3_1",
+              "type": "memory",
+              "content": "你决定认下债务和私翻产权材料。即便最终证明不是凶手，你也无权继续藏走文件。你担心修复师把你的气话和无陪伴时间拼成故事，却没有提供真正的致死物证。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "jiang_qiao"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s3_2",
+              "type": "fact",
+              "content": "你身上的红色污点可以同档案房印泥比对，不能凭颜色称作死者血迹。你愿意接受门禁、物品借用与后续录像核对，并要求任何指控说明你如何接触那件致伤物。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "jiang_qiao"
+            },
+            {
+              "block_id": "old_house_corridor_jiang_qiao_s3_3",
+              "type": "objective",
+              "content": "以可验证材料解释自己的最大疑点；最终投票优先选择完整行动证据，不能为了摆脱嫌疑随意指认。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "jiang_qiao"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "tang_tang",
+      "role_name": "唐棠",
+      "human_playable": true,
+      "public_identity": "家族律师，负责旧宅捐赠意向与多版遗嘱的效力审查。",
+      "personality": "说话有边界，重视文书证据，习惯保护委托人；面对利益冲突会过分谨慎。",
+      "hidden_goal": "查清死亡并保全文书，同时说明你与旧宅潜在买方的关系，避免利益冲突被误判为杀人。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_tang_tang_s1_1",
+              "type": "memory",
+              "content": "你私下替旧宅意向买方咨询过产权，收取费用，尚未向姜慎披露。今天19:50姜慎要求你撤回一份旧售房意向，重新拟定捐赠草案。19:55至20:12你与姜梨都在东书房，她复制遗嘱时你并不知情。20:13你应孟岚招呼，在侧楼梯平台工具间按普通保险归还流程，只核长木箱外观后共同贴封签；20:15才听到发现死亡的呼喊。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "tang_tang"
+            },
+            {
+              "block_id": "old_house_corridor_tang_tang_s1_2",
+              "type": "fact",
+              "content": "旧宅出售没有完成，继承也不能在死亡后直接跳过法定程序变成现金。你带来的文件夹只装纸质材料与印章，没有重物。北回廊的验收是裴砚负责的专业工作，不是你经手。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "tang_tang"
+            },
+            {
+              "block_id": "old_house_corridor_tang_tang_s1_3",
+              "type": "objective",
+              "content": "保全所有文书版本，澄清继承与出售状态；将自己的利益冲突如实解释，协助建立每个人的可核实时间线。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "tang_tang"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_tang_tang_s2_1",
+              "type": "memory",
+              "content": "你想起姜慎当晚要求在验收签字页加上“原件编号与历次照片一致”的条款，裴砚随即建议延后到明天。姜慎拒绝了。你当时认为是合同严谨性的争论，并不知道收藏是否被调包。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "tang_tang"
+            },
+            {
+              "block_id": "old_house_corridor_tang_tang_s2_2",
+              "type": "fact",
+              "content": "姜慎未签的新草案要求归还来源不清的藏品，和继承人分配无直接关系。你能解释条款的用途，不能把法律文本当成凶手指认。买方给你的报酬有转账记录，应该一并保留。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "tang_tang"
+            },
+            {
+              "block_id": "old_house_corridor_tang_tang_s2_3",
+              "type": "objective",
+              "content": "比较继承文件与验收条款，追问谁最害怕编号复核；依据已获得的材料区分经济动机与实际接触凶器。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "tang_tang"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_tang_tang_s3_1",
+              "type": "memory",
+              "content": "你决定公开双重收费，愿意退出后续代理。你确认今天随身记录仪只覆盖东书房会谈，不能替院落或北回廊提供全程证明。你可以见证线索封存，但不可以凭律师身份替警方做确定的法医学结论。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "tang_tang"
+            },
+            {
+              "block_id": "old_house_corridor_tang_tang_s3_2",
+              "type": "fact",
+              "content": "你最擅长核对借用签字、委托范围与文件版本。裴砚若声称任何人都能领用修复配重，应当要求拿出交接材料；若有人说录像“必然存在”，也要看真实导出的片段。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "tang_tang"
+            },
+            {
+              "block_id": "old_house_corridor_tang_tang_s3_3",
+              "type": "objective",
+              "content": "主持证据版本与保管路径核对；提出需要被最终解释排除的侄子、管家等替代嫌疑。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "tang_tang"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "meng_lan",
+      "role_name": "孟岚",
+      "human_playable": true,
+      "public_identity": "旧宅管家，服务姜家二十年，管理钥匙、门禁与日常护理。",
+      "personality": "耐心却防备，记人情比记规则更牢；为了保护亡故女主人会隐瞒旧事。",
+      "hidden_goal": "找出杀害姜慎的人，保住女主人留下的家族档案，并承认自己藏匿过一页藏品来历记录。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_meng_lan_s1_1",
+              "type": "memory",
+              "content": "19:45你把一页写有早年收购争议的原始账页从北资料柜移入自己的护理袋，怕旧宅捐赠暴露亡故女主人当年的错误。20:00至20:11你在后厨房备姜慎的热水，20:12经过北回廊门口看见裴砚的长木箱，20:13在侧楼梯平台工具间与唐棠按普通保险归还流程，仅核箱外观并贴封签；当时还不知道发生死亡。20:15下楼时发现姜慎倒在楼梯下。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "meng_lan"
+            },
+            {
+              "block_id": "old_house_corridor_meng_lan_s1_2",
+              "type": "fact",
+              "content": "你有普通门钥匙，可开资料柜和档案房，但修复箱的领用由保险登记管理。下午你清理过楼梯，扶手当时稳定；你没有专业资格判断一处后来松脱的接头为何改变。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "meng_lan"
+            },
+            {
+              "block_id": "old_house_corridor_meng_lan_s1_3",
+              "type": "objective",
+              "content": "检查钥匙与楼梯日常状态；如实说明发现尸体的顺序，避免为掩盖旧账而改动当晚行踪。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "meng_lan"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_meng_lan_s2_1",
+              "type": "memory",
+              "content": "你想起20:12在北回廊门口见裴砚正合上箱盖，他说“先别让人踩新漆”，让你走侧楼梯。你因此没走到楼梯上层，只能证明这句话与箱子，不能说自己看到他杀人。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "meng_lan"
+            },
+            {
+              "block_id": "old_house_corridor_meng_lan_s2_2",
+              "type": "fact",
+              "content": "护理袋中的旧账页与今天的致死行为无直接关系。你保存它是为了家族名誉，不是与裴砚共谋；但若拒绝交出，容易让调查误以为你阻挠来源审计。你可以说明楼梯白天确实牢固。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "meng_lan"
+            },
+            {
+              "block_id": "old_house_corridor_meng_lan_s2_3",
+              "type": "objective",
+              "content": "交出藏匿的旧账页，解释被支开的路线；用下午记录与当晚现场对照判断事故说法。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "meng_lan"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_meng_lan_s3_1",
+              "type": "memory",
+              "content": "你决定把女主人的旧账完整交还。你回忆20:15呼喊后五名在场者都来到楼梯口，你没有见任何人后来靠近北资料柜；因此自己藏页的旧事不能替别人解释后续设备或工具记录。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "meng_lan"
+            },
+            {
+              "block_id": "old_house_corridor_meng_lan_s3_2",
+              "type": "fact",
+              "content": "旧宅保安摄像采用本地循环卡，即使网络故障也继续录像；你知道保管流程，却无法在拿到存储卡前预知画面。北回廊摄像修复完后一直由保险封签保护。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "meng_lan"
+            },
+            {
+              "block_id": "old_house_corridor_meng_lan_s3_3",
+              "type": "objective",
+              "content": "帮助核对录像与工具的封存路径；给出自己确实看到的动作和位置，支持证据链闭合。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "meng_lan"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "pei_yan",
+      "role_name": "裴砚",
+      "human_playable": true,
+      "public_identity": "旧宅修复师，负责北回廊墙面、楼梯与藏品的修复验收。",
+      "personality": "礼貌且自负，习惯用专业差异掌控谈话；在编号与照片问题上尤其紧张。",
+      "hidden_goal": "掩盖你替换藏品并杀害姜慎的行为，让死亡被接受为失足，或使侄子的债务动机成为主要解释。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_pei_yan_s1_1",
+              "type": "memory",
+              "content": "你是作案者。你在修复期间把一件原藏品换成复制品并出售原件，姜慎决定逐件比对早年照片，会让你身败名裂。20:04你以验收为名请他来到北回廊，20:08用自己领用的黄铜修复配重锤击打他的头部，20:10把失去反应的他拖到楼梯边推下，再松开一段扶手接头，伪装失足。你将配重放回长木箱。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "pei_yan"
+            },
+            {
+              "block_id": "old_house_corridor_pei_yan_s1_2",
+              "type": "fact",
+              "content": "你领用配重时使用个人签名；配重底部有粘毡垫，你只擦拭了外侧，可能没处理垫下缝隙。你知道侄子欠债且威胁过姜慎，适合作为转移怀疑的对象，但游戏中你不能真的销毁已经封存或搜出的证据。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "pei_yan"
+            },
+            {
+              "block_id": "old_house_corridor_pei_yan_s1_3",
+              "type": "objective",
+              "content": "维持扶手老化造成意外的说法，必要时强调侄子的争吵；回应现场问题时不要虚构隐藏嫌疑人。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "pei_yan"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_pei_yan_s2_1",
+              "type": "memory",
+              "content": "你记得拖动姜慎时靴底蹭过一小片尚未固化的蓝绿色修复漆，搬箱子也经过同处。你当时没有检查尸体衣背或楼梯上的痕迹。你可以试图解释痕迹为工作接触，但不应声称已看过尚未公开的照片。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "pei_yan"
+            },
+            {
+              "block_id": "old_house_corridor_pei_yan_s2_2",
+              "type": "fact",
+              "content": "北回廊摄像因网络损坏停止远程显示，你误以为摄像本身没有工作。你没有拆开保险封签里的本地卡，也不知道它是否记录到你。你不能把摄像真正保存的内容读入自己的角色知识。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "pei_yan"
+            },
+            {
+              "block_id": "old_house_corridor_pei_yan_s2_3",
+              "type": "objective",
+              "content": "解释长木箱、配重和新漆的合理工作用途；对确实被公开的物证回应，继续试图把失足与债务嫌疑连起来。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "pei_yan"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "old_house_corridor_pei_yan_s3_1",
+              "type": "memory",
+              "content": "你想到下午培训时孟岚说过：本地录像与宅内网络独立，只在取卡后恢复查看。你的赌注可能失败。你保留着原件出售付款单，买方不是当晚在场人物；对方只参与过去交易，不是本次谋杀的隐藏协犯。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "pei_yan"
+            },
+            {
+              "block_id": "old_house_corridor_pei_yan_s3_2",
+              "type": "fact",
+              "content": "你知道自己犯下杀人和调包，但只能知道自己曾采取的行动，以及当前收到的证据。倘若画面确认你动手，专业解释无法使凶器、拖动与松扶手变成事故。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "pei_yan"
+            },
+            {
+              "block_id": "old_house_corridor_pei_yan_s3_3",
+              "type": "objective",
+              "content": "面对最终质询选择抵赖或承认；不要替其他角色补写回忆，不抢在最终指认前替DM揭底。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "pei_yan"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "stage_flow": {
+    "stage_1": {
+      "title": "第一幕 · 楼梯下的人",
+      "public_briefing": "姜慎倒在北楼梯下，一段扶手松脱。五名在场者已经停止宅内修复，警方要求保全现场并核对当晚行踪。事故、冲突与谋杀都只是待检验的解释，遗嘱争议也需要和实际行动分开。",
+      "public_tasks": [
+        "记录尸体位置、上层回廊与扶手状态。",
+        "核对争吵、会谈、翻档案和修复验收的时间。",
+        "明确哪些继承利益已经成立，哪些仍只是猜测。"
+      ],
+      "personal_tasks": {
+        "jiang_li": "分别检查坠落现场与旧宅处置材料；说明自己与父亲的真实分歧，不把继承人的秘密等同于凶手证据。",
+        "jiang_qiao": "核对南侧档案房和楼梯现场，说明红色手印来源；尽量保住债务隐私，但不要编造其他人作案。",
+        "tang_tang": "保全所有文书版本，澄清继承与出售状态；将自己的利益冲突如实解释，协助建立每个人的可核实时间线。",
+        "meng_lan": "检查钥匙与楼梯日常状态；如实说明发现尸体的顺序，避免为掩盖旧账而改动当晚行踪。",
+        "pei_yan": "维持扶手老化造成意外的说法，必要时强调侄子的争吵；回应现场问题时不要虚构隐藏嫌疑人。"
+      },
+      "personal_task_checks": {
+        "jiang_li": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "jiang_qiao": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "tang_tang": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "meng_lan": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "pei_yan": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 720,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 20,
+          "interval_seconds": 45,
+          "max_turns": 3,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第一幕 · 楼梯下的人 · 调查结算",
+        "metric": {
+          "key": "investigation_contribution",
+          "label": "调查贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场取证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          },
+          {
+            "label": "证据展示",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 2,
+            "max_points": 6
+          },
+          {
+            "label": "公开核对",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          }
+        ]
+      },
+      "dm_hosting": "旧宅里的每个房间都有一段不同的行踪，楼梯口也只展示了最后的场景。请把已取得的照片和陈述并列，标明哪些能够互证，哪些仍待解释。"
+    },
+    "stage_2": {
+      "title": "第二幕 · 被修过的痕迹",
+      "public_briefing": "调查开放修复工具、当日清洁记录和遗嘱原件。五人需要把“最近修过”与“事故前已经失效”区分开，核对上层回廊留下的接触痕迹，并重新评估每个人隐瞒的事。",
+      "public_tasks": [
+        "检查上层异常痕迹与楼梯下场景能否同属一次自然坠落。",
+        "核对修复工具、借用签字与现场形状。",
+        "解释红印泥、旧账和遗嘱分别支持什么结论，不能支持什么结论。"
+      ],
+      "personal_tasks": {
+        "jiang_li": "公开自己的遗嘱照片和时间，核对修复工具如何进入北回廊；把父亲最后的工作安排与继承争吵分开。",
+        "jiang_qiao": "交出带红印泥的纸页并接受鞋底对照；说明自己听到的声音只是观察，避免把它加工成目击证词。",
+        "tang_tang": "比较继承文件与验收条款，追问谁最害怕编号复核；依据已获得的材料区分经济动机与实际接触凶器。",
+        "meng_lan": "交出藏匿的旧账页，解释被支开的路线；用下午记录与当晚现场对照判断事故说法。",
+        "pei_yan": "解释长木箱、配重和新漆的合理工作用途；对确实被公开的物证回应，继续试图把失足与债务嫌疑连起来。"
+      },
+      "personal_task_checks": {
+        "jiang_li": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "jiang_qiao": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "tang_tang": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "meng_lan": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "pei_yan": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 840,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 20,
+          "interval_seconds": 45,
+          "max_turns": 3,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第二幕 · 被修过的痕迹 · 调查结算",
+        "metric": {
+          "key": "investigation_contribution",
+          "label": "调查贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场取证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "证据展示",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 2,
+            "max_points": 6
+          },
+          {
+            "label": "公开核对",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          }
+        ]
+      },
+      "dm_hosting": "新漆、旧纸和工具各自留下了痕迹。请用已经掌握的材料核对它们的来处，让解释同时容得下上层回廊与楼梯下的场景。"
+    },
+    "stage_3": {
+      "title": "第三幕 · 走廊的另一面",
+      "public_briefing": "道路抢修仍在继续，保险封签内的本地摄像存储与收藏验收资料已具备检查条件。请完成最后一轮取证：死亡究竟从楼梯开始，还是有人把楼梯当成了结尾？最终判断要同时解释工具、动作、现场与动机。",
+      "public_tasks": [
+        "核对本地画面、工具保管与修复记录是否互相印证。",
+        "排除债务侄子或藏页管家作为最强替代嫌疑。",
+        "指认作案者，给出从袭击到现场伪装的完整顺序。"
+      ],
+      "personal_tasks": {
+        "jiang_li": "把上层现场、修复工具与连续行动资料连接成证据链，检验最强替代嫌疑是否具有同样的行动窗口。",
+        "jiang_qiao": "以可验证材料解释自己的最大疑点；最终投票优先选择完整行动证据，不能为了摆脱嫌疑随意指认。",
+        "tang_tang": "主持证据版本与保管路径核对；提出需要被最终解释排除的侄子、管家等替代嫌疑。",
+        "meng_lan": "帮助核对录像与工具的封存路径；给出自己确实看到的动作和位置，支持证据链闭合。",
+        "pei_yan": "面对最终质询选择抵赖或承认；不要替其他角色补写回忆，不抢在最终指认前替DM揭底。"
+      },
+      "personal_task_checks": {
+        "jiang_li": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "jiang_qiao": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "tang_tang": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "meng_lan": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ],
+        "pei_yan": [
+          {
+            "label": "本幕完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "本幕参与公开核对",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 900,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 20,
+          "interval_seconds": 45,
+          "max_turns": 3,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 2,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第三幕 · 走廊的另一面 · 调查结算",
+        "metric": {
+          "key": "investigation_contribution",
+          "label": "调查贡献",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "现场取证",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          },
+          {
+            "label": "证据展示",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 2,
+            "max_points": 6
+          },
+          {
+            "label": "公开核对",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          }
+        ],
+        "final_decision": {
+          "prompt": "请根据可核实的证据，最终指认《旧宅回廊》的作案者。",
+          "eligible_role_ids": [
+            "jiang_li",
+            "jiang_qiao",
+            "tang_tang",
+            "meng_lan",
+            "pei_yan"
+          ],
+          "correct_verdict": "指认成立：北回廊的原始影像与修复配重物证相互印证，楼梯事故是事后伪装。DM 将揭示真实袭击、拖动与遗产争议的区别。",
+          "incorrect_verdict": "你们指认了{selected_role_name}，但这一判断与案件的关键物证冲突。调查以错误指认结束；现场和证物继续封存，真实作案者的责任尚未被正确确认。",
+          "reveal_truth_on_correct": true
+        }
+      },
+      "dm_hosting": "继承与验收都还没有结束，北回廊却已经需要一个答案。请展示你实际获得的线索，回应最关键的矛盾，再作出最终指认。"
+    }
+  },
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [
+        4,
+        5,
+        4
+      ],
+      "search_targets": [
+        {
+          "id": "house_stairs",
+          "name": "北楼梯与扶手",
+          "description": "查看发现位置、扶手接头和楼梯表面。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "house_stair_scene",
+              "content": "现场照片显示姜慎倒在楼梯下，扶手一处接头松脱，但螺纹末端没有长期磨耗或锈蚀，周围有新鲜工具划痕。楼梯踏面没有大范围连续滑落印痕。仅凭这些观察不能确定完整死因，但“自然老化”并非无需检验的解释。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_upper",
+          "name": "北回廊上层地面",
+          "description": "不移动证物，记录上层地面与墙边接触痕迹。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "house_upper_marks",
+              "content": "北回廊上层墙边有一小片暗红凝结痕与带棱角的擦碰点，墙边到楼梯口形成断续拖擦带；姜慎衣背见同色摩擦印。痕迹位于楼梯上方而非发现落点，说明仅检查楼梯下会遗漏一个重要接触位置。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_agenda",
+          "name": "晚间会谈安排",
+          "description": "核对访客名单、预约与可互证时段。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "house_schedule",
+              "content": "宅内门禁与当晚日程一致：只有姜梨、姜峤、唐棠、孟岚、裴砚五人在场。姜梨与唐棠19:55至20:12在东书房会谈，录音连续。20:02姜慎在工作便笺上写“20:04北回廊与裴验收”。姜峤19:35曾索要资助并说过气话，但没有记录证明他进入北回廊。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_inheritance",
+          "name": "旧遗嘱与债务材料",
+          "description": "厘清财产处置是否已经完成以及各人的压力。",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "house_will_status",
+              "content": "旧遗嘱把部分收藏分给姜梨与姜峤，新捐赠草案尚未签署，出售意向已经撤回，死亡并不能使房产立即变成现金。姜峤的债务催款短信真实存在，唐棠替买方收费也有转账记录。这些材料提供利益压力，不记录致死行动。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_weightbox",
+          "name": "修复长木箱",
+          "description": "按照借用登记检查工具、外观和保护垫。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "house_weight_trace",
+              "content": "长木箱内的黄铜修复配重为长方体，边角与姜慎头部照片中的棱角创口形状相近；外侧被擦拭，底部毡垫与缝隙仍有暗红组织样残留，并粘有姜慎围巾的白色纤维。残留与物体形状支持近距离接触，不能只靠“红色”认定血液来源。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "house_tool_custody",
+              "content": "保险工具登记表显示该配重及长木箱当晚由裴砚19:30签名领用，禁止转借；北工具间出入口记录与借用照片显示20:13由他本人送回，配重没有登记给其他四人。箱子回到侧楼梯平台工具间后，20:13孟岚与刚结束书房会谈的唐棠按普通保险归还流程，仅核箱外观后共同贴封签，没有打开清点；此时还未发现死亡。归还与封签照片连续。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_cleaning",
+          "name": "下午清洁与验收照片",
+          "description": "比对事故前后的扶手、地面和未固化修复漆。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "house_rail_before",
+              "content": "当日17:50清洁照片完整拍到同一扶手接头：螺丝在位，扶手固定。下午验收页写“扶手承载复核通过”，由裴砚签名。20:15接头出现新工具痕，表面没有断裂承载损伤；需解释为什么“已通过验收”的接头后来被旋松。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "house_paint_transfer",
+              "content": "北回廊当晚只在墙边托盘使用蓝绿色未固化漆。姜慎衣背与拖擦带均带此漆，裴砚工作靴的右后底也有相同新漆与拖向楼梯的鞋纹；登记的姜峤橡胶底样本为横纹，不匹配拖擦带旁的菱形工作靴纹。漆与鞋纹支持行动路径，仍需其他身份资料交叉印证。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_southarchive",
+          "name": "南档案房与护理袋",
+          "description": "检查红印泥、带走的文件与藏品旧账。",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "house_other_secrets",
+              "content": "南档案房红印泥与姜峤纸页、衣袖污点的颜色、印章图案对应，纸页是未签的产权询价稿。孟岚护理袋内藏的是早年藏品来源账页，纸张旧折痕与装订孔吻合，没有当晚北回廊新漆。两人的隐瞒真实存在，但没有因此形成与修复配重或拖动的连接。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_localvideo",
+          "name": "北回廊本地存储卡",
+          "description": "按保险封签流程读取摄像设备的原始本地记录。",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "house_video_action",
+              "content": "保险封签完好的本地卡记录连续，网络故障只影响远程显示。20:04姜慎与裴砚进入北回廊；20:08画面清楚显示裴砚从长木箱取出黄铜配重，击中姜慎头部；20:10他拖动姜慎到楼梯口并推下，随后对扶手接头使用工具。画面可辨裴砚面部，其他四人未进入该区域。",
+              "exclusivity": "shared"
+            },
+            {
+              "id": "house_video_departure",
+              "content": "同卡后续画面显示20:12裴砚合上木箱，向从厨房方向来的孟岚示意改走侧楼梯，20:13独自带箱离开；20:15孟岚从楼下发现姜慎并呼喊。画面与工具归还流水、发现顺序一致，覆盖袭击至发现之间的空档。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_collectionaudit",
+          "name": "藏品编号与出售记录",
+          "description": "核对修复验收照片、原件特征与实际付款。",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "house_swap_audit",
+              "content": "原藏品早年照片有独特窑裂，当前验收物却没有；裴砚的修复记录声称只做表面清理，没有改变器型的依据。其个人交易夹中有原藏品出售照片，窑裂与旧照片吻合，收款账户属于裴砚。姜慎的验收批注要求次日逐件复核编号，直接威胁调包获利。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "house_doorbackup",
+          "name": "侧门与档案房流水",
+          "description": "用完整门禁流水复核非核心嫌疑人的行动。",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "house_alt_check",
+              "content": "南档案房走廊摄像记录姜峤20:01进去，20:13出来并在院井洗红印泥，期间未往北回廊。厨房门禁和走廊画面显示孟岚20:00至20:11备热水，20:12走到北入口后改走侧楼梯。结合东书房会谈记录，其余四人均未出现在20:08至20:10袭击与拖动位置。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 3,
+      "role_available_from_stage": {
+        "jiang_li": 1,
+        "jiang_qiao": 1,
+        "tang_tang": 1,
+        "meng_lan": 1,
+        "pei_yan": 1
+      }
+    }
+  },
+  "truth": {
+    "culprit_role_id": "pei_yan",
+    "full_story": "裴砚利用修复项目把原藏品换成复制品，私售原件。姜慎原本要讨论旧宅捐赠、撤回出售意向，同时坚持逐件复核编号和历史照片；裴砚知道验收会揭穿自己。20:04他以验收为名把姜慎带到北回廊，20:08从自己领用的长木箱取出黄铜修复配重，击打姜慎头部造成致命袭击，20:10将失去反应的姜慎拖到楼梯口推下，再旋松一处扶手接头，企图把谋杀伪装为失足坠楼。20:12他支开经过的孟岚，20:13把箱子送回侧楼梯平台工具间。孟岚与唐棠不知死亡，按普通保险归还流程只核外观后贴封签，孟岚再下楼于20:15发现尸体。这里不存在失准钟表或复杂暗道，所有记录用同一设备校时。\n裴砚擦了配重外侧，却漏掉底部毡垫缝隙中的残留与围巾纤维。上层回廊的痕迹和新漆转移先推翻“只在楼梯下发生事故”的完整性；下午扶手验收与新划痕指向事后伪装。最后，本地摄像卡清楚记录裴砚本人取配重袭击、拖动和松扶手，这是区别于口供的独立身份链。借用照片、配重残留与归还流水提供另一条工具接触链；两条相互印证，不依赖裴砚或其他角色承认。网络损坏没有停止本地录像，凶手误判了设备。\n姜峤确实负债、说过气话并私翻材料，红污点却来自印泥，走廊录像覆盖他在南档案房的关键时段。孟岚藏页保护已故女主人，姜梨私拍旧遗嘱，唐棠存在利益冲突；这些行为都应分别追责，却没有参与当晚袭击。正确结局是指认裴砚，保全调包与杀人证据、等待警方；错误结局是用遗产动机替代行动证据，把责任推给无辜者。",
+    "complete_timeline": {
+      "前一个月": "裴砚在修复期间调换原藏品并私售。",
+      "当日17:50": "清洁照片与验收表证明北扶手当时固定，裴砚签名确认。",
+      "19:20": "姜梨与姜慎争论旧宅捐赠，并于19:28上传旧遗嘱照片。",
+      "19:30": "裴砚领用配重和长木箱，签字与照片留存。",
+      "19:35": "姜峤索要资助遭拒，留下威胁气话。",
+      "19:45": "孟岚为家族名誉藏起早年藏品来源账页。",
+      "19:55—20:12": "姜梨和唐棠在东书房讨论草案，记录连续。",
+      "20:01—20:13": "姜峤进入南档案房翻产权材料，随后在院井洗掉印泥。",
+      "20:04": "姜慎按验收便笺与裴砚进入北回廊。",
+      "20:08": "裴砚用黄铜修复配重击打姜慎。",
+      "20:10": "裴砚把人拖到楼梯口推下，并松扶手伪造失足。",
+      "20:12—20:13": "裴砚支开孟岚，送回工具箱；孟岚与唐棠按普通保险归还流程只核外观后贴封签，随后孟岚下楼。",
+      "20:15": "孟岚发现姜慎，五人停止作业并保护现场。"
+    },
+    "role_arcs": {
+      "jiang_li": "为保留旧宅与父亲争吵，又私拍旧遗嘱；在查清父亲重视藏品来源后，把事实和公益处置放在个人继承利益之前。",
+      "jiang_qiao": "债务和气话使他成为最强替代嫌疑，翻档案与洗印泥令他迟疑；最终通过连续行动材料与现场鞋纹排除，承担债务和偷文件责任。",
+      "tang_tang": "双重收费造成利益冲突，法律措辞容易被当成掩护；公开收费后协助核对版本与证据保管，退出后续代理。",
+      "meng_lan": "为已故女主人藏页，被凶手用新漆理由支开；承认旧事并提供真实发现顺序，帮助核对工具封存和摄像流程。",
+      "pei_yan": "调包盗售被验收威胁，利用专业身份谋杀并伪装事故；误以为网络失效等于无录像，最终被原始画面与凶器保管证据独立印证。"
+    },
+    "evidence_chain": [
+      {
+        "conclusion": "仅以扶手松脱解释自然坠楼不成立，现场存在上层接触和事后工具改动。",
+        "clue_ids": [
+          "house_stair_scene",
+          "house_upper_marks",
+          "house_rail_before"
+        ],
+        "reasoning": "上层凝结痕与拖擦带早于发现落点的叙述，下午固定扶手与新旋松痕相矛盾；需要调查人为袭击和伪装而非直接把意外当结论。"
+      },
+      {
+        "conclusion": "袭击工具是裴砚领用的黄铜配重，实物痕迹与保管路径独立支持接触。",
+        "clue_ids": [
+          "house_weight_trace",
+          "house_tool_custody",
+          "house_paint_transfer"
+        ],
+        "reasoning": "致伤形状、垫内残留和围巾纤维支持配重接触，签字照片确认工具归属，新漆和鞋纹连接上层拖动路径；这些物证不能单凭颜色作血液鉴定，需与行动录像印证。"
+      },
+      {
+        "conclusion": "裴砚本人袭击、拖动并松扶手，原始录像与实物工具两路证据闭合身份。",
+        "clue_ids": [
+          "house_video_action",
+          "house_video_departure",
+          "house_tool_custody",
+          "house_weight_trace"
+        ],
+        "reasoning": "面部清晰的连续画面直接证明实际动作，归还流水与垫内残留从独立实物保管路径印证，排除只接触过工具却未作案的解释。"
+      },
+      {
+        "conclusion": "姜峤的债务与管家的藏页不是本次致死行动，最强替代嫌疑被客观行动记录排除。",
+        "clue_ids": [
+          "house_alt_check",
+          "house_other_secrets",
+          "house_schedule",
+          "house_paint_transfer"
+        ],
+        "reasoning": "非核心角色被连续画面定位在其他区域，红污点与印泥相符，侄子鞋纹不匹配拖擦路径；继承利益只给动机，不能覆盖缺失的作案行动。"
+      },
+      {
+        "conclusion": "作案动机是避免原藏品调包被验收揭露，而非继承争议本身。",
+        "clue_ids": [
+          "house_swap_audit",
+          "house_will_status"
+        ],
+        "reasoning": "原件特征、出售照片与实际收款相互对应，次日编号验收将揭穿裴砚；遗产尚未兑现与房产出售撤回，反而说明不应只靠继承大小投票。"
+      }
+    ]
+  },
+  "hard_constraints": []
+}

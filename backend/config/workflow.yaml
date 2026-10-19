@@ -1,0 +1,20 @@
+# 新版本游戏启动时读取。已有游戏保存自己的配置快照；修改本文件不会改变正在运行的旧局。
+version: 2
+transport: native_tools
+max_model_requests_per_role_turn: 4
+max_tool_calls_per_role_turn: 3
+max_rounds_per_role_turn: 3
+max_public_responders: 3
+max_graph_steps: 32
+concurrency: 1
+automatic_retries: 0
+dm_reads_private_dialogue: false
+context_strategy: archive_retrieval
+memory_index_items: 12
+memory_chunk_chars: 1500
+lease_seconds: 20
+heartbeat_seconds: 5
+reconnect_grace_seconds: 30
+model_hosting: true
+# DeepSeek 原生工具回合优先采用低延迟执行；旧局保留创建时配置。
+reasoning_effort: none

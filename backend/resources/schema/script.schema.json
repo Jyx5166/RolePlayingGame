@@ -1,0 +1,1406 @@
+{
+  "$defs": {
+    "ActivityCountCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "activity_count",
+          "title": "Type",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Label",
+          "type": "string"
+        },
+        "event_types": {
+          "items": {
+            "enum": [
+              "search",
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response",
+              "private_speech",
+              "private_response",
+              "autonomous_private_speech",
+              "autonomous_private_response",
+              "clue_disclosure"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Event Types",
+          "type": "array"
+        },
+        "minimum": {
+          "minimum": 1,
+          "title": "Minimum",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "label",
+        "event_types",
+        "minimum"
+      ],
+      "title": "ActivityCountCheck",
+      "type": "object"
+    },
+    "Autonomy": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "initial_delay_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "default": 12,
+          "ge": 0,
+          "title": "Initial Delay Seconds"
+        },
+        "interval_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "default": 35,
+          "ge": 1,
+          "title": "Interval Seconds"
+        },
+        "max_turns": {
+          "default": 6,
+          "minimum": 0,
+          "title": "Max Turns",
+          "type": "integer"
+        },
+        "allow_private": {
+          "default": true,
+          "title": "Allow Private",
+          "type": "boolean"
+        }
+      },
+      "title": "Autonomy",
+      "type": "object"
+    },
+    "Clue": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Id",
+          "type": "string"
+        },
+        "content": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Content",
+          "type": "string"
+        },
+        "exclusivity": {
+          "default": "shared",
+          "enum": [
+            "shared",
+            "exclusive"
+          ],
+          "title": "Exclusivity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "content"
+      ],
+      "title": "Clue",
+      "type": "object"
+    },
+    "ClueDisclosureCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "clue_disclosure",
+          "title": "Type",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Label",
+          "type": "string"
+        },
+        "channel": {
+          "enum": [
+            "public",
+            "private"
+          ],
+          "title": "Channel",
+          "type": "string"
+        },
+        "disclosure_mode": {
+          "default": "truthful",
+          "enum": [
+            "truthful",
+            "distorted"
+          ],
+          "title": "Disclosure Mode",
+          "type": "string"
+        },
+        "clue_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clue Id"
+        },
+        "target_role_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Role Id"
+        },
+        "new_public": {
+          "default": false,
+          "title": "New Public",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "label",
+        "channel"
+      ],
+      "title": "ClueDisclosureCheck",
+      "type": "object"
+    },
+    "EndConditions": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "all",
+          "enum": [
+            "all",
+            "any"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "actor_scope": {
+          "default": "human",
+          "enum": [
+            "human",
+            "all"
+          ],
+          "title": "Actor Scope",
+          "type": "string"
+        },
+        "auto_end": {
+          "const": false,
+          "default": false,
+          "title": "Auto End",
+          "type": "boolean"
+        },
+        "minimum_public_messages": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Minimum Public Messages",
+          "type": "integer"
+        },
+        "minimum_searches": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Minimum Searches",
+          "type": "integer"
+        },
+        "minimum_whispers": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Minimum Whispers",
+          "type": "integer"
+        }
+      },
+      "title": "EndConditions",
+      "type": "object"
+    },
+    "EvidenceStep": {
+      "additionalProperties": false,
+      "properties": {
+        "conclusion": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Conclusion",
+          "type": "string"
+        },
+        "clue_ids": {
+          "items": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Clue Ids",
+          "type": "array"
+        },
+        "reasoning": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reasoning",
+          "type": "string"
+        }
+      },
+      "required": [
+        "conclusion",
+        "clue_ids",
+        "reasoning"
+      ],
+      "title": "EvidenceStep",
+      "type": "object"
+    },
+    "FinalDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Prompt",
+          "type": "string"
+        },
+        "eligible_role_ids": {
+          "items": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Eligible Role Ids",
+          "type": "array"
+        },
+        "correct_verdict": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Correct Verdict",
+          "type": "string"
+        },
+        "incorrect_verdict": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Incorrect Verdict",
+          "type": "string"
+        },
+        "reveal_truth_on_correct": {
+          "const": true,
+          "default": true,
+          "title": "Reveal Truth On Correct",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "prompt",
+        "eligible_role_ids",
+        "correct_verdict",
+        "incorrect_verdict"
+      ],
+      "title": "FinalDecision",
+      "type": "object"
+    },
+    "HardConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "role_id": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Role Id",
+          "type": "string"
+        },
+        "until_stage": {
+          "minimum": 1,
+          "title": "Until Stage",
+          "type": "integer"
+        },
+        "keywords": {
+          "items": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Keywords",
+          "type": "array"
+        },
+        "message": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role_id",
+        "until_stage",
+        "keywords",
+        "message"
+      ],
+      "title": "HardConstraint",
+      "type": "object"
+    },
+    "InfoBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "type": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Type",
+          "type": "string"
+        },
+        "content": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Content",
+          "type": "string"
+        },
+        "visibility": {
+          "description": "读取权限。public 允许角色读取该块，但不会自动广播；self_only 仅所有者可读；dm_only 仅 DM 可读。",
+          "enum": [
+            "public",
+            "self_only",
+            "dm_only"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        },
+        "unlock_stage": {
+          "description": "最早允许读取的幕次，还受所在 stage_knowledge 幕次限制。",
+          "minimum": 1,
+          "title": "Unlock Stage",
+          "type": "integer"
+        },
+        "owner_role": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Owner Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block_id",
+        "type",
+        "content",
+        "visibility",
+        "unlock_stage",
+        "owner_role"
+      ],
+      "title": "InfoBlock",
+      "type": "object"
+    },
+    "Investigation": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_seconds": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Duration Seconds",
+          "type": "integer"
+        },
+        "enabled_actions": {
+          "items": {
+            "enum": [
+              "public_speech",
+              "search",
+              "whisper"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Enabled Actions",
+          "type": "array"
+        },
+        "allow_manual_end": {
+          "default": true,
+          "title": "Allow Manual End",
+          "type": "boolean"
+        },
+        "end_conditions": {
+          "$ref": "#/$defs/EndConditions"
+        },
+        "autonomy": {
+          "$ref": "#/$defs/Autonomy"
+        }
+      },
+      "required": [
+        "enabled_actions"
+      ],
+      "title": "Investigation",
+      "type": "object"
+    },
+    "MechanicsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "search": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SearchConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "whisper": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WhisperConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "MechanicsConfig",
+      "type": "object"
+    },
+    "Metric": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Key",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Label",
+          "type": "string"
+        },
+        "unit": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Unit",
+          "type": "string"
+        },
+        "initial": {
+          "default": 0,
+          "title": "Initial",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "unit"
+      ],
+      "title": "Metric",
+      "type": "object"
+    },
+    "Opening": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Title",
+          "type": "string"
+        },
+        "content": {
+          "description": "选角后、角色剧本和第一幕之前展示的全剧开幕；仅包含公开背景与人物关系。",
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "content"
+      ],
+      "title": "Opening",
+      "type": "object"
+    },
+    "Penalty": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        },
+        "target_stage_offset": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Target Stage Offset",
+          "type": "integer"
+        },
+        "search_ap_reduction": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Search Ap Reduction",
+          "type": "integer"
+        },
+        "extra_task": {
+          "default": "",
+          "title": "Extra Task",
+          "type": "string"
+        },
+        "completion_checks": {
+          "anyOf": [
+            {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "activity_count": "#/$defs/ActivityCountCheck",
+                    "clue_disclosure": "#/$defs/ClueDisclosureCheck"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ActivityCountCheck"
+                  },
+                  {
+                    "$ref": "#/$defs/ClueDisclosureCheck"
+                  }
+                ]
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completion Checks"
+        }
+      },
+      "required": [
+        "label",
+        "description"
+      ],
+      "title": "Penalty",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "original",
+            "adaptation",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "creator": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Creator",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "creator",
+        "source"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Resolution": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Title",
+          "type": "string"
+        },
+        "metric": {
+          "$ref": "#/$defs/Metric"
+        },
+        "scoring_rules": {
+          "items": {
+            "$ref": "#/$defs/ScoringRule"
+          },
+          "minItems": 1,
+          "title": "Scoring Rules",
+          "type": "array"
+        },
+        "role_adjustments": {
+          "patternProperties": {
+            "\\S": {
+              "$ref": "#/$defs/RoleAdjustment"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Role Adjustments",
+          "type": "object"
+        },
+        "vote": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StageVote"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "final_decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinalDecision"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "title",
+        "metric",
+        "scoring_rules"
+      ],
+      "title": "Resolution",
+      "type": "object"
+    },
+    "Role": {
+      "additionalProperties": false,
+      "properties": {
+        "role_id": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Role Id",
+          "type": "string"
+        },
+        "role_name": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Role Name",
+          "type": "string"
+        },
+        "human_playable": {
+          "title": "Human Playable",
+          "type": "boolean"
+        },
+        "public_identity": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Public Identity",
+          "type": "string"
+        },
+        "personality": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Personality"
+        },
+        "hidden_goal": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "角色从开局就知道的私人目标；尚未解锁的真相应放入对应幕次的知识块。",
+          "title": "Hidden Goal"
+        },
+        "stage_knowledge": {
+          "patternProperties": {
+            "^stage_[1-9][0-9]*$": {
+              "$ref": "#/$defs/StageKnowledge"
+            }
+          },
+          "title": "Stage Knowledge",
+          "type": "object"
+        }
+      },
+      "required": [
+        "role_id",
+        "role_name",
+        "human_playable",
+        "public_identity",
+        "stage_knowledge"
+      ],
+      "title": "Role",
+      "type": "object"
+    },
+    "RoleAdjustment": {
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "title": "Points",
+          "type": "integer"
+        },
+        "reason": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "points",
+        "reason"
+      ],
+      "title": "RoleAdjustment",
+      "type": "object"
+    },
+    "ScoringRule": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Label",
+          "type": "string"
+        },
+        "event_types": {
+          "items": {
+            "enum": [
+              "search",
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response",
+              "private_speech",
+              "private_response",
+              "autonomous_private_speech",
+              "autonomous_private_response",
+              "clue_disclosure"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Event Types",
+          "type": "array"
+        },
+        "points_per_event": {
+          "title": "Points Per Event",
+          "type": "integer"
+        },
+        "max_points": {
+          "minimum": 0,
+          "title": "Max Points",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "label",
+        "event_types",
+        "points_per_event",
+        "max_points"
+      ],
+      "title": "ScoringRule",
+      "type": "object"
+    },
+    "ScriptMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "script_id": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Script Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Title",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "maxLength": 24,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Tags",
+          "type": "array"
+        },
+        "total_stages": {
+          "minimum": 1,
+          "title": "Total Stages",
+          "type": "integer"
+        },
+        "supported_skills": {
+          "items": {
+            "enum": [
+              "narrative",
+              "deduction",
+              "faction"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Supported Skills",
+          "type": "array"
+        },
+        "recommended_player_role": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommended Player Role"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Provenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "script_id",
+        "title",
+        "total_stages",
+        "supported_skills"
+      ],
+      "title": "ScriptMeta",
+      "type": "object"
+    },
+    "SearchConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "ap_per_stage": {
+          "items": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Ap Per Stage",
+          "type": "array"
+        },
+        "search_targets": {
+          "items": {
+            "$ref": "#/$defs/SearchTarget"
+          },
+          "title": "Search Targets",
+          "type": "array"
+        }
+      },
+      "title": "SearchConfig",
+      "type": "object"
+    },
+    "SearchTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "unlock_stage": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Unlock Stage",
+          "type": "integer"
+        },
+        "clues": {
+          "items": {
+            "$ref": "#/$defs/Clue"
+          },
+          "title": "Clues",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "SearchTarget",
+      "type": "object"
+    },
+    "StageFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Title",
+          "type": "string"
+        },
+        "public_briefing": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Public Briefing",
+          "type": "string"
+        },
+        "public_tasks": {
+          "items": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "title": "Public Tasks",
+          "type": "array"
+        },
+        "personal_tasks": {
+          "patternProperties": {
+            "\\S": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Personal Tasks",
+          "type": "object"
+        },
+        "personal_task_checks": {
+          "patternProperties": {
+            "\\S": {
+              "items": {
+                "discriminator": {
+                  "mapping": {
+                    "activity_count": "#/$defs/ActivityCountCheck",
+                    "clue_disclosure": "#/$defs/ClueDisclosureCheck"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ActivityCountCheck"
+                  },
+                  {
+                    "$ref": "#/$defs/ClueDisclosureCheck"
+                  }
+                ]
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Personal Task Checks",
+          "type": "object"
+        },
+        "investigation": {
+          "$ref": "#/$defs/Investigation"
+        },
+        "resolution": {
+          "$ref": "#/$defs/Resolution"
+        },
+        "dm_hosting": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Dm Hosting",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "public_briefing",
+        "investigation",
+        "resolution",
+        "dm_hosting"
+      ],
+      "title": "StageFlow",
+      "type": "object"
+    },
+    "StageKnowledge": {
+      "additionalProperties": false,
+      "properties": {
+        "blocks": {
+          "items": {
+            "$ref": "#/$defs/InfoBlock"
+          },
+          "title": "Blocks",
+          "type": "array"
+        }
+      },
+      "title": "StageKnowledge",
+      "type": "object"
+    },
+    "StageVote": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Prompt",
+          "type": "string"
+        },
+        "eligible_role_ids": {
+          "items": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Eligible Role Ids",
+          "type": "array"
+        },
+        "penalty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Penalty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "prompt",
+        "eligible_role_ids"
+      ],
+      "title": "StageVote",
+      "type": "object"
+    },
+    "Truth": {
+      "additionalProperties": false,
+      "properties": {
+        "full_story": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Full Story",
+          "type": "string"
+        },
+        "culprit_role_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Culprit Role Id"
+        },
+        "complete_timeline": {
+          "description": "真实事件时间或事件标识到事实的映射；事件时间线与分幕调查流程分别表达。",
+          "patternProperties": {
+            "\\S": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Complete Timeline",
+          "type": "object"
+        },
+        "role_arcs": {
+          "patternProperties": {
+            "\\S": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Role Arcs",
+          "type": "object"
+        },
+        "evidence_chain": {
+          "items": {
+            "$ref": "#/$defs/EvidenceStep"
+          },
+          "title": "Evidence Chain",
+          "type": "array"
+        }
+      },
+      "required": [
+        "full_story"
+      ],
+      "title": "Truth",
+      "type": "object"
+    },
+    "WhisperConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "max_sessions_per_stage": {
+          "default": 2,
+          "minimum": 0,
+          "title": "Max Sessions Per Stage",
+          "type": "integer"
+        },
+        "role_available_from_stage": {
+          "patternProperties": {
+            "\\S": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Role Available From Stage",
+          "type": "object"
+        }
+      },
+      "title": "WhisperConfig",
+      "type": "object"
+    }
+  },
+  "$id": "https://jujing.local/schemas/script-1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "opening": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "opening"
+        ]
+      },
+      "then": {
+        "properties": {
+          "stage_flow": {
+            "minProperties": 1,
+            "type": "object"
+          }
+        },
+        "required": [
+          "stage_flow"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "script_meta": {
+            "properties": {
+              "supported_skills": {
+                "contains": {
+                  "const": "deduction"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "stage_flow": {
+            "minProperties": 1,
+            "type": "object"
+          },
+          "truth": {
+            "properties": {
+              "evidence_chain": {
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "evidence_chain"
+            ]
+          }
+        },
+        "required": [
+          "stage_flow"
+        ]
+      }
+    }
+  ],
+  "description": "剧镜剧本 1.0。跨引用、权限、幕次与任务可达性由 ScriptLoader 校验。",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "script_meta": {
+      "$ref": "#/$defs/ScriptMeta"
+    },
+    "story_background": {
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Story Background",
+      "type": "string"
+    },
+    "opening": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Opening"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "roles": {
+      "items": {
+        "$ref": "#/$defs/Role"
+      },
+      "minItems": 2,
+      "title": "Roles",
+      "type": "array"
+    },
+    "mechanics_enabled": {
+      "items": {
+        "enum": [
+          "search",
+          "whisper"
+        ],
+        "type": "string"
+      },
+      "title": "Mechanics Enabled",
+      "type": "array"
+    },
+    "mechanics_config": {
+      "$ref": "#/$defs/MechanicsConfig"
+    },
+    "stage_flow": {
+      "patternProperties": {
+        "^stage_[1-9][0-9]*$": {
+          "$ref": "#/$defs/StageFlow"
+        }
+      },
+      "title": "Stage Flow",
+      "type": "object"
+    },
+    "hard_constraints": {
+      "items": {
+        "$ref": "#/$defs/HardConstraint"
+      },
+      "title": "Hard Constraints",
+      "type": "array"
+    },
+    "truth": {
+      "$ref": "#/$defs/Truth"
+    }
+  },
+  "required": [
+    "schema_version",
+    "script_meta",
+    "story_background",
+    "roles",
+    "truth"
+  ],
+  "title": "ScriptDocument",
+  "type": "object"
+}

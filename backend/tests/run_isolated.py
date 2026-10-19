@@ -16,13 +16,14 @@ from unittest.mock import patch
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--pattern", default="test*.py")
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(project))
     sys.path.insert(0, str(project / "backend" / "app"))
     with tempfile.TemporaryDirectory(prefix="rpg-regression-") as data_dir:
         with patch.dict(os.environ, {"AI_MURDER_MYSTERY_DATA_DIR": data_dir, "LLM_PROVIDER": "echo"}):
-            suite = unittest.defaultTestLoader.discover(str(project / "backend" / "tests"))
+            suite = unittest.defaultTestLoader.discover(str(project / "backend" / "tests"), pattern=args.pattern)
             started = time.perf_counter()
             result = unittest.TextTestRunner(verbosity=2).run(suite)
             elapsed = time.perf_counter() - started

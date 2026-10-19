@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from backend.tests.test_engine_flow import build_engine, actual_input
+from backend.tests.script_fixtures import advance_to_investigation
 from game_service import GameService
 from llm.base import BaseLLM
 from llm.budget import ContextBudget
@@ -41,6 +42,8 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
         script = build_engine().script_loader.load("fog_harbor_clocktower")
         self.game = await self.service.create_game(self.user["id"], script, "mystery", "deduction", "shen_zhiwei")
         _, self.dm = await self.service.get_engine(self.user["id"], self.game["id"])
+        await advance_to_investigation(self.dm)
+        self.service.persist_engine_events(self.game["id"], self.dm)
 
     async def asyncTearDown(self):
         self.directory.cleanup()
@@ -84,7 +87,7 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
         _, failed = await self.dm._call_agent(self.context())
         self.assertFalse(failed)
         payload = self.attempts()[0]["context"]
-        self.assertEqual(payload["prompt_version"], "role-context-v2")
+        self.assertEqual(payload["prompt_version"], "role-context-v3")
         self.assertEqual(payload["provider"], "echo")
         self.assertIn("ROLE_MEMORY_DATA", json.dumps(payload["messages"]))
         self.assertEqual(payload["messages"][0]["content"], self.dm.agent_pool.get("gu_linchuan").last_prepared.messages()[1]["content"])
@@ -132,7 +135,7 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(failed)
         attempt = self.attempts()[0]
         self.assertEqual(attempt["status"], "failed")
-        self.assertEqual(attempt["context"]["prompt_version"], "role-context-v2")
+        self.assertEqual(attempt["context"]["prompt_version"], "role-context-v3")
         self.assertFalse(attempt["context"]["input_prepared"])
         self.assertFalse(attempt["context"]["provider_invoked"])
         self.assertFalse(waiting.started.is_set())

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { copyFile, readFile, rename, rm, writeFile } from "node:fs/promises";
 
-const artifacts = ["app.js", "app.js.map"];
+const artifacts = ["app.js", "app.js.map", "app.css"];
 const builtAppUrl = new URL("../.build/app.js", import.meta.url);
 const builtApp = await readFile(builtAppUrl, "utf8");
 
@@ -18,7 +18,7 @@ for (const artifact of artifacts) {
 
 const indexUrl = new URL("../index.html", import.meta.url);
 let html = await readFile(indexUrl, "utf8");
-for (const asset of ["app.js", "styles.css"]) {
+for (const asset of ["app.js", "styles.css", "app.css"]) {
   const bytes = await readFile(new URL(`../${asset}`, import.meta.url));
   const version = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
   const reference = new RegExp(`/static/${asset.replace(".", "\\.")}(?:\\?v=[a-f0-9]+)?(?=")`, "g");

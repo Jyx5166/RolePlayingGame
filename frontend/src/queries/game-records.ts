@@ -14,7 +14,7 @@ export interface GameSummary {
   title: string;
   category: string;
   mode: string;
-  player_role_id: string;
+  player_role_id: string | null;
   ai_agent_count: number;
   current_stage: number;
   current_phase: string;
@@ -22,6 +22,8 @@ export interface GameSummary {
   status: string;
   created_at: string;
   updated_at: string;
+  lifecycle_version?: number;
+  catalog_script_id?: string | null;
 }
 
 export const gameRecordsQueryKey = (userId: number) => ["game-records", userId] as const;

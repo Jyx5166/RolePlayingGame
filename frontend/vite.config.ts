@@ -12,6 +12,7 @@ export default defineConfig(({ command }) => ({
       apply: "serve",
       transformIndexHtml(html) {
         return html
+          .replace(/\s*<link rel="stylesheet" href="\/static\/app\.css(?:\?v=[a-f0-9]+)?"\s*\/>/, "")
           .replace(/href="\/static\/styles\.css(?:\?v=[a-f0-9]+)?"/, 'href="/styles.css"')
           .replace(
             /<script src="\/static\/app\.js(?:\?v=[a-f0-9]+)?"><\/script>/,
@@ -24,6 +25,7 @@ export default defineConfig(({ command }) => ({
     port: 5173,
     strictPort: false,
     proxy: {
+      "/static/assets": "http://127.0.0.1:8000",
       "/api": "http://127.0.0.1:8000",
       "/ws": {
         target: "ws://127.0.0.1:8000",
@@ -42,6 +44,7 @@ export default defineConfig(({ command }) => ({
       name: "RolePlayingGameApp",
       formats: ["iife"],
       fileName: () => "app.js",
+      cssFileName: "app",
     },
   },
   test: {

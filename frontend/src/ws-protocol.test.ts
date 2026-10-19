@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import { buildCommandEnvelope, reduceRealtimeEnvelope } from "./ws-protocol";
 
 describe("WebSocket protocol", () => {
+  it('preserves request correlation for optimistic chat and live activity',()=>{
+    const result=reduceRealtimeEnvelope({protocol_version:'1.0',kind:'event',event_id:null,request_id:'request-1',type:'agent_activity',payload:{actor_role_id:'role',activity:'searching'}},21);
+    expect(result.lastEventId).toBe(21);expect(result.messages[0]).toMatchObject({request_id:'request-1',actor_role_id:'role',activity:'searching'});
+  });
   it("builds versioned command envelopes", () => {
     expect(buildCommandEnvelope(3, {
       type: "player_speech",

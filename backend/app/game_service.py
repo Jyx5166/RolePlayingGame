@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import time
+import uuid
 from typing import Any
 
 from dm.engine import DMEngine
 from loader.script_loader import ScriptLoader
 from storage import AppStore
+from runtime.contracts import RuntimeScope
+from runtime.store import RuntimeStore
+from agent.archive import MemoryArchive
+from agent.context import role_can_read_block
+from runtime.leases import GameLeases
+from workflow_config import WorkflowSettings, load_workflow_settings
 
 
 ALLOWED_CATEGORIES = {"mystery", "adventure", "fantasy", "history", "custom"}
@@ -17,12 +25,15 @@ class GameService:
         self.store = store
         self.dm_factory = dm_factory
         self.sessions: dict[int, DMEngine] = {}
+        self.runtime_store = RuntimeStore(store)
+        self.memory_archive = MemoryArchive(store)
+        self.leases = GameLeases(store)
+        self.workflow_defaults = load_workflow_settings()
 
     def inspect_script(self, script: dict[str, Any], mode: str) -> dict[str, Any]:
         if mode not in ALLOWED_MODES:
             raise ValueError("不支持的游戏模式")
-        dm = self.dm_factory()
-        dm.script_loader.validate(script)
+        ScriptLoader(".").validate(script)
         meta = script["script_meta"]
         supported = meta["supported_skills"]
         if mode not in supported:
@@ -65,14 +76,18 @@ class GameService:
             self.persist_engine_events(game["id"], dm)
         self.sessions[game["id"]] = dm
         self._bind_attempt_recorder(game["id"], dm)
+        game = self.store.get_game(user_id, game["id"])
         return {**self._public_game(game), "orchestration": dm.get_orchestration_summary()}
 
     async def get_engine(self, user_id: int, game_id: int) -> tuple[dict[str, Any], DMEngine]:
         game = self.store.get_game(user_id, game_id, include_script=True)
+        if game["status"] in {'preparing','abandoned'}:
+            raise ValueError("请先选择角色并确认进入游戏")
         dm = self.sessions.get(game_id)
         if dm is None:
             snapshot = self.store.get_runtime_snapshot(user_id, game_id)
             dm = self.dm_factory()
+            dm.reveal_truth_on_failure = game.get("lifecycle_version", 1) >= 2
             await dm.init_game_from_script(game["script"], game["player_role_id"], game["mode"])
             target_stage = (
                 int(snapshot["state"]["current_stage_num"])
@@ -98,11 +113,99 @@ class GameService:
             if snapshot is None:
                 self.persist_engine_events(game_id, dm)
             self.sessions[game_id] = dm
+        if game.get("lifecycle_version", 1) >= 2 and game.get("paused_at") is not None:
+            state = dm._require_state()
+            elapsed = max(0.0, time.time() - game["paused_at"])
+            state.phase_started_at += elapsed
+            for field in ("investigation_deadline_at", "autonomy_next_at"):
+                value = getattr(state, field)
+                if value is not None:
+                    setattr(state, field, value + elapsed)
+            with self.store.transaction():
+                self.persist_engine_events(game_id, dm)
+                self.store.set_game_lifecycle(game_id, paused_at=None, run_id=str(uuid.uuid4()))
+                self.store.add_event(game_id, "game_resumed", {})
         self._bind_attempt_recorder(game_id, dm)
         return game, dm
 
+    async def activate_game(self, user_id: int, game_id: int, player_role_id: str) -> dict[str, Any]:
+        game = self.store.get_game(user_id, game_id, include_script=True)
+        if game["status"] != "preparing":
+            if game["player_role_id"] != player_role_id:
+                raise ValueError("本场游戏已选定角色，不能重新选角")
+            return self._public_game(game)
+        preview = self.inspect_script(game["script"], game["mode"])
+        if player_role_id not in {role["role_id"] for role in preview["playable_roles"]}:
+            raise ValueError("所选角色不可由玩家扮演")
+        dm = self.dm_factory()
+        await dm.init_game_from_script(game["script"], player_role_id, game["mode"])
+        dm.reveal_truth_on_failure = True
+        with self.store.transaction():
+            self.store.activate_preparation(user_id, game_id, player_role_id, str(uuid.uuid4()))
+            self.store.add_event(game_id, "game_created", dm.get_orchestration_summary())
+            self.persist_engine_events(game_id, dm)
+        self.sessions[game_id] = dm
+        self._bind_attempt_recorder(game_id, dm)
+        return self.store.get_game(user_id, game_id)
+
+    def pause_game(self, user_id: int, game_id: int) -> dict[str, Any]:
+        game = self.store.get_game(user_id, game_id)
+        if game.get("lifecycle_version", 1) < 2 or game["status"] in {"preparing", "paused", "completed"}:
+            if game["status"] == "completed" and game.get("run_id"):
+                self.runtime_store.close_run(game["run_id"], "completed")
+            return game
+        dm = self.sessions.get(game_id)
+        if dm is not None and dm.runtime_scopes and dm.runtime_scopes['dm'].run_id!=game.get('run_id'):
+            dm = None
+        with self.store.transaction():
+            if dm is not None:
+                self.persist_engine_events(game_id, dm)
+            self.store.set_game_lifecycle(game_id, paused_at=time.time(), status="paused")
+            self.store.add_event(game_id, "game_paused", {})
+            if game.get("run_id"):
+                self.runtime_store.close_run(game["run_id"], "paused")
+        self.sessions.pop(game_id, None)
+        return self.store.get_game(user_id, game_id)
+
     def _bind_attempt_recorder(self, game_id: int, dm: DMEngine) -> None:
         dm.attempt_observer = lambda attempt: self.store.record_agent_attempt(game_id, attempt)
+        # Binding happens after ownership was checked and after this game's snapshot was loaded.
+        with self.store._connect() as connection:
+            game = dict(connection.execute("SELECT * FROM games WHERE id=?", (game_id,)).fetchone())
+        if not game.get("run_id"):
+            game["run_id"] = str(uuid.uuid4())
+            self.store.set_game_lifecycle(game_id, paused_at=game.get("paused_at"), run_id=game["run_id"])
+        if dm.runtime_scopes and next(iter(dm.runtime_scopes.values())).run_id == game["run_id"]:
+            return
+        state = dm._require_state()
+        roles = [state.human_player_role_id, *state.ai_role_ids]
+        context_ids = self.runtime_store.context_ids(game_id, roles)
+        instances = {"dm": dm.dm_instance_id, f"role:{state.human_player_role_id}": dm.human_instance_id,
+                     **{f"role:{role_id}": dm.agent_pool.get(role_id).instance_id for role_id in state.ai_role_ids}}
+        with self.store._connect() as connection:
+            prior = connection.execute("SELECT instances_json FROM game_runs WHERE run_id=?", (game["run_id"],)).fetchone()
+        if prior is not None:
+            import json
+            if json.loads(prior["instances_json"]) != instances:
+                game["run_id"] = str(uuid.uuid4())
+                self.store.set_game_lifecycle(game_id, paused_at=game.get("paused_at"), run_id=game["run_id"])
+        self.runtime_store.register_run(game_id, game["run_id"], instances)
+        self.leases.bind(game_id, game['run_id'])
+        dm.runtime_scopes = {key: RuntimeScope(game_id=game_id, run_id=game["run_id"], context_id=context_ids[key],
+            agent_instance_id=instance_id, actor_kind="dm" if key == "dm" else "human" if key == f"role:{state.human_player_role_id}" else "role",
+            actor_role_id="dm" if key == "dm" else key.removeprefix("role:")) for key, instance_id in instances.items()}
+        dm.runtime_store = self.runtime_store
+        dm.workflow_enabled = game.get("lifecycle_version", 1) >= 3
+        dm.workflow_settings = WorkflowSettings.model_validate_json(game["workflow_config_json"]) if game.get("workflow_config_json") else self.workflow_defaults
+        dm.memory_archive = self.memory_archive
+        dm._require_context_broker().runtime_scopes = {role: dm.runtime_scopes[f"role:{role}"] for role in state.ai_role_ids}
+        for role in state.ai_role_ids:
+            dm.agent_pool.get(role).runtime_scope = dm.runtime_scopes[f"role:{role}"]
+            dm.agent_pool.get(role).archive = self.memory_archive if dm.workflow_enabled and dm.workflow_settings.context_strategy == 'archive_retrieval' else None
+            dm.agent_pool.get(role).workflow_settings = dm.workflow_settings
+            if dm.workflow_enabled and dm.workflow_settings.reasoning_effort and hasattr(dm.agent_pool.get(role)._llm,'reasoning_effort'):
+                dm.agent_pool.get(role)._llm.reasoning_effort=dm.workflow_settings.reasoning_effort
+        self.memory_archive.sync_game(dm)
 
     def _recover_legacy_memory(self, user_id: int, game_id: int, dm: DMEngine,
                                snapshot: dict[str, Any] | None) -> None:
@@ -262,16 +365,28 @@ class GameService:
             "completed" if state.phase.value == "replay" else "playing",
             state.scene_phase.value,
         )
+        if getattr(dm, 'memory_archive', None) is not None:
+            self.memory_archive.sync_game(dm)
 
     def delete_game(self, user_id: int, game_id: int) -> None:
         self.store.delete_game(user_id, game_id)
         self.sessions.pop(game_id, None)
+        checkpoint=self.store.database_path.with_name(self.store.database_path.stem+'.workflow.db')
+        if checkpoint.exists():
+            import sqlite3
+            with sqlite3.connect(checkpoint) as connection:
+                for table in ('checkpoints','writes'):
+                    if connection.execute('SELECT name FROM sqlite_master WHERE name=?',(table,)).fetchone():
+                        connection.execute(f'DELETE FROM {table} WHERE thread_id LIKE ?',(f'game:{game_id}:%',))
 
     def get_player_notebook(self, user_id: int, game_id: int) -> dict[str, Any]:
         game = self.store.get_game(user_id, game_id, include_script=True)
+        if game["status"] == "preparing":
+            raise ValueError("选定角色后才能读取游戏手记")
         self._ensure_baseline_notebook_records(user_id, game)
         role_id = str(game["player_role_id"])
         entries = self.store.list_notebook_entries(user_id, game_id, role_id)
+        entries = self._authorized_notebook_entries(game, entries)
         entries = self._without_legacy_dm_duplicates(entries)
         manual = self.store.list_manual_notes(user_id, game_id).get(
             role_id,
@@ -304,6 +419,8 @@ class GameService:
         content: str,
     ) -> dict[str, Any]:
         game = self.store.get_game(user_id, game_id)
+        if game["status"] == "preparing":
+            raise ValueError("选定角色后才能保存游戏手记")
         return self.store.save_manual_notes(
             user_id,
             game_id,
@@ -318,6 +435,7 @@ class GameService:
 
         self._ensure_baseline_notebook_records(user_id, game)
         notebook_entries = self.store.list_notebook_entries(user_id, game_id)
+        notebook_entries = self._authorized_notebook_entries(game, notebook_entries)
         notebook_entries = self._without_legacy_dm_duplicates(notebook_entries)
         manual_revisions = self.store.list_manual_note_revisions(user_id, game_id)
         activities = self.store.list_role_activities(user_id, game_id)
@@ -444,6 +562,42 @@ class GameService:
             by_stage[int(resolution["stage"])] = dict(resolution)
         return [by_stage[stage] for stage in sorted(by_stage)]
 
+    @staticmethod
+    def _authorized_notebook_entries(
+        game: dict[str, Any], entries: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Recheck persisted script notes, including records written by older builds."""
+        current_stage = int(game["current_stage"])
+        if game["script"].get("opening") and current_stage == 1:
+            phase = game.get("current_phase")
+            if phase in {"opening", "private_reveal"}:
+                allowed = {"opening"} if phase == "opening" else {"opening", "role_script", "personal_task"}
+                entries = [entry for entry in entries if entry.get("source_type") in allowed]
+        visible = {
+            (str(role["role_id"]), str(block.get("block_id", index))): block
+            for role in game["script"]["roles"]
+            for stage in range(1, current_stage + 1)
+            for index, block in enumerate(
+                role.get("stage_knowledge", {}).get(f"stage_{stage}", {}).get("blocks", []), 1
+            )
+            if role_can_read_block(block, str(role["role_id"]), current_stage)
+        }
+        authorized = []
+        for entry in entries:
+            source_key = str(entry.get("source_key", ""))
+            if source_key.startswith("role-script:"):
+                parts = source_key.split(":", 2)
+                if len(parts) != 3 or not parts[1].isdigit() or not 1 <= int(parts[1]) <= current_stage:
+                    continue
+                block = visible.get((str(entry["role_id"]), parts[2]))
+                if block is None or str(entry.get("content", "")).strip() != str(block["content"]).strip():
+                    continue
+            elif entry.get("source_type") == "role_script":
+                # Unidentifiable historical script entries cannot establish permission.
+                continue
+            authorized.append(entry)
+        return authorized
+
     def _ensure_baseline_notebook_records(
         self,
         user_id: int,
@@ -456,12 +610,22 @@ class GameService:
         stage_flow = script.get("stage_flow", {})
         saved = self.store.get_runtime_snapshot(user_id, game_id)
         penalties = saved.get("state", {}).get("penalties", []) if saved else []
+        opening = script.get("opening")
+        phase = str(game.get("current_phase") or "")
+        initial_private = bool(opening) and current_stage == 1 and phase == "private_reveal"
+        if opening:
+            for role in roles:
+                self.store.add_notebook_entry(game_id=game_id, role_id=str(role["role_id"]), section="automatic",
+                    source_type="opening", source_key="dm-opening:1", stage=1,
+                    title=opening["title"], content=opening["content"])
+            if current_stage == 1 and phase == "opening":
+                return
 
         for stage in range(1, current_stage + 1):
             config = stage_flow.get(f"stage_{stage}", {})
             stage_title = str(config.get("title", f"第 {stage} 幕"))
             shared_entries: list[tuple[str, str, str, str]] = []
-            if stage == 1:
+            if stage == 1 and not opening:
                 shared_entries.append(
                     (
                         "story_background",
@@ -470,17 +634,18 @@ class GameService:
                         str(script.get("story_background", "")),
                     )
                 )
-            shared_entries.append(
-                (
-                    "public_briefing",
-                    f"dm-public-briefing:{stage}",
-                    f"{stage_title} · 公开通报",
-                    str(config.get("public_briefing", "")),
+            if not initial_private:
+                shared_entries.append(
+                    (
+                        "public_briefing",
+                        f"dm-public-briefing:{stage}",
+                        f"{stage_title} · 公开通报",
+                        str(config.get("public_briefing", "")),
+                    )
                 )
-            )
             public_tasks = [
                 str(task).strip()
-                for task in config.get("public_tasks", [])
+                for task in ([] if initial_private else config.get("public_tasks", []))
                 if str(task).strip()
             ]
             if public_tasks:
@@ -534,7 +699,11 @@ class GameService:
                     .get("blocks", [])
                 )
                 for index, block in enumerate(blocks, start=1):
+                    if not role_can_read_block(block, role_id, current_stage):
+                        continue
                     is_public = block.get("visibility") == "public"
+                    if initial_private and is_public:
+                        continue
                     self.store.add_notebook_entry(
                         game_id=game_id,
                         role_id=role_id,

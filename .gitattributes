@@ -1,0 +1,5 @@
+# Keep content-versioned frontend files byte-stable across platforms.
+frontend/app.js text eol=lf
+frontend/app.css text eol=lf
+frontend/styles.css text eol=lf
+frontend/index.html text eol=lf

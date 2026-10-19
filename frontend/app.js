@@ -2282,6 +2282,9 @@
 		}
 		return String(a) === String(b);
 	}
+	function looseIndexOf(arr, val) {
+		return arr.findIndex((item) => looseEqual(item, val));
+	}
 	var isRef$1 = (val) => {
 		return !!(val && val["__v_isRef"] === true);
 	};
@@ -4232,6 +4235,11 @@
 	function defineComponent(options, extraOptions) {
 		return isFunction$1(options) ? /* @__PURE__ */ (() => extend({ name: options.name }, extraOptions, { setup: options }))() : options;
 	}
+	function useId() {
+		const i = getCurrentInstance();
+		if (i) return (i.appContext.config.idPrefix || "v") + "-" + i.ids[0] + i.ids[1]++;
+		return "";
+	}
 	function markAsyncBoundary(instance) {
 		instance.ids = [
 			instance.ids[0] + instance.ids[2]++ + "-",
@@ -4393,7 +4401,28 @@
 	function onErrorCaptured(hook, target = currentInstance) {
 		injectHook("ec", hook, target);
 	}
+	var COMPONENTS = "components";
 	var NULL_DYNAMIC_COMPONENT = /* @__PURE__ */ Symbol.for("v-ndc");
+	function resolveDynamicComponent(component) {
+		if (isString(component)) return resolveAsset(COMPONENTS, component, false) || component;
+		else return component || NULL_DYNAMIC_COMPONENT;
+	}
+	function resolveAsset(type, name, warnMissing = true, maybeSelfReference = false) {
+		const instance = currentRenderingInstance || currentInstance;
+		if (instance) {
+			const Component = instance.type;
+			if (type === COMPONENTS) {
+				const selfName = getComponentName(Component, false);
+				if (selfName && (selfName === name || selfName === camelize(name) || selfName === capitalize(camelize(name)))) return Component;
+			}
+			const res = resolve(instance[type] || Component[type], name) || resolve(instance.appContext[type], name);
+			if (!res && maybeSelfReference) return Component;
+			return res;
+		}
+	}
+	function resolve(registry, name) {
+		return registry && (registry[name] || registry[camelize(name)] || registry[capitalize(camelize(name))]);
+	}
 	function renderList(source, renderItem, cache, index) {
 		let ret;
 		const cached = cache && cache[index];
@@ -6405,6 +6434,9 @@
 		}));
 		else return instance.proxy;
 	}
+	function getComponentName(Component, includeInferred = true) {
+		return isFunction$1(Component) ? Component.displayName || Component.name : Component.name || includeInferred && Component.__name;
+	}
 	function isClassComponent(value) {
 		return isFunction$1(value) && "__vccOpts" in value;
 	}
@@ -6774,6 +6806,143 @@
 			el.value = newValue;
 		}
 	};
+	var vModelCheckbox = {
+		deep: true,
+		created(el, _, vnode) {
+			el[assignKey] = getModelAssigner(vnode);
+			addEventListener(el, "change", () => {
+				const modelValue = el._modelValue;
+				const elementValue = getValue(el);
+				const checked = el.checked;
+				const assign = el[assignKey];
+				if (isArray$1(modelValue)) {
+					const index = looseIndexOf(modelValue, elementValue);
+					const found = index !== -1;
+					if (checked && !found) assign(modelValue.concat(elementValue));
+					else if (!checked && found) {
+						const filtered = [...modelValue];
+						filtered.splice(index, 1);
+						assign(filtered);
+					}
+				} else if (isSet(modelValue)) {
+					const cloned = new Set(modelValue);
+					if (checked) cloned.add(elementValue);
+					else cloned.delete(elementValue);
+					assign(cloned);
+				} else assign(getCheckboxValue(el, checked));
+			});
+		},
+		mounted: setChecked,
+		beforeUpdate(el, binding, vnode) {
+			el[assignKey] = getModelAssigner(vnode);
+			setChecked(el, binding, vnode);
+		}
+	};
+	function setChecked(el, { value, oldValue }, vnode) {
+		el._modelValue = value;
+		let checked;
+		if (isArray$1(value)) checked = looseIndexOf(value, vnode.props.value) > -1;
+		else if (isSet(value)) checked = value.has(vnode.props.value);
+		else {
+			if (value === oldValue) return;
+			checked = looseEqual(value, getCheckboxValue(el, true));
+		}
+		if (el.checked !== checked) el.checked = checked;
+	}
+	var vModelRadio = {
+		created(el, { value }, vnode) {
+			el.checked = looseEqual(value, vnode.props.value);
+			el[assignKey] = getModelAssigner(vnode);
+			addEventListener(el, "change", () => {
+				el[assignKey](getValue(el));
+			});
+		},
+		beforeUpdate(el, { value, oldValue }, vnode) {
+			el[assignKey] = getModelAssigner(vnode);
+			if (value !== oldValue) el.checked = looseEqual(value, vnode.props.value);
+		}
+	};
+	var vModelSelect = {
+		deep: true,
+		created(el, { value, modifiers: { number } }, vnode) {
+			el._modelValue = value;
+			addEventListener(el, "change", () => {
+				const selectedVal = Array.prototype.filter.call(el.options, (o) => o.selected).map((o) => number ? looseToNumber(getValue(o)) : getValue(o));
+				el[assignKey](el.multiple ? isSet(el._modelValue) ? new Set(selectedVal) : selectedVal : selectedVal[0]);
+				el._assigning = true;
+				nextTick(() => {
+					el._assigning = false;
+				});
+			});
+			el[assignKey] = getModelAssigner(vnode);
+		},
+		mounted(el, { value }) {
+			setSelected(el, value);
+		},
+		beforeUpdate(el, { value }, vnode) {
+			el._modelValue = value;
+			el[assignKey] = getModelAssigner(vnode);
+		},
+		updated(el, { value }) {
+			if (!el._assigning) setSelected(el, value);
+		}
+	};
+	function setSelected(el, value) {
+		const isMultiple = el.multiple;
+		const isArrayValue = isArray$1(value);
+		if (isMultiple && !isArrayValue && !isSet(value)) return;
+		for (let i = 0, l = el.options.length; i < l; i++) {
+			const option = el.options[i];
+			const optionValue = getValue(option);
+			if (isMultiple) {
+				if (isArrayValue) {
+					const optionType = typeof optionValue;
+					if (optionType === "string" || optionType === "number") option.selected = value.some((v) => String(v) === String(optionValue));
+					else option.selected = looseIndexOf(value, optionValue) > -1;
+				} else option.selected = value.has(optionValue);
+			} else if (looseEqual(getValue(option), value)) {
+				if (el.selectedIndex !== i) el.selectedIndex = i;
+				return;
+			}
+		}
+		if (!isMultiple && el.selectedIndex !== -1) el.selectedIndex = -1;
+	}
+	function getValue(el) {
+		return "_value" in el ? el._value : el.value;
+	}
+	function getCheckboxValue(el, checked) {
+		const key = checked ? "_trueValue" : "_falseValue";
+		return key in el ? el[key] : checked;
+	}
+	var vModelDynamic = {
+		created(el, binding, vnode) {
+			callModelHook(el, binding, vnode, null, "created");
+		},
+		mounted(el, binding, vnode) {
+			callModelHook(el, binding, vnode, null, "mounted");
+		},
+		beforeUpdate(el, binding, vnode, prevVNode) {
+			callModelHook(el, binding, vnode, prevVNode, "beforeUpdate");
+		},
+		updated(el, binding, vnode, prevVNode) {
+			callModelHook(el, binding, vnode, prevVNode, "updated");
+		}
+	};
+	function resolveDynamicModel(tagName, type) {
+		switch (tagName) {
+			case "SELECT": return vModelSelect;
+			case "TEXTAREA": return vModelText;
+			default: switch (type) {
+				case "checkbox": return vModelCheckbox;
+				case "radio": return vModelRadio;
+				default: return vModelText;
+			}
+		}
+	}
+	function callModelHook(el, binding, vnode, prevVNode, hook) {
+		const fn = resolveDynamicModel(el.tagName, vnode.props && vnode.props.type)[hook];
+		fn && fn(el, binding, vnode, prevVNode);
+	}
 	var systemModifiers = [
 		"ctrl",
 		"shift",
@@ -6803,6 +6972,24 @@
 				if (guard && guard(event, modifiers)) return;
 			}
 			return fn(event, ...args);
+		}));
+	};
+	var keyNames = {
+		esc: "escape",
+		space: " ",
+		up: "arrow-up",
+		left: "arrow-left",
+		right: "arrow-right",
+		down: "arrow-down",
+		delete: "backspace"
+	};
+	var withKeys = (fn, modifiers) => {
+		const cache = fn._withKeys || (fn._withKeys = {});
+		const cacheKey = modifiers.join(".");
+		return cache[cacheKey] || (cache[cacheKey] = ((event) => {
+			if (!("key" in event)) return;
+			const eventKey = hyphenate(event.key);
+			if (modifiers.some((k) => k === eventKey || keyNames[k] === eventKey)) return fn(event);
 		}));
 	};
 	var rendererOptions = /* @__PURE__ */ extend({ patchProp }, nodeOps);
@@ -7697,22 +7884,223 @@
 	* This source code is licensed under the ISC license.
 	* See the LICENSE file in the root directory of this source tree.
 	*/
-	var Archive = createLucideIcon("archive", [
-		["rect", {
-			width: "20",
-			height: "5",
-			x: "2",
-			y: "3",
-			rx: "1",
-			key: "1wp1u1"
+	var ArrowLeft = createLucideIcon("arrow-left", [["path", {
+		d: "m12 19-7-7 7-7",
+		key: "1l729n"
+	}], ["path", {
+		d: "M19 12H5",
+		key: "x3x0zl"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var ArrowRight = createLucideIcon("arrow-right", [["path", {
+		d: "M5 12h14",
+		key: "1ays0h"
+	}], ["path", {
+		d: "m12 5 7 7-7 7",
+		key: "xquz4c"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var BookOpen = createLucideIcon("book-open", [["path", {
+		d: "M12 5v16",
+		key: "1f6ucr"
+	}], ["path", {
+		d: "M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z",
+		key: "1fyvmf"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var Check = createLucideIcon("check", [["path", {
+		d: "M20 6 9 17l-5-5",
+		key: "1gmf2c"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var ChevronDown = createLucideIcon("chevron-down", [["path", {
+		d: "m6 9 6 6 6-6",
+		key: "qrunsl"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var ChevronRight = createLucideIcon("chevron-right", [["path", {
+		d: "m9 18 6-6-6-6",
+		key: "mthhwq"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var CircleCheck = createLucideIcon("circle-check", [["circle", {
+		cx: "12",
+		cy: "12",
+		r: "10",
+		key: "1mglay"
+	}], ["path", {
+		d: "m9 12 2 2 4-4",
+		key: "dzmm74"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var EyeOff = createLucideIcon("eye-off", [
+		["path", {
+			d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+			key: "ct8e1f"
 		}],
 		["path", {
-			d: "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8",
-			key: "1s80jp"
+			d: "M14.084 14.158a3 3 0 0 1-4.242-4.242",
+			key: "151rxh"
 		}],
 		["path", {
-			d: "M10 12h4",
-			key: "a56b0p"
+			d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+			key: "13bj9a"
+		}],
+		["path", {
+			d: "m2 2 20 20",
+			key: "1ooewy"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var Eye = createLucideIcon("eye", [["path", {
+		d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+		key: "1nclc0"
+	}], ["circle", {
+		cx: "12",
+		cy: "12",
+		r: "3",
+		key: "1v7zrd"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var FilePlusCorner = createLucideIcon("file-plus-corner", [
+		["path", {
+			d: "M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v5.35",
+			key: "17jvcc"
+		}],
+		["path", {
+			d: "M14 2v5a1 1 0 0 0 1 1h5",
+			key: "wfsgrz"
+		}],
+		["path", {
+			d: "M14 19h6",
+			key: "bvotb8"
+		}],
+		["path", {
+			d: "M17 16v6",
+			key: "18yu1i"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var FilePlus = createLucideIcon("file-plus", [
+		["path", {
+			d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+			key: "1oefj6"
+		}],
+		["path", {
+			d: "M14 2v5a1 1 0 0 0 1 1h5",
+			key: "wfsgrz"
+		}],
+		["path", {
+			d: "M9 15h6",
+			key: "cctwl0"
+		}],
+		["path", {
+			d: "M12 18v-6",
+			key: "17g6i2"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var FileText = createLucideIcon("file-text", [
+		["path", {
+			d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+			key: "1oefj6"
+		}],
+		["path", {
+			d: "M14 2v5a1 1 0 0 0 1 1h5",
+			key: "wfsgrz"
+		}],
+		["path", {
+			d: "M10 9H8",
+			key: "b1mrlr"
+		}],
+		["path", {
+			d: "M16 13H8",
+			key: "t4e002"
+		}],
+		["path", {
+			d: "M16 17H8",
+			key: "z1uh3a"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var FolderArchive = createLucideIcon("folder-archive", [
+		["circle", {
+			cx: "15",
+			cy: "19",
+			r: "2",
+			key: "u2pros"
+		}],
+		["path", {
+			d: "M20.9 19.8A2 2 0 0 0 22 18V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5.1",
+			key: "1jj40k"
+		}],
+		["path", {
+			d: "M15 11v-1",
+			key: "cntcp"
+		}],
+		["path", {
+			d: "M15 17v-2",
+			key: "1279jj"
 		}]
 	]);
 	/**
@@ -7725,6 +8113,32 @@
 		d: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2",
 		key: "usdka0"
 	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var LockKeyhole = createLucideIcon("lock-keyhole", [
+		["circle", {
+			cx: "12",
+			cy: "16",
+			r: "1",
+			key: "1au0dj"
+		}],
+		["rect", {
+			x: "3",
+			y: "10",
+			width: "18",
+			height: "12",
+			rx: "2",
+			key: "6s8ecr"
+		}],
+		["path", {
+			d: "M7 10V7a5 5 0 0 1 10 0v3",
+			key: "1pqi11"
+		}]
+	]);
 	/**
 	* @license @lucide/vue v1.30.0 - ISC
 	*
@@ -7775,6 +8189,51 @@
 	* This source code is licensed under the ISC license.
 	* See the LICENSE file in the root directory of this source tree.
 	*/
+	var PanelLeftOpen = createLucideIcon("panel-left-open", [
+		["rect", {
+			width: "18",
+			height: "18",
+			x: "3",
+			y: "3",
+			rx: "2",
+			key: "afitv7"
+		}],
+		["path", {
+			d: "M9 3v18",
+			key: "fh3hqa"
+		}],
+		["path", {
+			d: "m14 9 3 3-3 3",
+			key: "8010ee"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var Pause = createLucideIcon("pause", [["rect", {
+		x: "14",
+		y: "3",
+		width: "5",
+		height: "18",
+		rx: "1",
+		key: "kaeet6"
+	}], ["rect", {
+		x: "5",
+		y: "3",
+		width: "5",
+		height: "18",
+		rx: "1",
+		key: "1wsw3u"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
 	var Plus = createLucideIcon("plus", [["path", {
 		d: "M5 12h14",
 		key: "1ays0h"
@@ -7812,6 +8271,47 @@
 	* This source code is licensed under the ISC license.
 	* See the LICENSE file in the root directory of this source tree.
 	*/
+	var Search = createLucideIcon("search", [["path", {
+		d: "m21 21-4.34-4.34",
+		key: "14j7rj"
+	}], ["circle", {
+		cx: "11",
+		cy: "11",
+		r: "8",
+		key: "4ej97u"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var Sparkles = createLucideIcon("sparkles", [
+		["path", {
+			d: "M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z",
+			key: "1s2grr"
+		}],
+		["path", {
+			d: "M20 2v4",
+			key: "1rf3ol"
+		}],
+		["path", {
+			d: "M22 4h-4",
+			key: "gwowj6"
+		}],
+		["circle", {
+			cx: "4",
+			cy: "20",
+			r: "2",
+			key: "6kqj1y"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
 	var Trash2 = createLucideIcon("trash-2", [
 		["path", {
 			d: "M10 11v6",
@@ -7834,6 +8334,60 @@
 			key: "e791ji"
 		}]
 	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var UserRound = createLucideIcon("user-round", [["circle", {
+		cx: "12",
+		cy: "8",
+		r: "5",
+		key: "1hypcn"
+	}], ["path", {
+		d: "M20 21a8 8 0 0 0-16 0",
+		key: "rfgkzh"
+	}]]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var Users = createLucideIcon("users", [
+		["path", {
+			d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",
+			key: "1yyitq"
+		}],
+		["path", {
+			d: "M16 3.128a4 4 0 0 1 0 7.744",
+			key: "16gr8j"
+		}],
+		["path", {
+			d: "M22 21v-2a4 4 0 0 0-3-3.87",
+			key: "kshegd"
+		}],
+		["circle", {
+			cx: "9",
+			cy: "7",
+			r: "4",
+			key: "nufk8"
+		}]
+	]);
+	/**
+	* @license @lucide/vue v1.30.0 - ISC
+	*
+	* This source code is licensed under the ISC license.
+	* See the LICENSE file in the root directory of this source tree.
+	*/
+	var X = createLucideIcon("x", [["path", {
+		d: "M18 6 6 18",
+		key: "1bl5f8"
+	}], ["path", {
+		d: "m6 6 12 12",
+		key: "d8bk6v"
+	}]]);
 	//#endregion
 	//#region node_modules/vue-router/dist/devtools-EWN81iOl.mjs
 	/*!
@@ -9793,6 +10347,19 @@
 		if (pathname === "/register") return { name: "register" };
 		if (pathname === "/cases") return { name: "case-list" };
 		if (pathname === "/cases/new") return { name: "case-create" };
+		if (pathname === "/play") return { name: "script-library" };
+		if (pathname === "/scripts/new") return { name: "script-create" };
+		if (pathname === "/personal-center") return { name: "personal-center" };
+		const prepareMatch = pathname.match(/^\/games\/([1-9]\d*)\/prepare$/);
+		if (prepareMatch) return {
+			name: "game-prepare",
+			gameId: Number(prepareMatch[1])
+		};
+		const newGameMatch = pathname.match(/^\/games\/([1-9]\d*)$/);
+		if (newGameMatch) return {
+			name: "game-detail",
+			gameId: Number(newGameMatch[1])
+		};
 		const gameMatch = pathname.match(/^\/cases\/([1-9]\d*)$/);
 		if (gameMatch) return {
 			name: "case-detail",
@@ -9806,11 +10373,22 @@
 			case "register": return "/register";
 			case "case-list": return "/cases";
 			case "case-create": return "/cases/new";
+			case "script-library": return "/play";
+			case "script-create": return "/scripts/new";
+			case "personal-center": return "/personal-center";
+			case "game-prepare": return `/games/${route.gameId}/prepare`;
+			case "game-detail": return `/games/${route.gameId}`;
 			case "case-detail": return `/cases/${route.gameId}`;
 		}
 	}
 	function isPrivateRoute(route) {
-		return route.name === "case-list" || route.name === "case-create" || route.name === "case-detail";
+		return route.name === "case-list" || route.name === "case-create" || route.name === "case-detail" || [
+			"script-library",
+			"script-create",
+			"personal-center",
+			"game-prepare",
+			"game-detail"
+		].includes(route.name);
 	}
 	function isSafeReturnPath(pathname) {
 		return isPrivateRoute(parseAppRoute(pathname));
@@ -9838,6 +10416,31 @@
 		{
 			path: "/cases/new",
 			name: "case-create",
+			component: { render: () => null }
+		},
+		{
+			path: "/play",
+			name: "script-library",
+			component: { render: () => null }
+		},
+		{
+			path: "/scripts/new",
+			name: "script-create",
+			component: { render: () => null }
+		},
+		{
+			path: "/personal-center",
+			name: "personal-center",
+			component: { render: () => null }
+		},
+		{
+			path: "/games/:gameId(\\d+)/prepare",
+			name: "game-prepare",
+			component: { render: () => null }
+		},
+		{
+			path: "/games/:gameId(\\d+)",
+			name: "game-detail",
 			component: { render: () => null }
 		},
 		{
@@ -9988,16 +10591,24 @@
 	});
 	//#endregion
 	//#region src/components/AppSidebar.vue?vue&type=script&setup=true&lang.ts
-	var _hoisted_1$2 = { "aria-label": "主要导航" };
-	var _hoisted_2$2 = { class: "sidebar-account" };
-	var _hoisted_3$2 = ["aria-label", "title"];
-	var _hoisted_4$2 = {
+	var _hoisted_1$10 = { "aria-label": "主要导航" };
+	var _hoisted_2$10 = ["aria-current"];
+	var _hoisted_3$10 = ["aria-current"];
+	var _hoisted_4$10 = ["aria-current"];
+	var _hoisted_5$9 = { class: "sidebar-account" };
+	var _hoisted_6$9 = ["aria-current", "title"];
+	var _hoisted_7$9 = {
 		id: "userAvatarInitial",
 		class: "account-avatar-initial"
 	};
-	var _hoisted_5$2 = { id: "currentUsername" };
-	var _hoisted_6$2 = ["aria-expanded"];
-	var _hoisted_7$2 = ["disabled"];
+	var _hoisted_8$9 = { class: "sidebar-label" };
+	var _hoisted_9$9 = { id: "currentUsername" };
+	var _hoisted_10$9 = [
+		"title",
+		"aria-label",
+		"aria-expanded"
+	];
+	var _hoisted_11$9 = ["disabled"];
 	//#endregion
 	//#region src/components/AppSidebar.vue
 	var AppSidebar_default = /* @__PURE__ */ defineComponent({
@@ -10011,7 +10622,8 @@
 			const avatarStatus = computed(() => ui.gameActive ? "剧本演绎中，正在思考" : auth.user ? "在线" : "离线");
 			const activeView = computed(() => {
 				if (route.name === "case-list") return "records";
-				if (route.name === "case-create") return "create";
+				if (["case-create", "script-create"].includes(String(route.name))) return "create";
+				if (["script-library", "game-prepare"].includes(String(route.name))) return "library";
 				return "";
 			});
 			function navigate(view) {
@@ -10019,50 +10631,75 @@
 			}
 			function collapseSidebar() {
 				appEvents.emit("sidebar:set", {
-					collapsed: true,
+					collapsed: !ui.sidebarCollapsed,
 					focusTarget: true
 				});
 			}
 			return (_ctx, _cache) => {
 				return openBlock(), createElementBlock(Fragment, null, [
-					_cache[8] || (_cache[8] = createBaseVNode("div", { class: "sidebar-brand" }, [createBaseVNode("span", { class: "brand-seal small" }, "剧"), createBaseVNode("div", null, [createBaseVNode("strong", null, "剧镜"), createBaseVNode("span", null, "悬疑推理 MVP")])], -1)),
-					createBaseVNode("nav", _hoisted_1$2, [createBaseVNode("button", {
-						class: normalizeClass(["nav-button", { active: activeView.value === "create" }]),
-						type: "button",
-						onClick: _cache[0] || (_cache[0] = ($event) => navigate("create"))
-					}, [createVNode(unref(Plus), {
-						size: 18,
-						"aria-hidden": "true"
-					}), _cache[3] || (_cache[3] = createTextVNode("新建案件", -1))], 2), createBaseVNode("button", {
-						class: normalizeClass(["nav-button", { active: activeView.value === "records" }]),
-						type: "button",
-						onClick: _cache[1] || (_cache[1] = ($event) => navigate("records"))
-					}, [createVNode(unref(Archive), {
-						size: 18,
-						"aria-hidden": "true"
-					}), _cache[4] || (_cache[4] = createTextVNode("案件档案", -1))], 2)]),
-					_cache[9] || (_cache[9] = createBaseVNode("div", { class: "mvp-scope" }, [
-						createBaseVNode("span", null, "当前版本"),
-						createBaseVNode("strong", null, "悬疑推理"),
-						createBaseVNode("small", null, "DEDUCTION · MVP")
-					], -1)),
-					createBaseVNode("div", _hoisted_2$2, [
-						createBaseVNode("div", {
+					_cache[11] || (_cache[11] = createBaseVNode("div", { class: "sidebar-brand" }, [createBaseVNode("span", { class: "brand-seal brand-logo small" }, [createBaseVNode("img", {
+						src: "/static/assets/jujing-logo-original.jpg",
+						alt: "剧镜游戏 Logo",
+						width: "1280",
+						height: "1280",
+						decoding: "async",
+						draggable: "false"
+					})]), createBaseVNode("div", { class: "sidebar-label" }, [createBaseVNode("strong", null, "剧镜"), createBaseVNode("span", null, "悬疑推理")])], -1)),
+					createBaseVNode("nav", _hoisted_1$10, [
+						createBaseVNode("button", {
+							class: normalizeClass(["nav-button", { active: activeView.value === "library" }]),
+							"aria-current": activeView.value === "library" ? "page" : void 0,
+							type: "button",
+							title: "新建游戏",
+							"aria-label": "新建游戏",
+							onClick: _cache[0] || (_cache[0] = ($event) => navigate("library"))
+						}, [createVNode(unref(BookOpen), {
+							size: 20,
+							"aria-hidden": "true"
+						}), _cache[5] || (_cache[5] = createBaseVNode("span", { class: "sidebar-label" }, "新建游戏", -1))], 10, _hoisted_2$10),
+						createBaseVNode("button", {
+							class: normalizeClass(["nav-button", { active: activeView.value === "create" }]),
+							"aria-current": activeView.value === "create" ? "page" : void 0,
+							type: "button",
+							title: "新建剧本",
+							"aria-label": "新建剧本",
+							onClick: _cache[1] || (_cache[1] = ($event) => navigate("create"))
+						}, [createVNode(unref(FilePlus), {
+							size: 20,
+							"aria-hidden": "true"
+						}), _cache[6] || (_cache[6] = createBaseVNode("span", { class: "sidebar-label" }, "新建剧本", -1))], 10, _hoisted_3$10),
+						createBaseVNode("button", {
+							class: normalizeClass(["nav-button", { active: activeView.value === "records" }]),
+							"aria-current": activeView.value === "records" ? "page" : void 0,
+							type: "button",
+							title: "案件档案",
+							"aria-label": "案件档案",
+							onClick: _cache[2] || (_cache[2] = ($event) => navigate("records"))
+						}, [createVNode(unref(FolderArchive), {
+							size: 20,
+							"aria-hidden": "true"
+						}), _cache[7] || (_cache[7] = createBaseVNode("span", { class: "sidebar-label" }, "案件档案", -1))], 10, _hoisted_4$10)
+					]),
+					createBaseVNode("div", _hoisted_5$9, [
+						createBaseVNode("button", {
 							id: "userAvatar",
-							class: normalizeClass(["avatar account-avatar", {
+							class: normalizeClass(["avatar account-avatar personal-center-trigger", {
 								"is-online": Boolean(unref(auth).user),
-								"is-thinking": unref(ui).gameActive
+								"is-thinking": unref(ui).gameActive,
+								"is-active": unref(route).name === "personal-center"
 							}]),
-							role: "img",
-							"aria-label": `${username.value}，${avatarStatus.value}`,
-							title: `${username.value} · ${avatarStatus.value}`
+							type: "button",
+							"aria-label": "个人中心",
+							"aria-current": unref(route).name === "personal-center" ? "page" : void 0,
+							title: `${username.value} · 个人中心 · ${avatarStatus.value}`,
+							onClick: _cache[3] || (_cache[3] = ($event) => navigate("profile"))
 						}, [
-							_cache[5] || (_cache[5] = createBaseVNode("i", {
+							_cache[8] || (_cache[8] = createBaseVNode("i", {
 								class: "account-avatar-aura",
 								"aria-hidden": "true"
 							}, null, -1)),
-							createBaseVNode("b", _hoisted_4$2, toDisplayString(avatarInitial.value), 1),
-							_cache[6] || (_cache[6] = createBaseVNode("span", {
+							createBaseVNode("b", _hoisted_7$9, toDisplayString(avatarInitial.value), 1),
+							_cache[9] || (_cache[9] = createBaseVNode("span", {
 								class: "account-avatar-spectrum",
 								"aria-hidden": "true"
 							}, [
@@ -10072,21 +10709,26 @@
 								createBaseVNode("i"),
 								createBaseVNode("i")
 							], -1))
-						], 10, _hoisted_3$2),
-						createBaseVNode("div", null, [createBaseVNode("strong", _hoisted_5$2, toDisplayString(username.value), 1), _cache[7] || (_cache[7] = createBaseVNode("span", null, "本地调查员", -1))]),
+						], 10, _hoisted_6$9),
+						createBaseVNode("div", _hoisted_8$9, [createBaseVNode("strong", _hoisted_9$9, toDisplayString(username.value), 1), _cache[10] || (_cache[10] = createBaseVNode("span", null, "个人中心", -1))]),
 						createBaseVNode("button", {
 							id: "collapseSidebarBtn",
 							class: "icon-button sidebar-toggle-button",
 							type: "button",
-							title: "隐藏导航栏",
-							"aria-label": "隐藏导航栏",
+							title: unref(ui).sidebarCollapsed ? "展开导航栏" : "收起导航栏",
+							"aria-label": unref(ui).sidebarCollapsed ? "展开导航栏" : "收起导航栏",
 							"aria-controls": "appSidebar",
 							"aria-expanded": !unref(ui).sidebarCollapsed,
 							onClick: collapseSidebar
-						}, [createVNode(unref(PanelLeftClose), {
+						}, [unref(ui).sidebarCollapsed ? (openBlock(), createBlock(unref(PanelLeftOpen), {
+							key: 0,
 							size: 17,
 							"aria-hidden": "true"
-						})], 8, _hoisted_6$2),
+						})) : (openBlock(), createBlock(unref(PanelLeftClose), {
+							key: 1,
+							size: 17,
+							"aria-hidden": "true"
+						}))], 8, _hoisted_10$9),
 						createBaseVNode("button", {
 							id: "logoutBtn",
 							class: "icon-button",
@@ -10094,11 +10736,11 @@
 							title: "退出登录",
 							"aria-label": "退出登录",
 							disabled: unref(auth).status === "submitting",
-							onClick: _cache[2] || (_cache[2] = (...args) => unref(auth).logout && unref(auth).logout(...args))
+							onClick: _cache[4] || (_cache[4] = (...args) => unref(auth).logout && unref(auth).logout(...args))
 						}, [createVNode(unref(LogOut), {
 							size: 17,
 							"aria-hidden": "true"
-						})], 8, _hoisted_7$2)
+						})], 8, _hoisted_11$9)
 					])
 				], 64);
 			};
@@ -10106,23 +10748,46 @@
 	});
 	//#endregion
 	//#region src/components/AuthView.vue?vue&type=script&setup=true&lang.ts
-	var _hoisted_1$1 = { class: "auth-panel" };
-	var _hoisted_2$1 = { class: "auth-panel-inner" };
-	var _hoisted_3$1 = {
-		class: "auth-tabs",
-		role: "tablist",
-		"aria-label": "账户操作"
+	var _hoisted_1$9 = { class: "auth-book-stage" };
+	var _hoisted_2$9 = [
+		"aria-selected",
+		"tabindex",
+		"disabled"
+	];
+	var _hoisted_3$9 = [
+		"aria-selected",
+		"tabindex",
+		"disabled"
+	];
+	var _hoisted_4$9 = {
+		class: "auth-paper",
+		"aria-labelledby": "authTitle"
 	};
-	var _hoisted_4$1 = ["aria-selected"];
-	var _hoisted_5$1 = ["aria-selected"];
-	var _hoisted_6$1 = ["disabled"];
-	var _hoisted_7$1 = ["autocomplete", "disabled"];
-	var _hoisted_8$1 = {
+	var _hoisted_5$8 = { class: "auth-paper-subtitle" };
+	var _hoisted_6$8 = ["aria-labelledby", "aria-busy"];
+	var _hoisted_7$8 = { class: "auth-form-field" };
+	var _hoisted_8$8 = { class: "auth-input-wrap" };
+	var _hoisted_9$8 = ["disabled"];
+	var _hoisted_10$8 = { class: "auth-form-field" };
+	var _hoisted_11$8 = { class: "auth-input-wrap" };
+	var _hoisted_12$8 = [
+		"type",
+		"autocomplete",
+		"placeholder",
+		"aria-describedby",
+		"disabled"
+	];
+	var _hoisted_13$8 = [
+		"aria-label",
+		"aria-pressed",
+		"disabled"
+	];
+	var _hoisted_14$7 = {
 		id: "authError",
-		class: "form-error",
+		class: "auth-paper-error",
 		"aria-live": "polite"
 	};
-	var _hoisted_9$1 = ["disabled"];
+	var _hoisted_15$7 = ["disabled"];
 	//#endregion
 	//#region src/components/AuthView.vue
 	var AuthView_default = /* @__PURE__ */ defineComponent({
@@ -10133,72 +10798,151 @@
 			const router = useRouter();
 			const username = /* @__PURE__ */ ref("");
 			const password = /* @__PURE__ */ ref("");
+			const showPassword = /* @__PURE__ */ ref(false);
 			const mode = computed(() => route.name === "register" ? "register" : "login");
 			const submitting = computed(() => auth.status === "submitting");
 			watch(mode, () => {
 				auth.error = "";
+				showPassword.value = false;
 			});
 			async function selectMode(nextMode) {
 				await router.push({ name: nextMode });
 			}
+			async function switchTab(event) {
+				if (![
+					"ArrowLeft",
+					"ArrowRight",
+					"Home",
+					"End"
+				].includes(event.key)) return;
+				event.preventDefault();
+				const nextMode = event.key === "Home" ? "login" : event.key === "End" ? "register" : mode.value === "login" ? "register" : "login";
+				await selectMode(nextMode);
+				await nextTick();
+				document.getElementById(nextMode === "login" ? "loginTab" : "registerTab")?.focus();
+			}
 			async function submit() {
 				await auth.authenticate(mode.value, username.value, password.value);
-				if (auth.status === "authenticated") password.value = "";
+				if (auth.status === "authenticated") {
+					password.value = "";
+					showPassword.value = false;
+				}
 			}
 			return (_ctx, _cache) => {
-				return openBlock(), createElementBlock(Fragment, null, [_cache[10] || (_cache[10] = createStaticVNode("<section class=\"auth-scene\"><div class=\"auth-brand\"><div class=\"brand-lockup\"><span class=\"brand-seal\">剧</span><span>AI 悬疑推理</span></div><div class=\"auth-copy\"><p class=\"case-label\">CASE SYSTEM / 01</p><h1>剧镜</h1><p class=\"auth-lead\">每一份证词，都藏着另一面真相。</p></div><div class=\"scene-status\"><span><i></i>DM 已待命</span><span>角色知识隔离</span><span>本地案件档案</span></div></div></section>", 1)), createBaseVNode("section", _hoisted_1$1, [createBaseVNode("div", _hoisted_2$1, [
-					_cache[6] || (_cache[6] = createBaseVNode("p", { class: "case-label" }, "INVESTIGATOR ACCESS", -1)),
-					_cache[7] || (_cache[7] = createBaseVNode("h2", null, "进入调查室", -1)),
-					_cache[8] || (_cache[8] = createBaseVNode("p", { class: "auth-subtitle" }, "登录后继续你的案件，或建立新的调查员档案。", -1)),
-					createBaseVNode("div", _hoisted_3$1, [createBaseVNode("button", {
-						id: "loginTab",
-						class: normalizeClass(["tab-button", { active: mode.value === "login" }]),
-						type: "button",
-						role: "tab",
-						"aria-selected": mode.value === "login",
-						onClick: _cache[0] || (_cache[0] = ($event) => selectMode("login"))
-					}, "登录", 10, _hoisted_4$1), createBaseVNode("button", {
-						id: "registerTab",
-						class: normalizeClass(["tab-button", { active: mode.value === "register" }]),
-						type: "button",
-						role: "tab",
-						"aria-selected": mode.value === "register",
-						onClick: _cache[1] || (_cache[1] = ($event) => selectMode("register"))
-					}, "注册", 10, _hoisted_5$1)]),
-					createBaseVNode("form", {
-						id: "authForm",
-						onSubmit: withModifiers(submit, ["prevent"])
+				return openBlock(), createElementBlock("div", _hoisted_1$9, [
+					_cache[9] || (_cache[9] = createBaseVNode("section", {
+						class: "auth-dossier",
+						"aria-label": "剧镜调查员档案"
 					}, [
-						createBaseVNode("label", null, [_cache[4] || (_cache[4] = createBaseVNode("span", null, "调查员代号", -1)), withDirectives(createBaseVNode("input", {
-							id: "usernameInput",
-							"onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => username.value = $event),
-							autocomplete: "username",
-							minlength: "3",
-							maxlength: "32",
-							placeholder: "输入用户名",
-							disabled: submitting.value,
-							required: ""
-						}, null, 8, _hoisted_6$1), [[vModelText, username.value]])]),
-						createBaseVNode("label", null, [_cache[5] || (_cache[5] = createBaseVNode("span", null, "访问密码", -1)), withDirectives(createBaseVNode("input", {
-							id: "passwordInput",
-							"onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => password.value = $event),
-							type: "password",
-							autocomplete: mode.value === "login" ? "current-password" : "new-password",
-							minlength: "6",
-							placeholder: "至少 6 位",
-							disabled: submitting.value,
-							required: ""
-						}, null, 8, _hoisted_7$1), [[vModelText, password.value]])]),
-						createBaseVNode("p", _hoisted_8$1, toDisplayString(unref(auth).error), 1),
-						createBaseVNode("button", {
-							id: "authSubmit",
-							class: "primary-button wide",
-							type: "submit",
-							disabled: submitting.value
-						}, toDisplayString(submitting.value ? "处理中" : mode.value === "login" ? "登录" : "创建账户"), 9, _hoisted_9$1)
-					], 32),
-					_cache[9] || (_cache[9] = createBaseVNode("p", { class: "local-note" }, [createBaseVNode("span", null, "●"), createTextVNode("账户与案件记录保存在本机")], -1))
-				])])], 64);
+						createBaseVNode("p", { class: "auth-case-number" }, "CASE FILE / 01"),
+						createBaseVNode("div", {
+							class: "auth-cover-art",
+							role: "img",
+							"aria-label": "剧镜：调查员借放大镜探寻书页中的真相"
+						}),
+						createBaseVNode("h1", { class: "auth-book-title" }, "调查员档案"),
+						createBaseVNode("p", { class: "auth-book-quote" }, [
+							createTextVNode("每一份证词，"),
+							createBaseVNode("br"),
+							createTextVNode("都藏着另一面真相。")
+						])
+					], -1)),
+					createBaseVNode("div", {
+						class: "auth-book-tabs",
+						role: "tablist",
+						"aria-label": "账户操作",
+						onKeydown: switchTab
+					}, [createBaseVNode("button", {
+						id: "loginTab",
+						class: normalizeClass(["auth-book-tab", { active: mode.value === "login" }]),
+						type: "button",
+						role: "tab",
+						"aria-controls": "authForm",
+						"aria-selected": mode.value === "login",
+						tabindex: mode.value === "login" ? 0 : -1,
+						disabled: submitting.value,
+						onClick: _cache[0] || (_cache[0] = ($event) => selectMode("login"))
+					}, "登录", 10, _hoisted_2$9), createBaseVNode("button", {
+						id: "registerTab",
+						class: normalizeClass(["auth-book-tab", { active: mode.value === "register" }]),
+						type: "button",
+						role: "tab",
+						"aria-controls": "authForm",
+						"aria-selected": mode.value === "register",
+						tabindex: mode.value === "register" ? 0 : -1,
+						disabled: submitting.value,
+						onClick: _cache[1] || (_cache[1] = ($event) => selectMode("register"))
+					}, "注册", 10, _hoisted_3$9)], 32),
+					createBaseVNode("section", _hoisted_4$9, [
+						_cache[7] || (_cache[7] = createBaseVNode("p", { class: "auth-access-label" }, "INVESTIGATOR ACCESS", -1)),
+						createBaseVNode("h2", {
+							id: "authTitle",
+							class: normalizeClass({ "is-register": mode.value === "register" })
+						}, toDisplayString(mode.value === "login" ? "进入调查室" : "建立调查员档案"), 3),
+						createBaseVNode("p", _hoisted_5$8, toDisplayString(mode.value === "login" ? "登录后继续你的调查" : "创建账户，开启你的调查"), 1),
+						createBaseVNode("form", {
+							id: "authForm",
+							role: "tabpanel",
+							"aria-labelledby": mode.value === "login" ? "loginTab" : "registerTab",
+							"aria-busy": submitting.value,
+							onSubmit: withModifiers(submit, ["prevent"])
+						}, [
+							createBaseVNode("div", _hoisted_7$8, [_cache[5] || (_cache[5] = createBaseVNode("label", { for: "usernameInput" }, "调查员代号", -1)), createBaseVNode("div", _hoisted_8$8, [createVNode(unref(UserRound), {
+								"aria-hidden": "true",
+								class: "auth-field-icon"
+							}), withDirectives(createBaseVNode("input", {
+								id: "usernameInput",
+								"onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => username.value = $event),
+								autocomplete: "username",
+								minlength: "3",
+								maxlength: "32",
+								placeholder: "输入你的代号",
+								disabled: submitting.value,
+								required: ""
+							}, null, 8, _hoisted_9$8), [[vModelText, username.value]])])]),
+							createBaseVNode("div", _hoisted_10$8, [_cache[6] || (_cache[6] = createBaseVNode("label", { for: "passwordInput" }, "访问密码", -1)), createBaseVNode("div", _hoisted_11$8, [
+								createVNode(unref(LockKeyhole), {
+									"aria-hidden": "true",
+									class: "auth-field-icon"
+								}),
+								withDirectives(createBaseVNode("input", {
+									id: "passwordInput",
+									"onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => password.value = $event),
+									type: showPassword.value ? "text" : "password",
+									autocomplete: mode.value === "login" ? "current-password" : "new-password",
+									minlength: "6",
+									placeholder: mode.value === "login" ? "输入密码" : "设置密码（至少 6 位）",
+									"aria-describedby": unref(auth).error ? "authError" : void 0,
+									disabled: submitting.value,
+									required: ""
+								}, null, 8, _hoisted_12$8), [[vModelDynamic, password.value]]),
+								createBaseVNode("button", {
+									class: "auth-password-toggle",
+									type: "button",
+									"aria-label": showPassword.value ? "隐藏密码" : "显示密码",
+									"aria-pressed": showPassword.value,
+									"aria-controls": "passwordInput",
+									disabled: submitting.value,
+									onClick: _cache[4] || (_cache[4] = ($event) => showPassword.value = !showPassword.value)
+								}, [showPassword.value ? (openBlock(), createBlock(unref(EyeOff), {
+									key: 0,
+									"aria-hidden": "true"
+								})) : (openBlock(), createBlock(unref(Eye), {
+									key: 1,
+									"aria-hidden": "true"
+								}))], 8, _hoisted_13$8)
+							])]),
+							createBaseVNode("p", _hoisted_14$7, toDisplayString(unref(auth).error), 1),
+							createBaseVNode("button", {
+								id: "authSubmit",
+								class: "auth-book-submit",
+								type: "submit",
+								disabled: submitting.value
+							}, toDisplayString(submitting.value ? "正在核验…" : mode.value === "login" ? "登录" : "创建账户"), 9, _hoisted_15$7)
+						], 40, _hoisted_6$8),
+						_cache[8] || (_cache[8] = createBaseVNode("p", { class: "auth-storage-note" }, [createBaseVNode("span", { "aria-hidden": "true" }), createTextVNode("账户与案件记录保存在本机")], -1))
+					])
+				]);
 			};
 		}
 	});
@@ -10257,29 +11001,92 @@
 		return error instanceof Error ? error.message : "读取案件档案失败";
 	}
 	//#endregion
+	//#region src/script-artwork.ts
+	var artworkRoot = "/static/assets";
+	var covers = {
+		fog_harbor_clocktower: "noir-case-desk.png",
+		rainy_night_letter: "script-covers/rainy-night-letter.png",
+		last_train: "script-covers/last-train.png",
+		deep_sea_echo: "script-covers/deep-sea-echo.png",
+		old_house_corridor: "script-covers/old-house-corridor.png",
+		silent_theater: "script-covers/silent-theater.png"
+	};
+	var portraits = {
+		shen_zhiwei: 1,
+		gu_linchuan: 2,
+		zhou_jiming: 3,
+		xu_yanzhou: 4,
+		rnl_qin_he: 1,
+		rnl_shen_yu: 4,
+		rnl_lin_mo: 5,
+		lt_duan_yan: 2,
+		lt_ren_rui: 4,
+		lt_bai_jing: 5,
+		lt_tao_wen: 1,
+		lt_tang_shu: 3,
+		lu_chao: 4,
+		shen_ke: 2,
+		su_wen: 5,
+		chen_cheng: 3,
+		jiang_li: 1,
+		jiang_qiao: 2,
+		tang_tang: 5,
+		meng_lan: 6,
+		pei_yan: 3,
+		shen_yi: 1,
+		xu_ran: 2,
+		ren_tong: 3,
+		bai_zhi: 5,
+		qiao_man: 6,
+		gan_ji: 4
+	};
+	function scriptCover(scriptId) {
+		return `${artworkRoot}/${covers[scriptId] || "noir-case-desk.png"}`;
+	}
+	function rolePortrait(roleId) {
+		if (!roleId || roleId.toLowerCase() === "dm") return "";
+		let hash = 2166136261;
+		for (const character of roleId) hash = Math.imul(hash ^ character.codePointAt(0), 16777619) >>> 0;
+		const index = portraits[roleId] || hash % 6 + 1;
+		return `${artworkRoot}/portraits/portrait-${String(index).padStart(2, "0")}.png`;
+	}
+	//#endregion
 	//#region src/components/CaseRecordsView.vue?vue&type=script&setup=true&lang.ts
-	var _hoisted_1 = { class: "page-header" };
-	var _hoisted_2 = ["disabled"];
-	var _hoisted_3 = ["aria-busy"];
-	var _hoisted_4 = {
+	var _hoisted_1$8 = {
+		class: "case-archive-shell",
+		"aria-labelledby": "caseArchiveTitle"
+	};
+	var _hoisted_2$8 = { class: "case-archive-header" };
+	var _hoisted_3$8 = ["disabled"];
+	var _hoisted_4$8 = ["aria-busy"];
+	var _hoisted_5$7 = {
 		key: 0,
-		class: "empty-state"
+		class: "case-archive-message",
+		role: "status"
 	};
-	var _hoisted_5 = {
+	var _hoisted_6$7 = {
 		key: 1,
-		class: "empty-state records-error-state"
+		class: "case-archive-message case-archive-message--error",
+		role: "alert"
 	};
-	var _hoisted_6 = {
+	var _hoisted_7$7 = ["disabled"];
+	var _hoisted_8$7 = {
 		key: 2,
-		class: "empty-state"
+		class: "case-archive-message"
 	};
-	var _hoisted_7 = { class: "record-title" };
-	var _hoisted_8 = { class: "record-cell" };
-	var _hoisted_9 = { class: "record-cell" };
-	var _hoisted_10 = { class: "record-cell" };
-	var _hoisted_11 = { class: "record-actions" };
-	var _hoisted_12 = ["onClick"];
-	var _hoisted_13 = ["disabled", "onClick"];
+	var _hoisted_9$7 = ["data-game-id", "aria-labelledby"];
+	var _hoisted_10$7 = { class: "case-archive-cover" };
+	var _hoisted_11$7 = ["src"];
+	var _hoisted_12$7 = { class: "case-archive-details" };
+	var _hoisted_13$7 = ["id"];
+	var _hoisted_14$6 = { class: "case-archive-meta" };
+	var _hoisted_15$6 = { class: "case-archive-fields" };
+	var _hoisted_16$5 = { class: "case-archive-tag" };
+	var _hoisted_17$5 = { class: "case-archive-tag" };
+	var _hoisted_18$5 = { class: "case-archive-progress" };
+	var _hoisted_19$5 = { class: "case-archive-actions" };
+	var _hoisted_20$5 = ["disabled", "onClick"];
+	var _hoisted_21$5 = ["disabled", "onClick"];
 	//#endregion
 	//#region src/components/CaseRecordsView.vue
 	var CaseRecordsView_default = /* @__PURE__ */ defineComponent({
@@ -10297,6 +11104,14 @@
 				deduction: "推理对抗",
 				faction: "阵营博弈"
 			};
+			const phaseNames = {
+				opening: "故事开幕",
+				private_reveal: "角色剧本",
+				briefing: "幕前通报",
+				investigation: "自由调查",
+				dm_hosting: "DM 主持",
+				replay: "终局复盘"
+			};
 			const route = useRoute();
 			const auth = useAuthStore();
 			const queryClient = useQueryClient();
@@ -10313,7 +11128,26 @@
 			}
 			function formatUpdatedAt(value) {
 				const date = new Date(value);
-				return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+				return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN", {
+					year: "numeric",
+					month: "2-digit",
+					day: "2-digit",
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: false
+				});
+			}
+			function statusLabel(game) {
+				if (game.status === "abandoned") return "已取消入场";
+				if (game.status === "preparing") return "待选角色";
+				if (game.status === "completed") return "已完成";
+				return game.status === "paused" ? "已暂停" : "进行中";
+			}
+			function progressLabel(game) {
+				if (game.status === "preparing" || game.status === "abandoned") return `共 ${game.total_stages} 幕`;
+				const phase = phaseNames[game.current_phase] || "当前进度";
+				if (game.current_phase === "opening" || game.current_phase === "private_reveal" && game.current_stage === 1) return `${phase} · 共 ${game.total_stages} 幕`;
+				return `${phase} · ${game.current_stage}/${game.total_stages} 幕`;
 			}
 			async function refresh() {
 				clearDeleteConfirmation();
@@ -10321,6 +11155,7 @@
 				if (result.error) appEvents.emit("toast:show", { message: queryErrorMessage(result.error) });
 			}
 			async function openRecord(game) {
+				if (game.status === "abandoned") return;
 				clearDeleteConfirmation();
 				await invalidate();
 				appEvents.emit("records:open", { gameId: game.id });
@@ -10360,72 +11195,3445 @@
 				stopInvalidationListener?.();
 			});
 			return (_ctx, _cache) => {
-				return openBlock(), createElementBlock(Fragment, null, [
-					createBaseVNode("header", _hoisted_1, [_cache[0] || (_cache[0] = createBaseVNode("div", null, [
-						createBaseVNode("p", { class: "case-label" }, "CASE ARCHIVE"),
-						createBaseVNode("h2", null, "案件档案"),
-						createBaseVNode("p", null, "继续调查或查看已经完成的案件。")
-					], -1)), createBaseVNode("button", {
-						id: "refreshRecordsBtn",
-						class: normalizeClass(["icon-button bordered records-refresh", { "is-loading": unref(isFetching) }]),
-						type: "button",
-						title: "刷新档案",
-						"aria-label": "刷新档案",
-						disabled: unref(isFetching) || unref(deletingGameId) !== null,
-						onClick: refresh
-					}, [createVNode(unref(RefreshCw), {
-						size: 17,
-						"aria-hidden": "true"
-					})], 10, _hoisted_2)]),
-					_cache[5] || (_cache[5] = createBaseVNode("div", {
-						class: "records-header",
-						"aria-hidden": "true"
+				return openBlock(), createElementBlock("section", _hoisted_1$8, [createBaseVNode("header", _hoisted_2$8, [_cache[1] || (_cache[1] = createStaticVNode("<div class=\"case-archive-heading\"><p class=\"case-archive-eyebrow\">CASE ARCHIVE</p><div class=\"case-archive-heading-line\"><h2 id=\"caseArchiveTitle\">案件档案</h2><p class=\"case-archive-subtitle\">继续调查或查看已经完成的案件。</p></div></div>", 1)), createBaseVNode("button", {
+					id: "refreshRecordsBtn",
+					class: normalizeClass(["case-archive-refresh", { "case-archive-refresh--loading": unref(isFetching) }]),
+					type: "button",
+					"aria-label": "刷新档案",
+					disabled: unref(isFetching) || unref(deletingGameId) !== null,
+					onClick: refresh
+				}, [createVNode(unref(RefreshCw), {
+					size: 20,
+					"aria-hidden": "true"
+				}), _cache[0] || (_cache[0] = createBaseVNode("span", null, "刷新档案", -1))], 10, _hoisted_3$8)]), createBaseVNode("div", {
+					id: "recordsList",
+					class: "case-archive-list",
+					"aria-busy": unref(isFetching)
+				}, [unref(isPending) ? (openBlock(), createElementBlock("div", _hoisted_5$7, "正在读取记录...")) : unref(error) && !games.value.length ? (openBlock(), createElementBlock("div", _hoisted_6$7, [createBaseVNode("span", null, toDisplayString(unref(queryErrorMessage)(unref(error))), 1), createBaseVNode("button", {
+					class: "case-archive-retry",
+					type: "button",
+					disabled: unref(isFetching),
+					onClick: refresh
+				}, [createVNode(unref(RefreshCw), {
+					size: 16,
+					"aria-hidden": "true"
+				}), _cache[2] || (_cache[2] = createTextVNode("重新读取 ", -1))], 8, _hoisted_7$7)])) : !games.value.length ? (openBlock(), createElementBlock("div", _hoisted_8$7, [createVNode(unref(FolderOpen), {
+					size: 32,
+					"aria-hidden": "true"
+				}), _cache[3] || (_cache[3] = createBaseVNode("span", null, "暂无游戏记录", -1))])) : createCommentVNode("", true), (openBlock(true), createElementBlock(Fragment, null, renderList(games.value, (game) => {
+					return openBlock(), createElementBlock("article", {
+						key: game.id,
+						class: "case-archive-card",
+						"data-game-id": game.id,
+						"aria-labelledby": `caseArchiveGameTitle-${game.id}`
 					}, [
-						createBaseVNode("span", null, "案件"),
-						createBaseVNode("span", null, "类型"),
-						createBaseVNode("span", null, "模式"),
-						createBaseVNode("span", null, "进度"),
-						createBaseVNode("span")
-					], -1)),
-					createBaseVNode("div", {
-						id: "recordsList",
-						class: "records-list",
-						"aria-busy": unref(isFetching)
-					}, [unref(isPending) ? (openBlock(), createElementBlock("div", _hoisted_4, "正在读取记录...")) : unref(error) && !games.value.length ? (openBlock(), createElementBlock("div", _hoisted_5, [createBaseVNode("span", null, toDisplayString(unref(queryErrorMessage)(unref(error))), 1), createBaseVNode("button", {
-						class: "secondary-button",
+						createBaseVNode("div", _hoisted_10$7, [createBaseVNode("img", {
+							src: unref(scriptCover)(game.catalog_script_id || ""),
+							alt: "",
+							loading: "lazy",
+							decoding: "async"
+						}, null, 8, _hoisted_11$7)]),
+						createBaseVNode("div", _hoisted_12$7, [
+							createBaseVNode("h3", {
+								id: `caseArchiveGameTitle-${game.id}`,
+								class: "case-archive-title"
+							}, toDisplayString(game.title), 9, _hoisted_13$7),
+							createBaseVNode("p", _hoisted_14$6, [
+								createTextVNode("游戏 #" + toDisplayString(game.id), 1),
+								_cache[4] || (_cache[4] = createBaseVNode("span", { "aria-hidden": "true" }, "·", -1)),
+								createTextVNode(toDisplayString(formatUpdatedAt(game.updated_at)), 1)
+							]),
+							createBaseVNode("div", _hoisted_15$6, [
+								createBaseVNode("span", _hoisted_16$5, toDisplayString(categoryNames[game.category] || game.category), 1),
+								createBaseVNode("span", _hoisted_17$5, toDisplayString(modeNames[game.mode] || game.mode), 1),
+								createBaseVNode("span", { class: normalizeClass(["case-archive-state", `case-archive-state--${game.status}`]) }, [game.status === "paused" ? (openBlock(), createBlock(unref(Pause), {
+									key: 0,
+									size: 15,
+									"aria-hidden": "true"
+								})) : game.status === "completed" ? (openBlock(), createBlock(unref(Check), {
+									key: 1,
+									size: 16,
+									"aria-hidden": "true"
+								})) : game.status === "preparing" ? (openBlock(), createBlock(unref(UserRound), {
+									key: 2,
+									size: 16,
+									"aria-hidden": "true"
+								})) : (openBlock(), createBlock(unref(BookOpen), {
+									key: 3,
+									size: 15,
+									"aria-hidden": "true"
+								})), createTextVNode(" " + toDisplayString(statusLabel(game)), 1)], 2),
+								createBaseVNode("span", _hoisted_18$5, toDisplayString(progressLabel(game)), 1)
+							])
+						]),
+						createBaseVNode("div", _hoisted_19$5, [createBaseVNode("button", {
+							class: "case-archive-open",
+							type: "button",
+							disabled: game.status === "abandoned",
+							onClick: ($event) => openRecord(game)
+						}, toDisplayString(game.status === "abandoned" ? "已取消" : game.status === "completed" ? "查看" : "继续"), 9, _hoisted_20$5), createBaseVNode("button", {
+							class: normalizeClass(["case-archive-delete", { "case-archive-delete--confirming": confirmingGameId.value === game.id }]),
+							type: "button",
+							disabled: unref(deletingGameId) !== null,
+							onClick: ($event) => requestDelete(game)
+						}, [createVNode(unref(Trash2), {
+							size: 17,
+							"aria-hidden": "true"
+						}), createBaseVNode("span", null, toDisplayString(unref(deletingGameId) === game.id ? "删除中" : confirmingGameId.value === game.id ? "确认删除" : "删除"), 1)], 10, _hoisted_21$5)])
+					], 8, _hoisted_9$7);
+				}), 128))], 8, _hoisted_4$8)]);
+			};
+		}
+	});
+	//#endregion
+	//#region src/components/ScriptDetailView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$7 = { class: "script-detail" };
+	var _hoisted_2$7 = {
+		class: "detail-breadcrumb",
+		"aria-label": "当前位置"
+	};
+	var _hoisted_3$7 = ["disabled"];
+	var _hoisted_4$7 = { class: "detail-layout" };
+	var _hoisted_5$6 = { class: "detail-story" };
+	var _hoisted_6$6 = { class: "detail-cover" };
+	var _hoisted_7$6 = ["src", "alt"];
+	var _hoisted_8$6 = { class: "detail-case-stamp" };
+	var _hoisted_9$6 = { class: "detail-story-content" };
+	var _hoisted_10$6 = {
+		key: 0,
+		class: "detail-source"
+	};
+	var _hoisted_11$6 = { class: "detail-facts" };
+	var _hoisted_12$6 = { class: "detail-tags" };
+	var _hoisted_13$6 = { class: "detail-numbers" };
+	var _hoisted_14$5 = { class: "detail-synopsis" };
+	var _hoisted_15$5 = { class: "detail-characters" };
+	var _hoisted_16$4 = { class: "detail-portrait-grid" };
+	var _hoisted_17$4 = ["src"];
+	var _hoisted_18$4 = ["disabled"];
+	var _hoisted_19$4 = {
+		class: "detail-preparation",
+		"aria-label": "入场准备"
+	};
+	var _hoisted_20$4 = { class: "detail-steps" };
+	var _hoisted_21$4 = { class: "complete" };
+	var _hoisted_22$4 = { class: "detail-ready" };
+	var _hoisted_23$4 = {
+		key: 0,
+		class: "form-error",
+		role: "alert"
+	};
+	var _hoisted_24$4 = ["disabled"];
+	var _hoisted_25$4 = ["disabled"];
+	//#endregion
+	//#region src/components/ScriptDetailView.vue
+	var ScriptDetailView_default = /* @__PURE__ */ defineComponent({
+		__name: "ScriptDetailView",
+		props: {
+			script: {},
+			tags: {},
+			source: { default: "" },
+			busy: {
+				type: Boolean,
+				default: false
+			},
+			error: { default: "" },
+			preparing: {
+				type: Boolean,
+				default: false
+			},
+			selectedRole: { default: "" }
+		},
+		emits: [
+			"back",
+			"choose",
+			"edit"
+		],
+		setup(__props) {
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("div", _hoisted_1$7, [createBaseVNode("nav", _hoisted_2$7, [
+					createBaseVNode("button", {
 						type: "button",
-						onClick: refresh
-					}, [createVNode(unref(RefreshCw), {
+						disabled: __props.busy,
+						onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("back"))
+					}, [createVNode(unref(ArrowLeft), {
+						size: 18,
+						"aria-hidden": "true"
+					}), _cache[4] || (_cache[4] = createTextVNode("返回剧本库", -1))], 8, _hoisted_3$7),
+					_cache[5] || (_cache[5] = createBaseVNode("span", { class: "detail-breadcrumb-divider" }, null, -1)),
+					_cache[6] || (_cache[6] = createBaseVNode("span", null, "新建游戏", -1)),
+					_cache[7] || (_cache[7] = createBaseVNode("span", { "aria-hidden": "true" }, "›", -1)),
+					createBaseVNode("span", null, toDisplayString(__props.preparing ? "选择角色" : "剧本详情"), 1)
+				]), createBaseVNode("div", _hoisted_4$7, [createBaseVNode("article", _hoisted_5$6, [createBaseVNode("div", _hoisted_6$6, [createBaseVNode("img", {
+					src: unref(scriptCover)(__props.script.script_id),
+					alt: `${__props.script.title}封面`
+				}, null, 8, _hoisted_7$6), createBaseVNode("span", _hoisted_8$6, [
+					_cache[8] || (_cache[8] = createTextVNode("CASE FILE", -1)),
+					_cache[9] || (_cache[9] = createBaseVNode("br", null, null, -1)),
+					createTextVNode(toDisplayString(__props.source === "imported" ? "我的剧本" : "故事档案"), 1)
+				])]), createBaseVNode("div", _hoisted_9$6, [
+					__props.source ? (openBlock(), createElementBlock("span", _hoisted_10$6, toDisplayString(__props.source === "builtin" ? "内置剧本" : "我的剧本"), 1)) : createCommentVNode("", true),
+					createBaseVNode("h2", null, toDisplayString(__props.script.title), 1),
+					createBaseVNode("div", _hoisted_11$6, [createBaseVNode("div", _hoisted_12$6, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.tags, (tag) => {
+						return openBlock(), createElementBlock("span", { key: tag }, toDisplayString(tag), 1);
+					}), 128))]), createBaseVNode("div", _hoisted_13$6, [createBaseVNode("span", null, [createVNode(unref(Users), {
+						size: 22,
+						"aria-hidden": "true"
+					}), createTextVNode(toDisplayString(__props.script.role_count) + " 位角色", 1)]), createBaseVNode("span", null, [createVNode(unref(BookOpen), {
+						size: 22,
+						"aria-hidden": "true"
+					}), createTextVNode(toDisplayString(__props.script.total_stages) + " 幕故事", 1)])])]),
+					createBaseVNode("section", _hoisted_14$5, [_cache[10] || (_cache[10] = createBaseVNode("h3", null, "故事简介", -1)), createBaseVNode("p", null, toDisplayString(__props.script.story_background), 1)]),
+					createBaseVNode("section", _hoisted_15$5, [_cache[11] || (_cache[11] = createBaseVNode("h3", null, "可选角色", -1)), createBaseVNode("div", _hoisted_16$4, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.script.playable_roles, (role) => {
+						return openBlock(), createElementBlock("div", {
+							key: role.role_id,
+							class: normalizeClass(["detail-character", { selected: __props.selectedRole === role.role_id }])
+						}, [
+							createBaseVNode("img", {
+								src: unref(rolePortrait)(role.role_id),
+								alt: "",
+								loading: "lazy"
+							}, null, 8, _hoisted_17$4),
+							createBaseVNode("div", null, [createBaseVNode("strong", null, toDisplayString(role.role_name), 1), createBaseVNode("span", null, toDisplayString(role.public_identity), 1)]),
+							__props.selectedRole === role.role_id ? (openBlock(), createBlock(unref(Check), {
+								key: 0,
+								class: "detail-character-selected",
+								size: 18,
+								"aria-label": "已选择"
+							})) : createCommentVNode("", true)
+						], 2);
+					}), 128))])]),
+					__props.source === "imported" && !__props.preparing ? (openBlock(), createElementBlock("button", {
+						key: 1,
+						class: "catalog-edit",
+						disabled: __props.busy,
+						onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("edit"))
+					}, [_cache[12] || (_cache[12] = createTextVNode("编辑并发布新版本 ", -1)), createVNode(unref(ArrowRight), {
+						size: 14,
+						"aria-hidden": "true"
+					})], 8, _hoisted_18$4)) : createCommentVNode("", true)
+				])]), createBaseVNode("aside", _hoisted_19$4, [
+					_cache[17] || (_cache[17] = createBaseVNode("h2", null, "准备开始", -1)),
+					_cache[18] || (_cache[18] = createBaseVNode("div", { class: "detail-gold-rule" }, null, -1)),
+					createBaseVNode("ol", _hoisted_20$4, [
+						createBaseVNode("li", _hoisted_21$4, [
+							_cache[13] || (_cache[13] = createBaseVNode("span", { class: "detail-step-number" }, "01", -1)),
+							_cache[14] || (_cache[14] = createBaseVNode("div", null, [createBaseVNode("strong", null, "剧本确认"), createBaseVNode("p", null, "已查看剧本详情")], -1)),
+							createVNode(unref(Check), {
+								size: 19,
+								class: "detail-step-check",
+								"aria-label": "已完成"
+							})
+						]),
+						createBaseVNode("li", { class: normalizeClass({ current: __props.preparing }) }, [..._cache[15] || (_cache[15] = [
+							createBaseVNode("span", { class: "detail-step-number" }, "02", -1),
+							createBaseVNode("div", null, [createBaseVNode("strong", null, "选择角色"), createBaseVNode("p", null, "从不同视角进入故事")], -1),
+							createBaseVNode("span", { class: "detail-step-circle" }, null, -1)
+						])], 2),
+						_cache[16] || (_cache[16] = createBaseVNode("li", null, [
+							createBaseVNode("span", { class: "detail-step-number" }, "03"),
+							createBaseVNode("div", null, [createBaseVNode("strong", null, "开始调查"), createBaseVNode("p", null, "通过证词与线索推进调查")]),
+							createBaseVNode("span", { class: "detail-step-circle" })
+						], -1))
+					]),
+					createBaseVNode("div", _hoisted_22$4, [
+						createBaseVNode("p", null, toDisplayString(__props.preparing ? "选择你的角色，其余角色将由角色 Agent 扮演。" : "先了解故事，再选择角色。"), 1),
+						__props.error ? (openBlock(), createElementBlock("p", _hoisted_23$4, toDisplayString(__props.error), 1)) : createCommentVNode("", true),
+						createBaseVNode("button", {
+							class: "detail-choose",
+							type: "button",
+							disabled: __props.busy,
+							onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("choose"))
+						}, [createTextVNode(toDisplayString(__props.busy ? "正在准备…" : "选择角色"), 1), createVNode(unref(ArrowRight), {
+							size: 20,
+							"aria-hidden": "true"
+						})], 8, _hoisted_24$4),
+						createBaseVNode("button", {
+							class: "detail-return",
+							type: "button",
+							disabled: __props.busy,
+							onClick: _cache[3] || (_cache[3] = ($event) => _ctx.$emit("back"))
+						}, "返回剧本库", 8, _hoisted_25$4)
+					])
+				])])]);
+			};
+		}
+	});
+	//#endregion
+	//#region src/components/ScriptLibraryView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$6 = {
+		key: 1,
+		class: "catalog-status",
+		"aria-live": "polite"
+	};
+	var _hoisted_2$6 = {
+		key: 2,
+		class: "catalog-status"
+	};
+	var _hoisted_3$6 = { role: "alert" };
+	var _hoisted_4$6 = { class: "case-browser-header" };
+	var _hoisted_5$5 = {
+		class: "case-browser-source-tabs",
+		role: "group",
+		"aria-label": "剧本来源"
+	};
+	var _hoisted_6$5 = ["aria-pressed"];
+	var _hoisted_7$5 = ["aria-pressed"];
+	var _hoisted_8$5 = ["aria-pressed"];
+	var _hoisted_9$5 = {
+		type: "submit",
+		"aria-label": "搜索剧本"
+	};
+	var _hoisted_10$5 = { class: "case-browser-filterbar" };
+	var _hoisted_11$5 = {
+		class: "case-browser-genres",
+		role: "group",
+		"aria-label": "剧本类型"
+	};
+	var _hoisted_12$5 = ["aria-pressed"];
+	var _hoisted_13$5 = ["aria-pressed", "onClick"];
+	var _hoisted_14$4 = [
+		"id",
+		"aria-label",
+		"aria-expanded",
+		"aria-controls"
+	];
+	var _hoisted_15$4 = ["id", "aria-activedescendant"];
+	var _hoisted_16$3 = [
+		"id",
+		"aria-selected",
+		"onPointermove",
+		"onClick"
+	];
+	var _hoisted_17$3 = { class: "case-browser-result-tools" };
+	var _hoisted_18$3 = { class: "case-browser-sort" };
+	var _hoisted_19$3 = ["value"];
+	var _hoisted_20$3 = { class: "case-browser-count" };
+	var _hoisted_21$3 = {
+		key: 0,
+		class: "sr-only",
+		"aria-live": "polite"
+	};
+	var _hoisted_22$3 = ["aria-busy"];
+	var _hoisted_23$3 = {
+		key: 0,
+		class: "catalog-status",
+		"aria-live": "polite"
+	};
+	var _hoisted_24$3 = {
+		key: 1,
+		class: "catalog-status"
+	};
+	var _hoisted_25$3 = { role: "alert" };
+	var _hoisted_26$3 = {
+		key: 2,
+		class: "catalog-status"
+	};
+	var _hoisted_27$3 = [
+		"aria-label",
+		"aria-pressed",
+		"onClick"
+	];
+	var _hoisted_28$3 = ["src"];
+	var _hoisted_29$2 = { class: "case-browser-row-copy" };
+	var _hoisted_30$2 = ["title"];
+	var _hoisted_31$2 = { class: "case-browser-tags" };
+	var _hoisted_32$2 = ["title"];
+	var _hoisted_33$2 = { class: "case-browser-row-meta" };
+	var _hoisted_34$2 = ["onClick"];
+	var _hoisted_35$2 = {
+		key: 0,
+		class: "case-browser-preview",
+		"aria-labelledby": "scriptPreviewHeading"
+	};
+	var _hoisted_36$2 = { class: "case-browser-preview-bar" };
+	var _hoisted_37$2 = ["src", "alt"];
+	var _hoisted_38$2 = { class: "case-browser-preview-title" };
+	var _hoisted_39$2 = { class: "case-browser-tags" };
+	var _hoisted_40$2 = { class: "case-browser-synopsis" };
+	var _hoisted_41$2 = { class: "case-browser-preview-meta" };
+	var _hoisted_42$2 = {
+		class: "case-browser-roles",
+		"aria-label": "可选角色"
+	};
+	var _hoisted_43$2 = { class: "case-browser-cast" };
+	var _hoisted_44$2 = ["src", "alt"];
+	//#endregion
+	//#region src/components/ScriptLibraryView.vue
+	var ScriptLibraryView_default = /* @__PURE__ */ defineComponent({
+		__name: "ScriptLibraryView",
+		setup(__props) {
+			const router = useRouter();
+			const route = useRoute();
+			const auth = useAuthStore();
+			const routeValue = (key) => typeof route.query[key] === "string" ? route.query[key] : "";
+			const keyword = /* @__PURE__ */ ref(routeValue("q"));
+			const query = computed(() => routeValue("q").trim());
+			const source = computed(() => routeValue("source"));
+			const tag = computed(() => routeValue("tag"));
+			const order = computed(() => routeValue("order"));
+			const selectedId = computed(() => routeValue("script"));
+			const previewId = /* @__PURE__ */ ref(selectedId.value);
+			const previewHeading = /* @__PURE__ */ ref(null);
+			const scriptList = /* @__PURE__ */ ref(null);
+			const entering = /* @__PURE__ */ ref(null);
+			const actionError = /* @__PURE__ */ ref("");
+			const moreFilter = /* @__PURE__ */ ref(null);
+			const moreTrigger = /* @__PURE__ */ ref(null);
+			const moreList = /* @__PURE__ */ ref(null);
+			const moreOpen = /* @__PURE__ */ ref(false);
+			const moreAlignEnd = /* @__PURE__ */ ref(false);
+			const activeGenre = /* @__PURE__ */ ref(0);
+			const moreId = useId();
+			let debounce;
+			const pendingEntries = /* @__PURE__ */ new Map();
+			function updateQuery(values, replace = true) {
+				const next = { ...route.query };
+				for (const [key, value] of Object.entries(values)) if (value) next[key] = value;
+				else delete next[key];
+				router[replace ? "replace" : "push"]({
+					name: "script-library",
+					query: next
+				});
+			}
+			watch(keyword, (value) => {
+				clearTimeout(debounce);
+				debounce = setTimeout(() => updateQuery({ q: value.trim() }), 250);
+			});
+			watch(query, (value) => {
+				if (keyword.value.trim() !== value) keyword.value = value;
+			});
+			watch(selectedId, (value) => {
+				actionError.value = "";
+				if (value) previewId.value = value;
+			});
+			onMounted(() => document.addEventListener("pointerdown", closeMoreOutside));
+			onBeforeUnmount(() => {
+				clearTimeout(debounce);
+				document.removeEventListener("pointerdown", closeMoreOutside);
+			});
+			const { data, error, isPending, isFetching, refetch } = useQuery({
+				queryKey: computed(() => [
+					"script-catalog",
+					auth.user?.id,
+					query.value
+				]),
+				queryFn: ({ signal }) => getApiClient().request(`/api/v1/scripts?q=${encodeURIComponent(query.value)}`, { signal }),
+				enabled: computed(() => Boolean(auth.user))
+			});
+			const detailCatalog = useQuery({
+				queryKey: computed(() => [
+					"script-catalog",
+					auth.user?.id,
+					""
+				]),
+				queryFn: ({ signal }) => getApiClient().request("/api/v1/scripts?q=", { signal }),
+				enabled: computed(() => Boolean(auth.user && selectedId.value && query.value && data.value && !data.value.some((item) => item.catalog_id === selectedId.value)))
+			});
+			const selectedScript = computed(() => [...data.value || [], ...detailCatalog.data.value || []].find((item) => item.catalog_id === selectedId.value));
+			const availableTags = computed(() => [...new Set((data.value || []).flatMap((item) => item.tags))]);
+			const primaryTags = computed(() => [
+				"悬疑",
+				"推理",
+				"密室"
+			].filter((genre) => availableTags.value.includes(genre)));
+			const extraTags = computed(() => availableTags.value.filter((genre) => !primaryTags.value.includes(genre)));
+			const moreOptions = computed(() => [{
+				value: "",
+				label: "全部类型"
+			}, ...extraTags.value.map((genre) => ({
+				value: genre,
+				label: genre
+			}))]);
+			watch([
+				tag,
+				extraTags,
+				selectedId
+			], () => closeMore(false));
+			const visibleScripts = computed(() => {
+				const scripts = (data.value || []).filter((item) => (!source.value || item.source === source.value) && (!tag.value || item.tags.includes(tag.value)));
+				return order.value === "title" ? [...scripts].sort((a, b) => a.title.localeCompare(b.title, "zh-CN")) : scripts;
+			});
+			const previewScript = computed(() => {
+				if (isPending.value || error.value) return void 0;
+				return visibleScripts.value.find((item) => item.catalog_id === previewId.value) || visibleScripts.value[0];
+			});
+			watch([
+				visibleScripts,
+				isPending,
+				error
+			], ([scripts, pending, reason]) => {
+				if (pending || reason || data.value === void 0) return;
+				if (!scripts.some((item) => item.catalog_id === previewId.value)) previewId.value = scripts[0]?.catalog_id || "";
+			});
+			function search() {
+				clearTimeout(debounce);
+				updateQuery({ q: keyword.value.trim() });
+			}
+			function closeMore(restoreFocus = true) {
+				if (!moreOpen.value) return;
+				moreOpen.value = false;
+				if (restoreFocus) moreTrigger.value?.focus({ preventScroll: true });
+			}
+			function closeMoreOutside(event) {
+				if (event.target instanceof Node && !moreFilter.value?.contains(event.target)) closeMore(false);
+			}
+			function leaveMore(event) {
+				if (event.relatedTarget === moreTrigger.value || !(event.relatedTarget instanceof Node) || !moreFilter.value?.contains(event.relatedTarget)) closeMore(false);
+			}
+			async function openMore(direction = 1) {
+				moreAlignEnd.value = false;
+				const selected = moreOptions.value.findIndex((option) => option.value === tag.value);
+				activeGenre.value = selected >= 0 ? selected : direction < 0 ? moreOptions.value.length - 1 : 0;
+				moreOpen.value = true;
+				await nextTick();
+				moreAlignEnd.value = (moreList.value?.getBoundingClientRect().right || 0) > window.innerWidth - 12;
+				moreList.value?.focus({ preventScroll: true });
+				document.getElementById(`${moreId}-option-${activeGenre.value}`)?.scrollIntoView?.({ block: "nearest" });
+			}
+			function chooseGenre(value) {
+				updateQuery({ tag: value });
+				closeMore();
+			}
+			function moreTriggerKey(event) {
+				if (event.key === "Escape" && moreOpen.value) {
+					event.preventDefault();
+					closeMore();
+					return;
+				}
+				if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+				event.preventDefault();
+				openMore(event.key === "ArrowUp" ? -1 : 1);
+			}
+			function moreListKey(event) {
+				if (event.key === "Escape") {
+					event.preventDefault();
+					closeMore();
+					return;
+				}
+				if (["Enter", " "].includes(event.key)) {
+					event.preventDefault();
+					chooseGenre(moreOptions.value[activeGenre.value].value);
+					return;
+				}
+				if (![
+					"ArrowDown",
+					"ArrowUp",
+					"Home",
+					"End"
+				].includes(event.key)) return;
+				event.preventDefault();
+				const count = moreOptions.value.length;
+				activeGenre.value = event.key === "Home" ? 0 : event.key === "End" ? count - 1 : (activeGenre.value + (event.key === "ArrowDown" ? 1 : -1) + count) % count;
+				document.getElementById(`${moreId}-option-${activeGenre.value}`)?.scrollIntoView({ block: "nearest" });
+			}
+			function scrollInCompactView(element) {
+				if (!element || !window.matchMedia("(max-width: 760px)").matches) return;
+				element.focus({ preventScroll: true });
+				element.scrollIntoView({
+					behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+					block: "start"
+				});
+			}
+			async function selectPreview(catalogId) {
+				previewId.value = catalogId;
+				await nextTick();
+				scrollInCompactView(previewHeading.value);
+			}
+			function backToList() {
+				scrollInCompactView(scriptList.value);
+			}
+			function openDetails(script) {
+				clearTimeout(debounce);
+				updateQuery({
+					script: script.catalog_id,
+					q: keyword.value.trim()
+				}, false);
+			}
+			function backToLibrary() {
+				updateQuery({ script: "" }, false);
+			}
+			async function edit(script) {
+				await router.push({
+					name: "script-create",
+					query: { edit: script.catalog_id }
+				});
+				appEvents.emit("navigation:view", { view: "create" });
+			}
+			async function enter(script) {
+				if (entering.value) return;
+				const returnPath = route.fullPath;
+				entering.value = script.catalog_id;
+				actionError.value = "";
+				try {
+					const key = `${script.catalog_id}:${script.version}`;
+					if (!pendingEntries.has(key)) pendingEntries.set(key, crypto.randomUUID());
+					const game = await getApiClient().request("/api/v1/game-preparations", {
+						method: "POST",
+						body: JSON.stringify({
+							catalog_id: script.catalog_id,
+							version: script.version,
+							request_id: pendingEntries.get(key)
+						})
+					});
+					appEvents.emit("records:invalidate", {});
+					await router.push({
+						name: "game-prepare",
+						params: { gameId: game.id },
+						query: { from: returnPath }
+					});
+					appEvents.emit("games:prepare", { gameId: game.id });
+				} catch (reason) {
+					actionError.value = reason instanceof Error ? reason.message : "进入剧本失败";
+				} finally {
+					entering.value = null;
+				}
+			}
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("section", { class: normalizeClass(["catalog-shell", { "case-browser-shell": !selectedId.value }]) }, [selectedId.value ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [selectedScript.value ? (openBlock(), createBlock(ScriptDetailView_default, {
+					key: 0,
+					script: selectedScript.value,
+					tags: selectedScript.value.tags,
+					source: selectedScript.value.source,
+					busy: entering.value !== null,
+					error: actionError.value,
+					onBack: backToLibrary,
+					onChoose: _cache[0] || (_cache[0] = ($event) => enter(selectedScript.value)),
+					onEdit: _cache[1] || (_cache[1] = ($event) => edit(selectedScript.value))
+				}, null, 8, [
+					"script",
+					"tags",
+					"source",
+					"busy",
+					"error"
+				])) : unref(isPending) || unref(isFetching) || unref(detailCatalog).isFetching.value ? (openBlock(), createElementBlock("div", _hoisted_1$6, "正在读取剧本详情…")) : (openBlock(), createElementBlock("div", _hoisted_2$6, [createBaseVNode("p", _hoisted_3$6, toDisplayString(unref(error)?.message || unref(detailCatalog).error.value?.message || "该剧本不存在或暂时无法查看。"), 1), createBaseVNode("button", {
+					class: "secondary-button",
+					onClick: backToLibrary
+				}, "返回剧本库")]))], 64)) : (openBlock(), createElementBlock(Fragment, { key: 1 }, [
+					createBaseVNode("header", _hoisted_4$6, [
+						_cache[13] || (_cache[13] = createBaseVNode("h2", null, "剧本库", -1)),
+						createBaseVNode("div", _hoisted_5$5, [
+							createBaseVNode("button", {
+								class: normalizeClass({ active: !source.value }),
+								"aria-pressed": !source.value,
+								onClick: _cache[2] || (_cache[2] = ($event) => updateQuery({ source: "" }))
+							}, "全部剧本", 10, _hoisted_6$5),
+							createBaseVNode("button", {
+								class: normalizeClass({ active: source.value === "builtin" }),
+								"aria-pressed": source.value === "builtin",
+								onClick: _cache[3] || (_cache[3] = ($event) => updateQuery({ source: "builtin" }))
+							}, "内置剧本", 10, _hoisted_7$5),
+							createBaseVNode("button", {
+								class: normalizeClass({ active: source.value === "imported" }),
+								"aria-pressed": source.value === "imported",
+								onClick: _cache[4] || (_cache[4] = ($event) => updateQuery({ source: "imported" }))
+							}, "我的剧本", 10, _hoisted_8$5)
+						]),
+						createBaseVNode("form", {
+							class: "case-browser-search",
+							role: "search",
+							onSubmit: withModifiers(search, ["prevent"])
+						}, [
+							createBaseVNode("button", _hoisted_9$5, [createVNode(unref(Search), {
+								size: 21,
+								"aria-hidden": "true"
+							})]),
+							_cache[12] || (_cache[12] = createBaseVNode("label", {
+								class: "sr-only",
+								for: "scriptSearchInput"
+							}, "按剧本名称或标签搜索", -1)),
+							withDirectives(createBaseVNode("input", {
+								id: "scriptSearchInput",
+								"onUpdate:modelValue": _cache[5] || (_cache[5] = ($event) => keyword.value = $event),
+								type: "search",
+								maxlength: "120",
+								placeholder: "搜索剧本名称或标签",
+								autocomplete: "off"
+							}, null, 512), [[vModelText, keyword.value]])
+						], 32)
+					]),
+					createBaseVNode("div", _hoisted_10$5, [createBaseVNode("div", _hoisted_11$5, [
+						createBaseVNode("button", {
+							class: normalizeClass(["case-browser-genre", { active: !tag.value }]),
+							"aria-pressed": !tag.value,
+							onClick: _cache[6] || (_cache[6] = ($event) => updateQuery({ tag: "" }))
+						}, "全部类型", 10, _hoisted_12$5),
+						(openBlock(true), createElementBlock(Fragment, null, renderList(primaryTags.value, (genre) => {
+							return openBlock(), createElementBlock("button", {
+								key: genre,
+								class: normalizeClass(["case-browser-genre", { active: tag.value === genre }]),
+								"aria-pressed": tag.value === genre,
+								onClick: ($event) => updateQuery({ tag: tag.value === genre ? "" : genre })
+							}, toDisplayString(genre), 11, _hoisted_13$5);
+						}), 128)),
+						extraTags.value.length ? (openBlock(), createElementBlock("div", {
+							key: 0,
+							ref_key: "moreFilter",
+							ref: moreFilter,
+							class: "case-browser-more",
+							onFocusout: leaveMore
+						}, [createBaseVNode("button", {
+							id: unref(moreId),
+							ref_key: "moreTrigger",
+							ref: moreTrigger,
+							type: "button",
+							class: normalizeClass(["case-browser-genre case-browser-more-trigger", { active: extraTags.value.includes(tag.value) }]),
+							"aria-label": extraTags.value.includes(tag.value) ? `更多剧本类型，当前：${tag.value}` : "更多剧本类型",
+							"aria-haspopup": "listbox",
+							"aria-expanded": moreOpen.value,
+							"aria-controls": `${unref(moreId)}-options`,
+							onClick: _cache[7] || (_cache[7] = ($event) => moreOpen.value ? closeMore() : openMore()),
+							onKeydown: moreTriggerKey
+						}, [createBaseVNode("span", null, toDisplayString(extraTags.value.includes(tag.value) ? tag.value : "更多"), 1), createVNode(unref(ChevronDown), {
+							size: 15,
+							"aria-hidden": "true"
+						})], 42, _hoisted_14$4), moreOpen.value ? (openBlock(), createElementBlock("ul", {
+							key: 0,
+							id: `${unref(moreId)}-options`,
+							ref_key: "moreList",
+							ref: moreList,
+							class: normalizeClass(["case-browser-more-options", { "align-end": moreAlignEnd.value }]),
+							role: "listbox",
+							"aria-label": "更多剧本类型",
+							"aria-activedescendant": `${unref(moreId)}-option-${activeGenre.value}`,
+							tabindex: "-1",
+							onKeydown: moreListKey
+						}, [(openBlock(true), createElementBlock(Fragment, null, renderList(moreOptions.value, (option, index) => {
+							return openBlock(), createElementBlock("li", {
+								id: `${unref(moreId)}-option-${index}`,
+								key: option.value,
+								role: "option",
+								"aria-selected": tag.value === option.value,
+								class: normalizeClass({
+									active: activeGenre.value === index,
+									selected: tag.value === option.value
+								}),
+								onPointermove: ($event) => activeGenre.value = index,
+								onPointerdown: _cache[8] || (_cache[8] = withModifiers(() => {}, ["prevent"])),
+								onClick: ($event) => chooseGenre(option.value)
+							}, [createBaseVNode("span", null, toDisplayString(option.label), 1), tag.value === option.value ? (openBlock(), createBlock(unref(Check), {
+								key: 0,
+								size: 15,
+								"aria-hidden": "true"
+							})) : createCommentVNode("", true)], 42, _hoisted_16$3);
+						}), 128))], 42, _hoisted_15$4)) : createCommentVNode("", true)], 544)) : createCommentVNode("", true)
+					]), createBaseVNode("div", _hoisted_17$3, [
+						createBaseVNode("label", _hoisted_18$3, [
+							_cache[15] || (_cache[15] = createBaseVNode("span", { class: "sr-only" }, "剧本排序", -1)),
+							createBaseVNode("select", {
+								value: order.value,
+								onChange: _cache[9] || (_cache[9] = ($event) => updateQuery({ order: $event.target.value }))
+							}, [..._cache[14] || (_cache[14] = [createBaseVNode("option", { value: "" }, "默认排序", -1), createBaseVNode("option", { value: "title" }, "名称顺序", -1)])], 40, _hoisted_19$3),
+							createVNode(unref(ChevronDown), {
+								size: 16,
+								"aria-hidden": "true"
+							})
+						]),
+						createBaseVNode("span", _hoisted_20$3, "共 " + toDisplayString(visibleScripts.value.length) + " 部剧本", 1),
+						unref(isFetching) ? (openBlock(), createElementBlock("span", _hoisted_21$3, "正在更新剧本…")) : createCommentVNode("", true)
+					])]),
+					createBaseVNode("div", {
+						class: "case-browser-body",
+						"aria-busy": unref(isFetching)
+					}, [unref(isPending) ? (openBlock(), createElementBlock("p", _hoisted_23$3, "正在读取剧本…")) : unref(error) ? (openBlock(), createElementBlock("div", _hoisted_24$3, [createBaseVNode("p", _hoisted_25$3, toDisplayString(unref(error).message), 1), createBaseVNode("button", {
+						class: "secondary-button",
+						onClick: _cache[10] || (_cache[10] = ($event) => unref(refetch)())
+					}, "重新读取")])) : !visibleScripts.value.length ? (openBlock(), createElementBlock("div", _hoisted_26$3, toDisplayString(query.value || source.value || tag.value ? "没有匹配的剧本，试试其他名称或类型。" : "剧本库暂无可用剧本。"), 1)) : (openBlock(), createElementBlock(Fragment, { key: 3 }, [createBaseVNode("div", {
+						ref_key: "scriptList",
+						ref: scriptList,
+						class: "case-browser-list",
+						"aria-label": "可选剧本",
+						tabindex: "-1"
+					}, [(openBlock(true), createElementBlock(Fragment, null, renderList(visibleScripts.value, (script) => {
+						return openBlock(), createElementBlock("article", {
+							key: script.catalog_id,
+							class: normalizeClass(["case-browser-row", { selected: previewScript.value?.catalog_id === script.catalog_id }])
+						}, [createBaseVNode("button", {
+							class: "case-browser-row-button",
+							type: "button",
+							"aria-label": `预览剧本：${script.title}`,
+							"aria-pressed": previewScript.value?.catalog_id === script.catalog_id,
+							onClick: ($event) => selectPreview(script.catalog_id)
+						}, [
+							createBaseVNode("img", {
+								class: "case-browser-thumbnail",
+								src: unref(scriptCover)(script.script_id || script.catalog_id),
+								alt: "",
+								loading: "lazy"
+							}, null, 8, _hoisted_28$3),
+							createBaseVNode("div", _hoisted_29$2, [createBaseVNode("h3", { title: script.title }, toDisplayString(script.title), 9, _hoisted_30$2), createBaseVNode("div", _hoisted_31$2, [(openBlock(true), createElementBlock(Fragment, null, renderList(script.tags.slice(0, 3), (genre) => {
+								return openBlock(), createElementBlock("span", {
+									key: genre,
+									title: genre
+								}, toDisplayString(genre), 9, _hoisted_32$2);
+							}), 128))])]),
+							createBaseVNode("div", _hoisted_33$2, [createBaseVNode("span", null, [createBaseVNode("b", null, toDisplayString(script.role_count), 1), _cache[16] || (_cache[16] = createTextVNode(" 位角色", -1))]), createBaseVNode("span", null, [createBaseVNode("b", null, toDisplayString(script.total_stages), 1), _cache[17] || (_cache[17] = createTextVNode(" 幕故事", -1))])]),
+							createVNode(unref(ChevronRight), {
+								class: "case-browser-row-arrow",
+								size: 20,
+								"aria-hidden": "true"
+							})
+						], 8, _hoisted_27$3), script.source === "imported" ? (openBlock(), createElementBlock("button", {
+							key: 0,
+							class: "case-browser-edit",
+							onClick: ($event) => edit(script)
+						}, [_cache[18] || (_cache[18] = createTextVNode("编辑并发布新版本 ", -1)), createVNode(unref(ArrowRight), {
+							size: 13,
+							"aria-hidden": "true"
+						})], 8, _hoisted_34$2)) : createCommentVNode("", true)], 2);
+					}), 128))], 512), previewScript.value ? (openBlock(), createElementBlock("aside", _hoisted_35$2, [
+						createBaseVNode("div", _hoisted_36$2, [createBaseVNode("h3", {
+							id: "scriptPreviewHeading",
+							ref_key: "previewHeading",
+							ref: previewHeading,
+							class: "case-browser-preview-label",
+							tabindex: "-1"
+						}, "剧本预览", 512), createBaseVNode("button", {
+							class: "case-browser-back-to-list",
+							type: "button",
+							onClick: backToList
+						}, "返回剧本列表")]),
+						createBaseVNode("img", {
+							class: "case-browser-preview-cover",
+							src: unref(scriptCover)(previewScript.value.script_id || previewScript.value.catalog_id),
+							alt: `${previewScript.value.title}封面`
+						}, null, 8, _hoisted_37$2),
+						createBaseVNode("h2", _hoisted_38$2, toDisplayString(previewScript.value.title), 1),
+						createBaseVNode("div", _hoisted_39$2, [(openBlock(true), createElementBlock(Fragment, null, renderList(previewScript.value.tags, (genre) => {
+							return openBlock(), createElementBlock("span", { key: genre }, toDisplayString(genre), 1);
+						}), 128))]),
+						createBaseVNode("p", _hoisted_40$2, toDisplayString(previewScript.value.story_background), 1),
+						createBaseVNode("div", _hoisted_41$2, [createBaseVNode("span", null, [
+							createVNode(unref(Users), {
+								size: 23,
+								"aria-hidden": "true"
+							}),
+							createBaseVNode("b", null, toDisplayString(previewScript.value.role_count), 1),
+							_cache[19] || (_cache[19] = createTextVNode(" 位角色", -1))
+						]), createBaseVNode("span", null, [
+							createVNode(unref(BookOpen), {
+								size: 23,
+								"aria-hidden": "true"
+							}),
+							createBaseVNode("b", null, toDisplayString(previewScript.value.total_stages), 1),
+							_cache[20] || (_cache[20] = createTextVNode(" 幕故事", -1))
+						])]),
+						createBaseVNode("section", _hoisted_42$2, [_cache[21] || (_cache[21] = createBaseVNode("h3", null, "可选角色", -1)), createBaseVNode("div", _hoisted_43$2, [(openBlock(true), createElementBlock(Fragment, null, renderList(previewScript.value.playable_roles, (role) => {
+							return openBlock(), createElementBlock("figure", { key: role.role_id }, [createBaseVNode("img", {
+								src: unref(rolePortrait)(role.role_id),
+								alt: role.role_name,
+								loading: "lazy"
+							}, null, 8, _hoisted_44$2), createBaseVNode("figcaption", null, toDisplayString(role.role_name), 1)]);
+						}), 128))])]),
+						createBaseVNode("button", {
+							class: "case-browser-details",
+							type: "button",
+							onClick: _cache[11] || (_cache[11] = ($event) => openDetails(previewScript.value))
+						}, [_cache[22] || (_cache[22] = createTextVNode("查看剧本详情 ", -1)), createVNode(unref(ArrowRight), {
+							size: 23,
+							"aria-hidden": "true"
+						})])
+					])) : createCommentVNode("", true)], 64))], 8, _hoisted_22$3)
+				], 64))], 2);
+			};
+		}
+	});
+	//#endregion
+	//#region src/components/ScriptCreatorView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$5 = { class: "script-creator-shell" };
+	var _hoisted_2$5 = { class: "script-creator-header" };
+	var _hoisted_3$5 = { class: "script-creator-modebar" };
+	var _hoisted_4$5 = {
+		class: "script-creator-tabs",
+		role: "group",
+		"aria-label": "剧本创作方式"
+	};
+	var _hoisted_5$4 = ["aria-pressed", "disabled"];
+	var _hoisted_6$4 = ["aria-pressed", "disabled"];
+	var _hoisted_7$4 = { class: "script-creator-layout" };
+	var _hoisted_8$4 = {
+		key: 0,
+		class: "script-creator-panel script-creator-import-panel"
+	};
+	var _hoisted_9$4 = ["disabled"];
+	var _hoisted_10$4 = {
+		key: 0,
+		class: "script-creator-file-row"
+	};
+	var _hoisted_11$4 = ["disabled"];
+	var _hoisted_12$4 = {
+		key: 1,
+		class: "script-creator-panel"
+	};
+	var _hoisted_13$4 = { class: "script-creator-ai-fields" };
+	var _hoisted_14$3 = ["disabled"];
+	var _hoisted_15$3 = { class: "script-creator-panel script-creator-metadata-panel" };
+	var _hoisted_16$2 = { class: "script-creator-section-heading" };
+	var _hoisted_17$2 = { class: "script-creator-field" };
+	var _hoisted_18$2 = ["disabled"];
+	var _hoisted_19$2 = { class: "script-creator-field script-creator-tag-field" };
+	var _hoisted_20$2 = { class: "script-creator-tag-editor" };
+	var _hoisted_21$2 = [
+		"aria-label",
+		"disabled",
+		"onClick"
+	];
+	var _hoisted_22$2 = { class: "script-creator-tag-add" };
+	var _hoisted_23$2 = ["disabled", "onKeydown"];
+	var _hoisted_24$2 = ["disabled"];
+	var _hoisted_25$2 = {
+		key: 0,
+		class: "script-creator-revalidation-note"
+	};
+	var _hoisted_26$2 = ["disabled"];
+	var _hoisted_27$2 = {
+		key: 2,
+		class: "script-creator-panel script-creator-progress",
+		"aria-labelledby": "scriptCreatorProgressTitle"
+	};
+	var _hoisted_28$2 = { key: 0 };
+	var _hoisted_29$1 = {
+		key: 3,
+		class: "script-creator-error",
+		role: "alert"
+	};
+	var _hoisted_30$1 = {
+		key: 4,
+		class: "script-creator-job-status"
+	};
+	var _hoisted_31$1 = { role: "status" };
+	var _hoisted_32$1 = ["disabled"];
+	var _hoisted_33$1 = {
+		key: 5,
+		class: "script-creator-panel script-creator-draft-editor"
+	};
+	var _hoisted_34$1 = ["value", "disabled"];
+	var _hoisted_35$1 = {
+		key: 0,
+		class: "script-creator-error",
+		role: "alert"
+	};
+	var _hoisted_36$1 = {
+		class: "script-creator-panel script-creator-preview",
+		"aria-labelledby": "scriptCreatorPreviewTitle"
+	};
+	var _hoisted_37$1 = { class: "script-creator-preview-header" };
+	var _hoisted_38$1 = ["src", "alt"];
+	var _hoisted_39$1 = { class: "script-creator-preview-title" };
+	var _hoisted_40$1 = { class: "script-creator-preview-facts" };
+	var _hoisted_41$1 = { class: "script-creator-preview-tags" };
+	var _hoisted_42$1 = { class: "script-creator-preview-meta" };
+	var _hoisted_43$1 = { class: "script-creator-preview-story" };
+	var _hoisted_44$1 = { class: "script-creator-preview-roles" };
+	var _hoisted_45$1 = { class: "script-creator-cast" };
+	var _hoisted_46$1 = ["src", "alt"];
+	var _hoisted_47$1 = { class: "script-creator-agent-count" };
+	var _hoisted_48$1 = {
+		key: 1,
+		class: "script-creator-preview-placeholder"
+	};
+	var _hoisted_49$1 = { class: "script-creator-placeholder-art" };
+	var _hoisted_50$1 = {
+		key: 2,
+		class: "script-creator-manuscript",
+		"aria-label": "完整剧本预览"
+	};
+	var _hoisted_51$1 = { class: "script-creator-opening" };
+	var _hoisted_52$1 = { key: 0 };
+	var _hoisted_53$1 = { class: "script-creator-role-books" };
+	var _hoisted_54$1 = { key: 0 };
+	var _hoisted_55$1 = { key: 1 };
+	var _hoisted_56$1 = { key: 0 };
+	var _hoisted_57$1 = { class: "script-creator-stage-books" };
+	var _hoisted_58$1 = { key: 0 };
+	var _hoisted_59$1 = { key: 1 };
+	var _hoisted_60$1 = { key: 2 };
+	var _hoisted_61$1 = { key: 0 };
+	var _hoisted_62$1 = {
+		key: 3,
+		class: "script-creator-review",
+		"aria-label": "校验报告"
+	};
+	var _hoisted_63$1 = { key: 0 };
+	var _hoisted_64$1 = { class: "script-creator-checks" };
+	var _hoisted_65$1 = {
+		key: 0,
+		class: "script-creator-report-errors"
+	};
+	var _hoisted_66$1 = {
+		key: 1,
+		class: "script-creator-report-warnings"
+	};
+	var _hoisted_67$1 = { key: 1 };
+	var _hoisted_68$1 = {
+		key: 0,
+		class: "script-creator-semantic-issues"
+	};
+	var _hoisted_69$1 = {
+		key: 4,
+		class: "script-creator-publish-note"
+	};
+	var _hoisted_70$1 = ["disabled"];
+	//#endregion
+	//#region src/components/ScriptCreatorView.vue
+	var ScriptCreatorView_default = /* @__PURE__ */ defineComponent({
+		__name: "ScriptCreatorView",
+		setup(__props) {
+			const fileInput = /* @__PURE__ */ ref();
+			const fileName = /* @__PURE__ */ ref("");
+			const title = /* @__PURE__ */ ref("");
+			const tagsText = /* @__PURE__ */ ref("");
+			const tagDraft = /* @__PURE__ */ ref("");
+			const fileSize = /* @__PURE__ */ ref(null);
+			const dragging = /* @__PURE__ */ ref(false);
+			const script = /* @__PURE__ */ ref(null);
+			const preview = /* @__PURE__ */ ref(null);
+			const steps = /* @__PURE__ */ ref([]);
+			const publishable = /* @__PURE__ */ ref();
+			const draftText = /* @__PURE__ */ ref("");
+			const draftTextError = /* @__PURE__ */ ref("");
+			const returnedDraft = /* @__PURE__ */ ref(false);
+			const sourceJobId = /* @__PURE__ */ ref(null);
+			const error = /* @__PURE__ */ ref("");
+			const busy = /* @__PURE__ */ ref(false);
+			const cancelling = /* @__PURE__ */ ref(false);
+			let cancelled = false;
+			const mode = /* @__PURE__ */ ref("import");
+			const topic = /* @__PURE__ */ ref("");
+			const jobId = /* @__PURE__ */ ref("");
+			const jobState = /* @__PURE__ */ ref("");
+			const route = useRoute();
+			let destroyed = false;
+			const currentCatalogId = /* @__PURE__ */ ref(route.query.edit ? String(route.query.edit) : null);
+			let pollTimer;
+			let finishWait;
+			let operation = 0;
+			const savedJob = /* @__PURE__ */ ref(sessionStorage.getItem("authoring:last") || "");
+			const editable = computed(() => Boolean(script.value) || mode.value === "ai");
+			const validation = computed(() => preview.value?.authoring_validation);
+			const semanticReview = computed(() => preview.value?.semantic_review);
+			const reviewRunning = computed(() => busy.value && [
+				"queued",
+				"generating",
+				"validating"
+			].includes(jobState.value) && (semanticReview.value?.status === "running" || steps.value.some((step) => step.step_id.startsWith("review:") && step.status === "running")));
+			const semanticReviewLabel = computed(() => reviewRunning.value ? "审稿中" : semanticReview.value?.status === "passed" ? "通过" : semanticReview.value?.status === "failed" ? "未通过" : ["running", "incomplete"].includes(semanticReview.value?.status || "") ? "审稿未完成" : "未进行模型审稿");
+			const canPublish = computed(() => !cancelling.value && !cancelled && jobState.value === "preview" && Boolean(preview.value && jobId.value) && validation.value?.passed !== false && semanticReview.value?.status !== "failed" && publishable.value === true);
+			const displayPreview = computed(() => {
+				const value = preview.value;
+				return value && typeof value.title === "string" && typeof value.script_id === "string" && typeof value.role_count === "number" && typeof value.total_stages === "number" && Array.isArray(value.playable_roles) ? value : null;
+			});
+			const completedSteps = computed(() => steps.value.filter((step) => step.status === "completed").length);
+			const statusText = computed(() => busy.value ? jobState.value === "generating" ? "正在创作草稿" : jobState.value === "validating" ? "正在校验" : "处理中…" : jobState.value === "failed" ? "需要修订" : jobState.value === "interrupted" ? "创作已中断" : preview.value ? canPublish.value ? "校验通过" : "暂不可发布" : script.value || mode.value === "ai" ? "等待校验" : "等待导入");
+			const stepStatus = {
+				pending: "待开始",
+				running: "进行中",
+				completed: "已完成",
+				failed: "未通过",
+				interrupted: "已中断"
+			};
+			const checkStatus = {
+				passed: "通过",
+				failed: "未通过",
+				warning: "提醒"
+			};
+			function record(value) {
+				return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+			}
+			function text(value) {
+				return typeof value === "string" ? value : "";
+			}
+			function stageEntries(value) {
+				return Object.entries(record(value)).sort(([a], [b]) => Number(a.replace("stage_", "")) - Number(b.replace("stage_", ""))).map(([key, value]) => [key, record(value)]);
+			}
+			function stageLabel(key) {
+				return /^stage_\d+$/.test(key) ? `第 ${key.slice(6)} 幕` : "分幕内容";
+			}
+			const opening = computed(() => record(script.value?.opening));
+			const roles = computed(() => Array.isArray(script.value?.roles) ? script.value.roles.map(record) : []);
+			const stages = computed(() => stageEntries(script.value?.stage_flow));
+			function blocks(value) {
+				return Array.isArray(value) ? value.map(record) : [];
+			}
+			function publicTasks(value) {
+				return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+			}
+			function roleName(id) {
+				return text(roles.value.find((role) => role.role_id === id)?.role_name) || "角色";
+			}
+			onBeforeUnmount(() => {
+				destroyed = true;
+				clearTimeout(pollTimer);
+				finishWait?.();
+			});
+			onMounted(async () => {
+				if (!route.query.edit) {
+					if (savedJob.value) await restoreDraft();
+					return;
+				}
+				const currentOperation = ++operation;
+				busy.value = true;
+				try {
+					let saved;
+					if (savedJob.value) try {
+						saved = await getApiClient().request(`/api/v1/authoring-jobs/${savedJob.value}`);
+					} catch {}
+					if (destroyed) return;
+					if (saved?.catalog_id === String(route.query.edit) && saved.status !== "published") {
+						jobId.value = savedJob.value;
+						await pollJob(jobId.value, true, saved);
+						return;
+					}
+					const data = await getApiClient().request(`/api/v1/scripts/${encodeURIComponent(String(route.query.edit))}/edit`);
+					if (!destroyed) {
+						adoptDraft(data.script, "编辑已发布剧本 · 新版本");
+						sourceJobId.value = data.source_job_id || null;
+						returnedDraft.value = Boolean(sourceJobId.value);
+					}
+				} catch (reason) {
+					if (currentOperation === operation) error.value = reason.message;
+				} finally {
+					if (currentOperation === operation) busy.value = false;
+				}
+			});
+			const tags = () => [...new Set(tagsText.value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean))];
+			function clearReview() {
+				preview.value = null;
+				publishable.value = void 0;
+				steps.value = [];
+				jobId.value = "";
+				jobState.value = "";
+				cancelled = false;
+				cancelling.value = false;
+			}
+			function invalidatePreview(reviseDraft = true) {
+				clearReview();
+				if (reviseDraft && returnedDraft.value && script.value) mode.value = "import";
+				if (script.value && !draftTextError.value) draftText.value = JSON.stringify(normalizedScript(), null, 2);
+			}
+			function adoptDraft(value, name) {
+				script.value = value;
+				const meta = record(value.script_meta);
+				title.value = text(meta.title);
+				tagsText.value = publicTasks(meta.tags).join("，");
+				tagDraft.value = "";
+				draftText.value = JSON.stringify(value, null, 2);
+				draftTextError.value = "";
+				if (name) {
+					fileName.value = name;
+					fileSize.value = null;
+					mode.value = "import";
+				}
+			}
+			function editDraft(event) {
+				draftText.value = event.target.value;
+				clearReview();
+				try {
+					const parsed = JSON.parse(draftText.value);
+					if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("剧本必须是 JSON 对象");
+					const content = draftText.value;
+					adoptDraft(parsed);
+					draftText.value = content;
+					mode.value = "import";
+				} catch (reason) {
+					draftTextError.value = reason instanceof SyntaxError ? "草稿格式尚未完整，请检查后再校验。" : reason.message;
+				}
+			}
+			function changeMode(value) {
+				if (mode.value === value) return;
+				mode.value = value;
+				clearReview();
+				if (value === "ai") {
+					returnedDraft.value = false;
+					sourceJobId.value = null;
+					draftTextError.value = "";
+					if (script.value) draftText.value = JSON.stringify(normalizedScript(), null, 2);
+				}
+			}
+			function addTag() {
+				if (!editable.value || busy.value) return false;
+				const added = tagDraft.value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+				const next = [.../* @__PURE__ */ new Set([...tags(), ...added])];
+				if (next.length > 12 || next.some((tag) => tag.length > 24)) {
+					error.value = "最多 12 个标签，每个最多 24 字。";
+					return false;
+				}
+				tagsText.value = next.join("，");
+				tagDraft.value = "";
+				invalidatePreview();
+				return true;
+			}
+			function removeTag(value) {
+				tagsText.value = tags().filter((tag) => tag !== value).join("，");
+				invalidatePreview();
+			}
+			async function readFile(file) {
+				if (!file || busy.value) return;
+				clearReview();
+				returnedDraft.value = false;
+				sourceJobId.value = null;
+				draftText.value = "";
+				draftTextError.value = "";
+				tagDraft.value = "";
+				script.value = null;
+				title.value = "";
+				tagsText.value = "";
+				error.value = "";
+				fileName.value = file.name;
+				fileSize.value = file.size;
+				if (file.size > 5242880) {
+					error.value = "剧本文件不能超过 5 MB";
+					return;
+				}
+				try {
+					const parsed = JSON.parse(await file.text());
+					if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("剧本必须是 JSON 对象");
+					adoptDraft(parsed);
+				} catch (reason) {
+					error.value = reason instanceof SyntaxError ? "JSON 格式无效" : reason.message;
+				}
+			}
+			function dropFile(event) {
+				dragging.value = false;
+				readFile(event.dataTransfer?.files[0]);
+			}
+			function normalizedScript() {
+				const draft = JSON.parse(JSON.stringify(script.value));
+				draft.script_meta = {
+					...draft.script_meta,
+					title: title.value.trim(),
+					tags: tags()
+				};
+				return draft;
+			}
+			async function validate() {
+				if (mode.value === "import" && !script.value || busy.value) return;
+				if (mode.value === "import" && draftTextError.value) {
+					error.value = "请先修正草稿格式，再进行校验。";
+					return;
+				}
+				if (mode.value === "ai" && !topic.value.trim()) {
+					error.value = "请先填写创作主题。";
+					return;
+				}
+				if (tagDraft.value.trim() && !addTag()) return;
+				const currentOperation = ++operation;
+				busy.value = true;
+				error.value = "";
+				clearReview();
+				jobState.value = "queued";
+				try {
+					const job = await getApiClient().request("/api/v1/authoring-jobs", {
+						method: "POST",
+						body: JSON.stringify({
+							mode: mode.value,
+							request_id: crypto.randomUUID(),
+							title: title.value,
+							tags: tags(),
+							topic: topic.value,
+							script: mode.value === "import" ? normalizedScript() : null,
+							catalog_id: currentCatalogId.value,
+							source_job_id: mode.value === "import" ? sourceJobId.value : null
+						})
+					});
+					if (destroyed) return;
+					if (mode.value === "ai") sourceJobId.value = job.job_id;
+					jobId.value = job.job_id;
+					receiveJob(job);
+					savedJob.value = job.job_id;
+					sessionStorage.setItem("authoring:last", job.job_id);
+					await pollJob(job.job_id);
+				} catch (reason) {
+					if (currentOperation === operation) error.value = reason.message;
+				} finally {
+					if (currentOperation === operation) busy.value = false;
+				}
+			}
+			async function publish() {
+				if (!script.value || !canPublish.value || busy.value) return;
+				busy.value = true;
+				error.value = "";
+				try {
+					await getApiClient().request(`/api/v1/authoring-jobs/${jobId.value}/publish`, { method: "POST" });
+					sessionStorage.removeItem("authoring:last");
+					savedJob.value = "";
+					appEvents.emit("toast:show", { message: "剧本已发布，可从新建游戏进入" });
+					appEvents.emit("navigation:view", { view: "library" });
+				} catch (reason) {
+					error.value = reason.message;
+				} finally {
+					busy.value = false;
+				}
+			}
+			function receiveJob(job, restoring = false) {
+				jobState.value = job.status;
+				if (restoring) {
+					if (job.mode) mode.value = job.mode;
+					if (typeof job.input?.title === "string") title.value = job.input.title;
+					if (Array.isArray(job.input?.tags)) tagsText.value = job.input.tags.join("，");
+					if (typeof job.input?.topic === "string") topic.value = job.input.topic;
+				}
+				if (job.catalog_id !== void 0) currentCatalogId.value = job.catalog_id;
+				if (job.steps) steps.value = job.steps;
+				publishable.value = job.can_publish;
+				if (job.preview) preview.value = job.preview;
+				if (job.mode === "ai" || job.input?.source_job_id || job.preview?.semantic_required === true) sourceJobId.value = job.job_id || jobId.value || job.input?.source_job_id || null;
+				else if (job.preview?.semantic_required === false || job.input) sourceJobId.value = null;
+				if (job.draft && [
+					"preview",
+					"failed",
+					"interrupted"
+				].includes(job.status)) {
+					returnedDraft.value = true;
+					adoptDraft(job.draft, restoring ? "已恢复的草稿" : ["failed", "interrupted"].includes(job.status) ? "保留的创作草稿" : void 0);
+				}
+			}
+			async function pollJob(id, restoring = false, initialJob) {
+				while (!destroyed && !cancelled) {
+					const job = initialJob || await getApiClient().request(`/api/v1/authoring-jobs/${id}`);
+					initialJob = void 0;
+					if (destroyed || cancelled || jobId.value !== id) return;
+					if (!cancelling.value || ["failed", "interrupted"].includes(job.status)) receiveJob(job, restoring);
+					if (job.status === "published") {
+						sessionStorage.removeItem("authoring:last");
+						savedJob.value = "";
+						throw new Error("这个任务已经发布，请从剧本库查看");
+					}
+					if (["failed", "interrupted"].includes(job.status)) throw new Error(job.error || (job.status === "failed" ? "创作未通过，请查看报告并修订草稿。" : "创作已中断，已完成的草稿会保留。"));
+					if (job.status === "preview" && !cancelling.value) return;
+					await new Promise((resolve) => {
+						finishWait = resolve;
+						pollTimer = setTimeout(() => {
+							finishWait = void 0;
+							resolve();
+						}, 1e3);
+					});
+				}
+			}
+			async function restoreDraft() {
+				if (busy.value || !savedJob.value) return;
+				const currentOperation = ++operation;
+				busy.value = true;
+				error.value = "";
+				clearReview();
+				jobId.value = savedJob.value;
+				try {
+					await pollJob(jobId.value, true);
+				} catch (reason) {
+					if (currentOperation === operation) error.value = reason.message;
+				} finally {
+					if (currentOperation === operation) busy.value = false;
+				}
+			}
+			async function cancelTask() {
+				if (!jobId.value || cancelling.value) return;
+				const cancelId = jobId.value;
+				const cancelOperation = operation;
+				cancelling.value = true;
+				try {
+					const job = await getApiClient().request(`/api/v1/authoring-jobs/${cancelId}/cancel`, { method: "POST" });
+					if (destroyed || jobId.value !== cancelId || operation !== cancelOperation) return;
+					receiveJob({
+						...job,
+						status: "interrupted"
+					});
+					cancelled = true;
+					operation++;
+					busy.value = false;
+					clearTimeout(pollTimer);
+					finishWait?.();
+					error.value = job.error || "创作已取消，已完成的草稿会保留。";
+				} catch (reason) {
+					if (jobId.value === cancelId && operation === cancelOperation) error.value = reason.message;
+				} finally {
+					if (jobId.value === cancelId) cancelling.value = false;
+				}
+			}
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("section", _hoisted_1$5, [
+					createBaseVNode("header", _hoisted_2$5, [createBaseVNode("h2", null, toDisplayString(currentCatalogId.value ? "编辑剧本 · 发布新版本" : "新建剧本"), 1), _cache[12] || (_cache[12] = createBaseVNode("p", null, "导入或创作故事，校验后发布到你的剧本库。", -1))]),
+					createBaseVNode("div", _hoisted_3$5, [createBaseVNode("div", _hoisted_4$5, [createBaseVNode("button", {
+						class: normalizeClass({ active: mode.value === "import" }),
+						"aria-pressed": mode.value === "import",
+						disabled: busy.value,
+						onClick: _cache[0] || (_cache[0] = ($event) => changeMode("import"))
+					}, "导入剧本", 10, _hoisted_5$4), createBaseVNode("button", {
+						class: normalizeClass({ active: mode.value === "ai" }),
+						"aria-pressed": mode.value === "ai",
+						disabled: busy.value,
+						onClick: _cache[1] || (_cache[1] = ($event) => changeMode("ai"))
+					}, "AI 创作草稿", 10, _hoisted_6$4)]), savedJob.value && !busy.value ? (openBlock(), createElementBlock("button", {
+						key: 0,
+						class: "script-creator-restore",
+						type: "button",
+						onClick: restoreDraft
+					}, "恢复上次创作任务")) : createCommentVNode("", true)]),
+					createBaseVNode("div", _hoisted_7$4, [createBaseVNode("form", {
+						class: "script-creator-form",
+						onSubmit: withModifiers(validate, ["prevent"])
+					}, [
+						mode.value === "import" ? (openBlock(), createElementBlock("section", _hoisted_8$4, [
+							_cache[15] || (_cache[15] = createBaseVNode("header", { class: "script-creator-section-heading" }, [createBaseVNode("span", null, "01"), createBaseVNode("div", null, [createBaseVNode("h3", null, "导入剧本"), createBaseVNode("p", null, "支持 JSON 格式的剧本文件，校验通过后可预览并发布。")])], -1)),
+							createBaseVNode("label", {
+								class: normalizeClass(["script-creator-dropzone", {
+									"is-dragging": dragging.value,
+									"is-disabled": busy.value
+								}]),
+								onDragover: _cache[3] || (_cache[3] = withModifiers(($event) => dragging.value = !busy.value, ["prevent"])),
+								onDragleave: _cache[4] || (_cache[4] = withModifiers(($event) => dragging.value = false, ["prevent"])),
+								onDrop: withModifiers(dropFile, ["prevent"])
+							}, [
+								createBaseVNode("input", {
+									ref_key: "fileInput",
+									ref: fileInput,
+									class: "script-creator-file-input",
+									type: "file",
+									accept: ".json,application/json",
+									"aria-label": "选择 JSON 剧本文件",
+									disabled: busy.value,
+									onChange: _cache[2] || (_cache[2] = ($event) => readFile($event.target.files?.[0]))
+								}, null, 40, _hoisted_9$4),
+								createVNode(unref(FilePlusCorner), {
+									size: 42,
+									"aria-hidden": "true"
+								}),
+								_cache[13] || (_cache[13] = createBaseVNode("strong", null, "拖入剧本文件，或点击选择", -1)),
+								_cache[14] || (_cache[14] = createBaseVNode("span", null, "UTF-8 JSON · 最大 5 MB", -1))
+							], 34),
+							fileName.value ? (openBlock(), createElementBlock("div", _hoisted_10$4, [
+								createVNode(unref(FileText), {
+									size: 23,
+									"aria-hidden": "true"
+								}),
+								createBaseVNode("div", null, [createBaseVNode("strong", null, toDisplayString(fileName.value), 1), createBaseVNode("span", null, toDisplayString(fileSize.value !== null ? `${Math.max(1, Math.ceil(fileSize.value / 1024))} KB · ` : "") + toDisplayString(canPublish.value ? "校验通过" : preview.value ? "请查看校验报告" : script.value ? "已读取，待校验" : "文件未能读取"), 1)]),
+								canPublish.value ? (openBlock(), createBlock(unref(CircleCheck), {
+									key: 0,
+									class: "script-creator-file-check",
+									size: 23,
+									"aria-label": "文件校验通过"
+								})) : (openBlock(), createElementBlock("button", {
+									key: 1,
+									type: "button",
+									disabled: busy.value,
+									onClick: _cache[5] || (_cache[5] = ($event) => fileInput.value?.click())
+								}, "更换文件", 8, _hoisted_11$4))
+							])) : createCommentVNode("", true)
+						])) : (openBlock(), createElementBlock("section", _hoisted_12$4, [_cache[18] || (_cache[18] = createBaseVNode("header", { class: "script-creator-section-heading" }, [createBaseVNode("span", null, "01"), createBaseVNode("div", null, [createBaseVNode("h3", null, "创作主题"), createBaseVNode("p", null, "描述故事与角色关系，生成草稿后校验并预览。")])], -1)), createBaseVNode("div", _hoisted_13$4, [
+							_cache[16] || (_cache[16] = createBaseVNode("label", { for: "scriptCreatorTopic" }, "故事设定", -1)),
+							withDirectives(createBaseVNode("textarea", {
+								id: "scriptCreatorTopic",
+								"onUpdate:modelValue": _cache[6] || (_cache[6] = ($event) => topic.value = $event),
+								"aria-label": "创作主题",
+								maxlength: "2000",
+								required: "",
+								placeholder: "描述故事背景、角色关系与推理主题…",
+								disabled: busy.value,
+								onInput: _cache[7] || (_cache[7] = ($event) => invalidatePreview(false))
+							}, null, 40, _hoisted_14$3), [[vModelText, topic.value]]),
+							_cache[17] || (_cache[17] = createBaseVNode("p", null, "按故事设计、独立开幕、角色本和分幕逐步创作，再进行结构校验与语义审校。", -1))
+						])])),
+						createBaseVNode("section", _hoisted_15$3, [
+							createBaseVNode("header", _hoisted_16$2, [_cache[20] || (_cache[20] = createBaseVNode("span", null, "02", -1)), createBaseVNode("div", null, [_cache[19] || (_cache[19] = createBaseVNode("h3", null, "基本信息", -1)), createBaseVNode("p", null, toDisplayString(editable.value ? "完善剧本的基本信息，以便在剧本库中展示。" : "导入剧本后，可编辑名称和类型标签。"), 1)])]),
+							createBaseVNode("div", _hoisted_17$2, [_cache[21] || (_cache[21] = createBaseVNode("label", { for: "scriptCreatorTitle" }, "剧本名称", -1)), withDirectives(createBaseVNode("input", {
+								id: "scriptCreatorTitle",
+								"onUpdate:modelValue": _cache[8] || (_cache[8] = ($event) => title.value = $event),
+								maxlength: "120",
+								required: "",
+								placeholder: "填写剧本名称",
+								disabled: busy.value || !editable.value,
+								onInput: _cache[9] || (_cache[9] = ($event) => invalidatePreview())
+							}, null, 40, _hoisted_18$2), [[vModelText, title.value]])]),
+							createBaseVNode("div", _hoisted_19$2, [_cache[23] || (_cache[23] = createBaseVNode("label", { for: "scriptCreatorTag" }, "标签", -1)), createBaseVNode("div", _hoisted_20$2, [
+								(openBlock(true), createElementBlock(Fragment, null, renderList(tags(), (tag) => {
+									return openBlock(), createElementBlock("span", {
+										key: tag,
+										class: "script-creator-tag-chip"
+									}, [createTextVNode(toDisplayString(tag), 1), createBaseVNode("button", {
+										type: "button",
+										"aria-label": `移除标签：${tag}`,
+										disabled: busy.value || !editable.value,
+										onClick: ($event) => removeTag(tag)
+									}, [createVNode(unref(X), {
+										size: 13,
+										"aria-hidden": "true"
+									})], 8, _hoisted_21$2)]);
+								}), 128)),
+								createBaseVNode("div", _hoisted_22$2, [withDirectives(createBaseVNode("input", {
+									id: "scriptCreatorTag",
+									"onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => tagDraft.value = $event),
+									maxlength: "24",
+									"aria-label": "添加类型标签",
+									placeholder: "添加标签",
+									disabled: busy.value || !editable.value || tags().length >= 12,
+									onInput: _cache[11] || (_cache[11] = ($event) => invalidatePreview()),
+									onKeydown: withKeys(withModifiers(addTag, ["prevent"]), ["enter"])
+								}, null, 40, _hoisted_23$2), [[vModelText, tagDraft.value]]), createBaseVNode("button", {
+									type: "button",
+									"aria-label": "添加标签",
+									disabled: busy.value || !editable.value || !tagDraft.value.trim() || tags().length >= 12,
+									onClick: addTag
+								}, [createVNode(unref(Plus), {
+									size: 19,
+									"aria-hidden": "true"
+								})], 8, _hoisted_24$2)]),
+								_cache[22] || (_cache[22] = createBaseVNode("small", null, "最多 12 个标签，每个最多 24 字。", -1))
+							])]),
+							returnedDraft.value && mode.value === "import" ? (openBlock(), createElementBlock("p", _hoisted_25$2, toDisplayString(sourceJobId.value ? "沿用故事设计，修订后重新校验并审稿。" : "修订草稿后可重新校验结构与线索；这次校验不进行模型审稿。"), 1)) : createCommentVNode("", true),
+							createBaseVNode("button", {
+								class: "script-creator-gold-button",
+								type: "submit",
+								disabled: busy.value || !editable.value || Boolean(draftTextError.value)
+							}, [createTextVNode(toDisplayString(busy.value ? "处理中…" : mode.value === "ai" ? "开始分步创作" : "校验并预览"), 1), createVNode(unref(ArrowRight), {
+								size: 22,
+								"aria-hidden": "true"
+							})], 8, _hoisted_26$2)
+						]),
+						steps.value.length ? (openBlock(), createElementBlock("section", _hoisted_27$2, [createBaseVNode("header", null, [_cache[24] || (_cache[24] = createBaseVNode("h3", { id: "scriptCreatorProgressTitle" }, "创作进度", -1)), createBaseVNode("span", null, "已完成 " + toDisplayString(completedSteps.value) + " / " + toDisplayString(steps.value.length) + " 步", 1)]), createBaseVNode("ol", null, [(openBlock(true), createElementBlock(Fragment, null, renderList(steps.value, (step) => {
+							return openBlock(), createElementBlock("li", {
+								key: step.step_id,
+								class: normalizeClass(`is-${step.status}`)
+							}, [createBaseVNode("div", null, [createBaseVNode("strong", null, toDisplayString(step.label), 1), createBaseVNode("span", null, toDisplayString(stepStatus[step.status]), 1)]), step.error ? (openBlock(), createElementBlock("p", _hoisted_28$2, toDisplayString(step.error), 1)) : createCommentVNode("", true)], 2);
+						}), 128))])])) : createCommentVNode("", true),
+						error.value ? (openBlock(), createElementBlock("p", _hoisted_29$1, toDisplayString(error.value), 1)) : createCommentVNode("", true),
+						busy.value ? (openBlock(), createElementBlock("div", _hoisted_30$1, [createBaseVNode("p", _hoisted_31$1, [createVNode(unref(Sparkles), {
+							size: 17,
+							"aria-hidden": "true"
+						}), createTextVNode(toDisplayString(statusText.value), 1)]), jobId.value ? (openBlock(), createElementBlock("button", {
+							key: 0,
+							type: "button",
+							disabled: cancelling.value,
+							onClick: cancelTask
+						}, toDisplayString(cancelling.value ? "正在取消…" : "取消本次创作"), 9, _hoisted_32$1)) : createCommentVNode("", true)])) : createCommentVNode("", true),
+						script.value && (mode.value === "import" || returnedDraft.value) ? (openBlock(), createElementBlock("details", _hoisted_33$1, [
+							_cache[25] || (_cache[25] = createBaseVNode("summary", null, "编辑完整草稿文件", -1)),
+							_cache[26] || (_cache[26] = createBaseVNode("p", null, "可修订正文、角色、分幕和线索。修改后需要重新校验；请保留完整 JSON 格式。", -1)),
+							_cache[27] || (_cache[27] = createBaseVNode("label", { for: "scriptCreatorDraft" }, "剧本草稿（JSON）", -1)),
+							createBaseVNode("textarea", {
+								id: "scriptCreatorDraft",
+								value: draftText.value,
+								disabled: busy.value,
+								spellcheck: "false",
+								onInput: editDraft
+							}, null, 40, _hoisted_34$1),
+							draftTextError.value ? (openBlock(), createElementBlock("p", _hoisted_35$1, toDisplayString(draftTextError.value), 1)) : createCommentVNode("", true)
+						])) : createCommentVNode("", true)
+					], 32), createBaseVNode("aside", _hoisted_36$1, [
+						createBaseVNode("header", _hoisted_37$1, [_cache[28] || (_cache[28] = createBaseVNode("h3", { id: "scriptCreatorPreviewTitle" }, "剧本预览", -1)), createBaseVNode("span", {
+							class: normalizeClass(["script-creator-preview-status", { "is-validated": canPublish.value && !busy.value }]),
+							"aria-live": "polite"
+						}, [canPublish.value && !busy.value ? (openBlock(), createBlock(unref(CircleCheck), {
+							key: 0,
+							size: 20,
+							"aria-hidden": "true"
+						})) : createCommentVNode("", true), createTextVNode(toDisplayString(statusText.value), 1)], 2)]),
+						displayPreview.value ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [
+							createBaseVNode("img", {
+								class: "script-creator-cover",
+								src: unref(scriptCover)(displayPreview.value.script_id),
+								alt: `${displayPreview.value.title}封面`
+							}, null, 8, _hoisted_38$1),
+							createBaseVNode("h2", _hoisted_39$1, toDisplayString(displayPreview.value.title), 1),
+							createBaseVNode("div", _hoisted_40$1, [createBaseVNode("div", _hoisted_41$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(tags(), (tag) => {
+								return openBlock(), createElementBlock("span", { key: tag }, toDisplayString(tag), 1);
+							}), 128))]), createBaseVNode("div", _hoisted_42$1, [createBaseVNode("span", null, [
+								createVNode(unref(Users), {
+									size: 20,
+									"aria-hidden": "true"
+								}),
+								createBaseVNode("b", null, toDisplayString(displayPreview.value.role_count), 1),
+								_cache[29] || (_cache[29] = createTextVNode(" 位角色", -1))
+							]), createBaseVNode("span", null, [
+								createVNode(unref(BookOpen), {
+									size: 20,
+									"aria-hidden": "true"
+								}),
+								createBaseVNode("b", null, toDisplayString(displayPreview.value.total_stages), 1),
+								_cache[30] || (_cache[30] = createTextVNode(" 幕故事", -1))
+							])])]),
+							createBaseVNode("section", _hoisted_43$1, [_cache[31] || (_cache[31] = createBaseVNode("h4", null, "故事背景", -1)), createBaseVNode("p", null, toDisplayString(displayPreview.value.story_background), 1)]),
+							createBaseVNode("section", _hoisted_44$1, [_cache[32] || (_cache[32] = createBaseVNode("h4", null, "可选角色", -1)), createBaseVNode("div", _hoisted_45$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(displayPreview.value.playable_roles, (role) => {
+								return openBlock(), createElementBlock("figure", { key: role.role_id }, [createBaseVNode("img", {
+									src: unref(rolePortrait)(role.role_id),
+									alt: `${role.role_name}角色头像`
+								}, null, 8, _hoisted_46$1), createBaseVNode("figcaption", null, [createBaseVNode("strong", null, toDisplayString(role.role_name), 1), createBaseVNode("span", null, toDisplayString(role.public_identity), 1)])]);
+							}), 128))])]),
+							createBaseVNode("p", _hoisted_47$1, "本剧本另有 " + toDisplayString(displayPreview.value.ai_agent_count) + " 位角色由 AI 演绎。", 1)
+						], 64)) : !returnedDraft.value ? (openBlock(), createElementBlock("div", _hoisted_48$1, [
+							createBaseVNode("div", _hoisted_49$1, [createVNode(unref(BookOpen), {
+								size: 54,
+								"aria-hidden": "true"
+							}), _cache[33] || (_cache[33] = createBaseVNode("span", null, "故事即将展开", -1))]),
+							_cache[34] || (_cache[34] = createBaseVNode("h4", null, "校验后查看剧本预览", -1)),
+							_cache[35] || (_cache[35] = createBaseVNode("p", null, "剧本封面、故事背景和可选角色将在校验成功后显示。", -1)),
+							_cache[36] || (_cache[36] = createBaseVNode("ol", null, [
+								createBaseVNode("li", null, "导入文件或填写创作主题"),
+								createBaseVNode("li", null, "完善基本信息并校验"),
+								createBaseVNode("li", null, "确认预览后发布")
+							], -1))
+						])) : createCommentVNode("", true),
+						returnedDraft.value && script.value ? (openBlock(), createElementBlock("section", _hoisted_50$1, [
+							createBaseVNode("section", _hoisted_51$1, [
+								_cache[37] || (_cache[37] = createBaseVNode("h4", null, "公共开幕", -1)),
+								opening.value.title ? (openBlock(), createElementBlock("h5", _hoisted_52$1, toDisplayString(opening.value.title), 1)) : createCommentVNode("", true),
+								createBaseVNode("p", null, toDisplayString(text(opening.value.content) || "此草稿未提供独立开幕。"), 1)
+							]),
+							createBaseVNode("section", _hoisted_53$1, [
+								_cache[40] || (_cache[40] = createBaseVNode("h4", null, "角色本", -1)),
+								_cache[41] || (_cache[41] = createBaseVNode("p", { class: "script-creator-reading-note" }, "以下包含私人信息与后续剧情，仅供作者审阅。", -1)),
+								(openBlock(true), createElementBlock(Fragment, null, renderList(roles.value, (role, index) => {
+									return openBlock(), createElementBlock("details", { key: text(role.role_id) || index }, [
+										createBaseVNode("summary", null, toDisplayString(text(role.role_name) || `角色 ${index + 1}`), 1),
+										createBaseVNode("p", null, toDisplayString(role.public_identity), 1),
+										role.personality ? (openBlock(), createElementBlock("p", _hoisted_54$1, [_cache[38] || (_cache[38] = createBaseVNode("b", null, "人物性格", -1)), createTextVNode(toDisplayString(role.personality), 1)])) : createCommentVNode("", true),
+										role.hidden_goal ? (openBlock(), createElementBlock("p", _hoisted_55$1, [_cache[39] || (_cache[39] = createBaseVNode("b", null, "私人目标", -1)), createTextVNode(toDisplayString(role.hidden_goal), 1)])) : createCommentVNode("", true),
+										(openBlock(true), createElementBlock(Fragment, null, renderList(stageEntries(role.stage_knowledge), ([key, knowledge]) => {
+											return openBlock(), createElementBlock("details", { key }, [createBaseVNode("summary", null, toDisplayString(stageLabel(key)) + " · 角色内容", 1), (openBlock(true), createElementBlock(Fragment, null, renderList(blocks(knowledge.blocks), (block, blockIndex) => {
+												return openBlock(), createElementBlock("p", { key: text(block.block_id) || blockIndex }, toDisplayString(block.content), 1);
+											}), 128))]);
+										}), 128))
+									]);
+								}), 128)),
+								!roles.value.length ? (openBlock(), createElementBlock("p", _hoisted_56$1, "尚未生成角色本。")) : createCommentVNode("", true)
+							]),
+							createBaseVNode("section", _hoisted_57$1, [
+								_cache[43] || (_cache[43] = createBaseVNode("h4", null, "分幕内容", -1)),
+								(openBlock(true), createElementBlock(Fragment, null, renderList(stages.value, ([key, stage]) => {
+									return openBlock(), createElementBlock("details", { key }, [
+										createBaseVNode("summary", null, toDisplayString(text(stage.title) || stageLabel(key)), 1),
+										_cache[42] || (_cache[42] = createBaseVNode("h5", null, "本幕开场", -1)),
+										createBaseVNode("p", null, toDisplayString(stage.public_briefing), 1),
+										publicTasks(stage.public_tasks).length ? (openBlock(), createElementBlock("h5", _hoisted_58$1, "公共任务")) : createCommentVNode("", true),
+										createBaseVNode("ul", null, [(openBlock(true), createElementBlock(Fragment, null, renderList(publicTasks(stage.public_tasks), (task) => {
+											return openBlock(), createElementBlock("li", { key: task }, toDisplayString(task), 1);
+										}), 128))]),
+										Object.keys(record(stage.personal_tasks)).length ? (openBlock(), createElementBlock("h5", _hoisted_59$1, "个人任务")) : createCommentVNode("", true),
+										(openBlock(true), createElementBlock(Fragment, null, renderList(record(stage.personal_tasks), (task, roleId) => {
+											return openBlock(), createElementBlock("p", { key: roleId }, [createBaseVNode("b", null, toDisplayString(roleName(roleId)), 1), createTextVNode(toDisplayString(task), 1)]);
+										}), 128)),
+										stage.dm_hosting ? (openBlock(), createElementBlock("h5", _hoisted_60$1, "主持提示")) : createCommentVNode("", true),
+										createBaseVNode("p", null, toDisplayString(stage.dm_hosting), 1)
+									]);
+								}), 128)),
+								!stages.value.length ? (openBlock(), createElementBlock("p", _hoisted_61$1, "尚未生成分幕内容。")) : createCommentVNode("", true)
+							])
+						])) : createCommentVNode("", true),
+						validation.value || semanticReview.value ? (openBlock(), createElementBlock("section", _hoisted_62$1, [
+							_cache[46] || (_cache[46] = createBaseVNode("h4", null, "校验报告", -1)),
+							validation.value ? (openBlock(), createElementBlock("section", _hoisted_63$1, [
+								createBaseVNode("h5", null, [_cache[44] || (_cache[44] = createTextVNode("结构与线索校验", -1)), createBaseVNode("span", { class: normalizeClass(validation.value.passed ? "is-passed" : "is-failed") }, toDisplayString(validation.value.passed ? "通过" : "未通过"), 3)]),
+								createBaseVNode("ul", _hoisted_64$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(validation.value.checks, (check, index) => {
+									return openBlock(), createElementBlock("li", {
+										key: `${check.code}-${index}`,
+										class: normalizeClass(`is-${check.status}`)
+									}, [createBaseVNode("strong", null, [createTextVNode(toDisplayString(check.label), 1), createBaseVNode("span", null, toDisplayString(checkStatus[check.status]), 1)]), createBaseVNode("p", null, toDisplayString(check.message), 1)], 2);
+								}), 128))]),
+								validation.value.errors?.length ? (openBlock(), createElementBlock("ul", _hoisted_65$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(validation.value.errors, (message) => {
+									return openBlock(), createElementBlock("li", { key: message }, toDisplayString(message), 1);
+								}), 128))])) : createCommentVNode("", true),
+								validation.value.warnings?.length ? (openBlock(), createElementBlock("ul", _hoisted_66$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(validation.value.warnings, (message) => {
+									return openBlock(), createElementBlock("li", { key: message }, toDisplayString(message), 1);
+								}), 128))])) : createCommentVNode("", true)
+							])) : createCommentVNode("", true),
+							semanticReview.value ? (openBlock(), createElementBlock("section", _hoisted_67$1, [
+								createBaseVNode("h5", null, [_cache[45] || (_cache[45] = createTextVNode("语义审校", -1)), createBaseVNode("span", { class: normalizeClass(`is-${reviewRunning.value ? "running" : semanticReview.value.status === "running" ? "incomplete" : semanticReview.value.status}`) }, toDisplayString(semanticReviewLabel.value), 3)]),
+								createBaseVNode("p", null, toDisplayString(reviewRunning.value && semanticReview.value.status === "not_run" ? "正在核对公共内容、角色成稿与证据链，完成后展示完整报告。" : semanticReview.value.summary), 1),
+								semanticReview.value.issues?.length ? (openBlock(), createElementBlock("ul", _hoisted_68$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(semanticReview.value.issues, (issue, index) => {
+									return openBlock(), createElementBlock("li", {
+										key: `${issue.code}-${index}`,
+										class: normalizeClass(`is-${issue.severity}`)
+									}, [createBaseVNode("span", null, toDisplayString(issue.severity === "error" ? "需修订" : "提醒"), 1), createTextVNode(toDisplayString(issue.message), 1)], 2);
+								}), 128))])) : createCommentVNode("", true)
+							])) : createCommentVNode("", true)
+						])) : createCommentVNode("", true),
+						preview.value && !canPublish.value && !busy.value ? (openBlock(), createElementBlock("p", _hoisted_69$1, "当前草稿暂不可发布，请查看未通过的步骤与报告，修订后重新校验。")) : createCommentVNode("", true),
+						createBaseVNode("button", {
+							class: "script-creator-gold-button script-creator-publish",
+							type: "button",
+							disabled: busy.value || !canPublish.value,
+							onClick: publish
+						}, [_cache[47] || (_cache[47] = createTextVNode("发布到剧本库", -1)), createVNode(unref(ArrowRight), {
+							size: 22,
+							"aria-hidden": "true"
+						})], 8, _hoisted_70$1)
+					])])
+				]);
+			};
+		}
+	});
+	//#endregion
+	//#region src/components/PersonalCenterView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$4 = {
+		class: "personal-center-shell",
+		"aria-labelledby": "personalCenterTitle"
+	};
+	var _hoisted_2$4 = { class: "personal-center-layout" };
+	var _hoisted_3$4 = {
+		class: "personal-center-panel personal-center-account",
+		"aria-label": "账户信息"
+	};
+	var _hoisted_4$4 = {
+		class: "personal-center-avatar",
+		"aria-hidden": "true"
+	};
+	var _hoisted_5$3 = { class: "personal-center-identity" };
+	var _hoisted_6$3 = { class: "personal-center-account-fields" };
+	var _hoisted_7$3 = ["disabled"];
+	var _hoisted_8$3 = { class: "personal-center-content" };
+	var _hoisted_9$3 = {
+		class: "personal-center-panel personal-center-overview",
+		"aria-labelledby": "personalCenterOverviewTitle"
+	};
+	var _hoisted_10$3 = { class: "personal-center-section-header" };
+	var _hoisted_11$3 = ["disabled"];
+	var _hoisted_12$3 = ["aria-busy"];
+	var _hoisted_13$3 = {
+		key: 0,
+		class: "personal-center-feedback",
+		role: "status"
+	};
+	var _hoisted_14$2 = {
+		key: 1,
+		class: "personal-center-error"
+	};
+	var _hoisted_15$2 = { role: "alert" };
+	var _hoisted_16$1 = ["disabled"];
+	var _hoisted_17$1 = {
+		key: 2,
+		class: "personal-center-stats-note"
+	};
+	var _hoisted_18$1 = {
+		class: "personal-center-panel",
+		"aria-labelledby": "personalCenterActionsTitle"
+	};
+	var _hoisted_19$1 = { class: "personal-center-shortcuts" };
+	var _hoisted_20$1 = {
+		class: "personal-center-panel personal-center-recent",
+		"aria-labelledby": "personalCenterRecentTitle"
+	};
+	var _hoisted_21$1 = { class: "personal-center-section-header" };
+	var _hoisted_22$1 = {
+		key: 0,
+		class: "personal-center-feedback"
+	};
+	var _hoisted_23$1 = {
+		key: 1,
+		class: "personal-center-feedback"
+	};
+	var _hoisted_24$1 = {
+		key: 2,
+		class: "personal-center-recent-list"
+	};
+	var _hoisted_25$1 = { class: "personal-center-record-id" };
+	var _hoisted_26$1 = { class: "personal-center-record-progress" };
+	var _hoisted_27$1 = ["data-status"];
+	var _hoisted_28$1 = {
+		key: 3,
+		class: "personal-center-empty"
+	};
+	//#endregion
+	//#region src/components/PersonalCenterView.vue
+	var PersonalCenterView_default = /* @__PURE__ */ defineComponent({
+		__name: "PersonalCenterView",
+		setup(__props) {
+			const route = useRoute();
+			const auth = useAuthStore();
+			const { data, error, isPending, isFetching, refetch } = useGameRecordsQuery(computed(() => route.name === "personal-center"));
+			const games = computed(() => data.value || []);
+			const initial = computed(() => Array.from(auth.user?.username.trim() || "?")[0].toLocaleUpperCase());
+			const stats = computed(() => [
+				{
+					label: "案件总数",
+					value: games.value.length,
+					icon: FolderOpen
+				},
+				{
+					label: "待续案件",
+					value: games.value.filter((game) => !["abandoned", "completed"].includes(game.status)).length,
+					icon: BookOpen
+				},
+				{
+					label: "已完成",
+					value: games.value.filter((game) => game.status === "completed").length,
+					icon: CircleCheck
+				}
+			]);
+			const recentGames = computed(() => [...games.value].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || b.id - a.id).slice(0, 3));
+			const phases = {
+				opening: "故事开幕",
+				private_reveal: "角色剧本",
+				briefing: "幕前通报",
+				investigation: "自由调查",
+				dm_hosting: "DM 主持",
+				replay: "终局复盘"
+			};
+			const statuses = {
+				preparing: "待选角色",
+				playing: "进行中",
+				paused: "已暂停",
+				completed: "已完成",
+				abandoned: "已取消入场"
+			};
+			const statusLabel = (game) => statuses[game.status] || game.status || "状态未记录";
+			function progressLabel(game) {
+				if (["preparing", "abandoned"].includes(game.status)) return `尚未开始 · 共 ${game.total_stages} 幕`;
+				const phase = phases[game.current_phase] || game.current_phase || "阶段未记录";
+				if (game.current_phase === "opening" || game.current_phase === "private_reveal" && game.current_stage === 1) return `${phase} · 共 ${game.total_stages} 幕`;
+				return `${phase} · 第 ${game.current_stage} / ${game.total_stages} 幕`;
+			}
+			const navigate = (view) => appEvents.emit("navigation:view", { view });
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("section", _hoisted_1$4, [_cache[20] || (_cache[20] = createBaseVNode("header", { class: "personal-center-header" }, [createBaseVNode("p", null, "PERSONAL CENTER"), createBaseVNode("div", null, [createBaseVNode("h2", { id: "personalCenterTitle" }, "个人中心"), createBaseVNode("span", null, "查看账户信息、案件进度，继续你的故事。")])], -1)), createBaseVNode("div", _hoisted_2$4, [
+					createBaseVNode("section", _hoisted_3$4, [
+						createBaseVNode("div", _hoisted_4$4, toDisplayString(initial.value), 1),
+						createBaseVNode("h3", null, toDisplayString(unref(auth).user?.username || "未登录"), 1),
+						createBaseVNode("p", _hoisted_5$3, [createVNode(unref(UserRound), {
+							size: 15,
+							"aria-hidden": "true"
+						}), _cache[7] || (_cache[7] = createTextVNode("本地调查员", -1))]),
+						createBaseVNode("dl", _hoisted_6$3, [createBaseVNode("div", null, [_cache[8] || (_cache[8] = createBaseVNode("dt", null, "账号 ID", -1)), createBaseVNode("dd", null, toDisplayString(unref(auth).user ? `#${unref(auth).user.id}` : "—"), 1)]), _cache[9] || (_cache[9] = createBaseVNode("div", null, [createBaseVNode("dt", null, "账户类型"), createBaseVNode("dd", null, "本地账户")], -1))]),
+						_cache[10] || (_cache[10] = createBaseVNode("p", { class: "personal-center-account-note" }, "案件记录与剧本库关联当前账户。", -1)),
+						createBaseVNode("button", {
+							class: "personal-center-logout",
+							type: "button",
+							disabled: unref(auth).status === "submitting" || !unref(auth).user,
+							onClick: _cache[0] || (_cache[0] = ($event) => unref(auth).logout())
+						}, [createVNode(unref(LogOut), {
+							size: 17,
+							"aria-hidden": "true"
+						}), createTextVNode(toDisplayString(unref(auth).status === "submitting" ? "正在退出…" : "退出登录"), 1)], 8, _hoisted_7$3)
+					]),
+					createBaseVNode("div", _hoisted_8$3, [createBaseVNode("section", _hoisted_9$3, [
+						createBaseVNode("header", _hoisted_10$3, [_cache[11] || (_cache[11] = createBaseVNode("h3", { id: "personalCenterOverviewTitle" }, "调查概览", -1)), createBaseVNode("button", {
+							class: "personal-center-text-button",
+							type: "button",
+							disabled: unref(isFetching),
+							onClick: _cache[1] || (_cache[1] = ($event) => unref(refetch)())
+						}, [createVNode(unref(RefreshCw), {
+							size: 16,
+							"aria-hidden": "true"
+						}), createTextVNode(toDisplayString(unref(isFetching) ? "正在读取…" : "刷新概览"), 1)], 8, _hoisted_11$3)]),
+						createBaseVNode("div", {
+							class: "personal-center-stats",
+							"aria-busy": unref(isPending)
+						}, [(openBlock(true), createElementBlock(Fragment, null, renderList(stats.value, (stat) => {
+							return openBlock(), createElementBlock("article", {
+								key: stat.label,
+								class: "personal-center-stat"
+							}, [
+								(openBlock(), createBlock(resolveDynamicComponent(stat.icon), {
+									size: 21,
+									"aria-hidden": "true"
+								})),
+								createBaseVNode("span", null, toDisplayString(stat.label), 1),
+								createBaseVNode("strong", null, toDisplayString(unref(isPending) || unref(error) ? "—" : stat.value), 1)
+							]);
+						}), 128))], 8, _hoisted_12$3),
+						unref(isPending) ? (openBlock(), createElementBlock("p", _hoisted_13$3, "正在读取案件概览…")) : unref(error) ? (openBlock(), createElementBlock("div", _hoisted_14$2, [createBaseVNode("p", _hoisted_15$2, toDisplayString(unref(queryErrorMessage)(unref(error))), 1), createBaseVNode("button", {
+							class: "personal-center-outline-button",
+							type: "button",
+							disabled: unref(isFetching),
+							onClick: _cache[2] || (_cache[2] = ($event) => unref(refetch)())
+						}, "重新读取", 8, _hoisted_16$1)])) : (openBlock(), createElementBlock("p", _hoisted_17$1, "总数包含已取消入场记录；待续案件包含待选角色和已暂停的案件。"))
+					]), createBaseVNode("section", _hoisted_18$1, [_cache[15] || (_cache[15] = createBaseVNode("header", { class: "personal-center-section-header" }, [createBaseVNode("h3", { id: "personalCenterActionsTitle" }, "继续探索"), createBaseVNode("span", null, "从这里开始下一段故事")], -1)), createBaseVNode("div", _hoisted_19$1, [
+						createBaseVNode("button", {
+							type: "button",
+							onClick: _cache[3] || (_cache[3] = ($event) => navigate("library"))
+						}, [
+							createVNode(unref(BookOpen), {
+								size: 23,
+								"aria-hidden": "true"
+							}),
+							_cache[12] || (_cache[12] = createBaseVNode("span", null, [createBaseVNode("strong", null, "新建游戏"), createBaseVNode("small", null, "挑选剧本，进入故事")], -1)),
+							createVNode(unref(ArrowRight), {
+								size: 17,
+								"aria-hidden": "true"
+							})
+						]),
+						createBaseVNode("button", {
+							type: "button",
+							onClick: _cache[4] || (_cache[4] = ($event) => navigate("create"))
+						}, [
+							createVNode(unref(FilePlusCorner), {
+								size: 23,
+								"aria-hidden": "true"
+							}),
+							_cache[13] || (_cache[13] = createBaseVNode("span", null, [createBaseVNode("strong", null, "新建剧本"), createBaseVNode("small", null, "导入或创作新的故事")], -1)),
+							createVNode(unref(ArrowRight), {
+								size: 17,
+								"aria-hidden": "true"
+							})
+						]),
+						createBaseVNode("button", {
+							type: "button",
+							onClick: _cache[5] || (_cache[5] = ($event) => navigate("records"))
+						}, [
+							createVNode(unref(FolderOpen), {
+								size: 23,
+								"aria-hidden": "true"
+							}),
+							_cache[14] || (_cache[14] = createBaseVNode("span", null, [createBaseVNode("strong", null, "案件档案"), createBaseVNode("small", null, "继续调查，回看案件")], -1)),
+							createVNode(unref(ArrowRight), {
+								size: 17,
+								"aria-hidden": "true"
+							})
+						])
+					])])]),
+					createBaseVNode("section", _hoisted_20$1, [createBaseVNode("header", _hoisted_21$1, [_cache[17] || (_cache[17] = createBaseVNode("h3", { id: "personalCenterRecentTitle" }, "最近案件", -1)), createBaseVNode("button", {
+						class: "personal-center-text-button",
+						type: "button",
+						onClick: _cache[6] || (_cache[6] = ($event) => navigate("records"))
+					}, [_cache[16] || (_cache[16] = createTextVNode("查看案件档案", -1)), createVNode(unref(ArrowRight), {
 						size: 15,
 						"aria-hidden": "true"
-					}), _cache[1] || (_cache[1] = createTextVNode("重新读取 ", -1))])])) : !games.value.length ? (openBlock(), createElementBlock("div", _hoisted_6, "暂无游戏记录")) : createCommentVNode("", true), (openBlock(true), createElementBlock(Fragment, null, renderList(games.value, (game) => {
-						return openBlock(), createElementBlock("article", {
-							key: game.id,
-							class: "record-row"
+					})])]), unref(isPending) ? (openBlock(), createElementBlock("p", _hoisted_22$1, "正在读取最近案件…")) : unref(error) ? (openBlock(), createElementBlock("p", _hoisted_23$1, "读取成功后将显示最近案件。")) : recentGames.value.length ? (openBlock(), createElementBlock("ul", _hoisted_24$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(recentGames.value, (game) => {
+						return openBlock(), createElementBlock("li", { key: game.id }, [createBaseVNode("div", null, [
+							createBaseVNode("p", _hoisted_25$1, "CASE #" + toDisplayString(game.id), 1),
+							createBaseVNode("h4", null, toDisplayString(game.title), 1),
+							createBaseVNode("p", _hoisted_26$1, toDisplayString(progressLabel(game)), 1)
+						]), createBaseVNode("span", {
+							class: "personal-center-record-status",
+							"data-status": game.status
+						}, toDisplayString(statusLabel(game)), 9, _hoisted_27$1)]);
+					}), 128))])) : (openBlock(), createElementBlock("div", _hoisted_28$1, [
+						createVNode(unref(FolderOpen), {
+							size: 30,
+							"aria-hidden": "true"
+						}),
+						_cache[18] || (_cache[18] = createBaseVNode("p", null, "暂无案件记录", -1)),
+						_cache[19] || (_cache[19] = createBaseVNode("span", null, "从新建游戏挑选一个剧本，开启你的第一场调查。", -1))
+					]))])
+				])]);
+			};
+		}
+	});
+	//#endregion
+	//#region src/components/GamePreparationView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$3 = { class: "catalog-shell" };
+	var _hoisted_2$3 = {
+		key: 0,
+		class: "catalog-status"
+	};
+	var _hoisted_3$3 = {
+		key: 1,
+		class: "catalog-status"
+	};
+	var _hoisted_4$3 = { role: "alert" };
+	var _hoisted_5$2 = {
+		key: 2,
+		class: "catalog-status"
+	};
+	var _hoisted_6$2 = ["disabled"];
+	var _hoisted_7$2 = { class: "role-selection-list" };
+	var _hoisted_8$2 = ["disabled"];
+	var _hoisted_9$2 = ["value"];
+	var _hoisted_10$2 = ["src"];
+	var _hoisted_11$2 = { class: "portrait-option-copy" };
+	var _hoisted_12$2 = {
+		key: 0,
+		class: "form-error",
+		role: "alert"
+	};
+	var _hoisted_13$2 = { class: "role-selection-actions" };
+	var _hoisted_14$1 = ["disabled"];
+	var _hoisted_15$1 = ["disabled"];
+	//#endregion
+	//#region src/components/GamePreparationView.vue
+	var GamePreparationView_default = /* @__PURE__ */ defineComponent({
+		__name: "GamePreparationView",
+		setup(__props) {
+			const route = useRoute();
+			const router = useRouter();
+			const queryClient = useQueryClient();
+			const gameId = computed(() => Number(route.params.gameId));
+			const dialog = /* @__PURE__ */ ref();
+			const selectedRole = /* @__PURE__ */ ref("");
+			const activating = /* @__PURE__ */ ref(false);
+			const cancelling = /* @__PURE__ */ ref(false);
+			const busy = computed(() => activating.value || cancelling.value);
+			const actionError = /* @__PURE__ */ ref("");
+			const { data, error, isPending, refetch } = useQuery({
+				queryKey: computed(() => ["game-preparation", gameId.value]),
+				queryFn: ({ signal }) => getApiClient().request(`/api/v1/games/${gameId.value}/preparation`, { signal }),
+				enabled: computed(() => route.name === "game-prepare" && gameId.value > 0),
+				retry: false
+			});
+			async function selectRole() {
+				await nextTick();
+				if (dialog.value && !dialog.value.open) dialog.value.showModal();
+			}
+			watch(data, (value) => {
+				selectedRole.value = "";
+				if (value?.game.status === "preparing") selectRole();
+				else if (value && value.game.status !== "abandoned") appEvents.emit("games:activated", { gameId: value.game.id });
+			}, { immediate: true });
+			async function returnToLibrary() {
+				dialog.value?.close();
+				const from = route.query.from;
+				const returnQuery = typeof from === "string" && (from === "/play" || from.startsWith("/play?")) ? Object.fromEntries(Object.entries(router.resolve(from).query).filter(([key]) => [
+					"q",
+					"source",
+					"tag",
+					"order"
+				].includes(key))) : {};
+				await router.push({
+					name: "script-library",
+					query: returnQuery
+				});
+				appEvents.emit("navigation:view", { view: "library" });
+			}
+			async function activate() {
+				if (!selectedRole.value || busy.value) return;
+				activating.value = true;
+				actionError.value = "";
+				try {
+					await getApiClient().request(`/api/v1/games/${gameId.value}/activate`, {
+						method: "POST",
+						body: JSON.stringify({ player_role_id: selectedRole.value })
+					});
+					dialog.value?.close();
+					appEvents.emit("records:invalidate", {});
+					appEvents.emit("games:activated", { gameId: gameId.value });
+				} catch (reason) {
+					actionError.value = reason instanceof Error ? reason.message : "进入游戏失败，请重试";
+				} finally {
+					activating.value = false;
+				}
+			}
+			async function cancel() {
+				if (busy.value) return;
+				cancelling.value = true;
+				actionError.value = "";
+				try {
+					await getApiClient().request(`/api/v1/games/${gameId.value}/cancel-preparation`, { method: "POST" });
+					if (data.value) queryClient.setQueryData(["game-preparation", gameId.value], {
+						...data.value,
+						game: {
+							...data.value.game,
+							status: "abandoned"
+						}
+					});
+					appEvents.emit("records:invalidate", {});
+					await returnToLibrary();
+				} catch (reason) {
+					actionError.value = reason instanceof Error ? reason.message : "取消入场失败，请重试";
+				} finally {
+					cancelling.value = false;
+				}
+			}
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("section", _hoisted_1$3, [unref(isPending) ? (openBlock(), createElementBlock("div", _hoisted_2$3, "正在进入剧本…")) : unref(error) ? (openBlock(), createElementBlock("div", _hoisted_3$3, [
+					createBaseVNode("p", _hoisted_4$3, toDisplayString(unref(error).message), 1),
+					createBaseVNode("button", {
+						class: "secondary-button",
+						onClick: _cache[0] || (_cache[0] = ($event) => unref(refetch)())
+					}, "重新读取"),
+					createBaseVNode("button", {
+						class: "secondary-button",
+						onClick: returnToLibrary
+					}, "返回剧本库")
+				])) : unref(data)?.game.status === "abandoned" ? (openBlock(), createElementBlock("div", _hoisted_5$2, [_cache[2] || (_cache[2] = createBaseVNode("p", null, "本次入场已取消，请返回剧本库重新选择剧本。", -1)), createBaseVNode("button", {
+					class: "secondary-button",
+					onClick: returnToLibrary
+				}, "返回剧本库")])) : unref(data) ? (openBlock(), createElementBlock(Fragment, { key: 3 }, [createVNode(ScriptDetailView_default, {
+					script: unref(data).script,
+					tags: unref(data).tags,
+					busy: busy.value,
+					error: actionError.value,
+					"selected-role": selectedRole.value,
+					preparing: "",
+					onBack: cancel,
+					onChoose: selectRole
+				}, null, 8, [
+					"script",
+					"tags",
+					"busy",
+					"error",
+					"selected-role"
+				]), createBaseVNode("dialog", {
+					ref_key: "dialog",
+					ref: dialog,
+					class: "role-selection-dialog portrait-selection-dialog",
+					"aria-labelledby": "roleSelectionTitle",
+					onCancel: withModifiers(cancel, ["prevent"])
+				}, [createBaseVNode("header", null, [_cache[3] || (_cache[3] = createBaseVNode("div", null, [
+					createBaseVNode("p", { class: "catalog-eyebrow" }, "CHOOSE YOUR CHARACTER"),
+					createBaseVNode("h3", { id: "roleSelectionTitle" }, "选择你的角色"),
+					createBaseVNode("p", null, "其余角色将由角色 Agent 扮演。")
+				], -1)), createBaseVNode("button", {
+					class: "portrait-dialog-close",
+					type: "button",
+					"aria-label": "取消本次入场并返回剧本库",
+					disabled: busy.value,
+					onClick: cancel
+				}, [createVNode(unref(X), {
+					size: 20,
+					"aria-hidden": "true"
+				})], 8, _hoisted_6$2)]), createBaseVNode("form", { onSubmit: withModifiers(activate, ["prevent"]) }, [
+					createBaseVNode("div", _hoisted_7$2, [createBaseVNode("fieldset", {
+						class: "role-options portrait-options",
+						disabled: busy.value
+					}, [_cache[4] || (_cache[4] = createBaseVNode("legend", { class: "sr-only" }, "可选角色", -1)), (openBlock(true), createElementBlock(Fragment, null, renderList(unref(data).script.playable_roles, (role) => {
+						return openBlock(), createElementBlock("label", {
+							key: role.role_id,
+							class: normalizeClass(["portrait-option", { selected: selectedRole.value === role.role_id }])
 						}, [
-							createBaseVNode("div", _hoisted_7, [createBaseVNode("strong", null, toDisplayString(game.title), 1), createBaseVNode("span", null, toDisplayString(formatUpdatedAt(game.updated_at)), 1)]),
-							createBaseVNode("div", _hoisted_8, [_cache[2] || (_cache[2] = createBaseVNode("span", null, "类型", -1)), createTextVNode(toDisplayString(categoryNames[game.category] || game.category), 1)]),
-							createBaseVNode("div", _hoisted_9, [_cache[3] || (_cache[3] = createBaseVNode("span", null, "模式", -1)), createTextVNode(toDisplayString(modeNames[game.mode] || game.mode), 1)]),
-							createBaseVNode("div", _hoisted_10, [_cache[4] || (_cache[4] = createBaseVNode("span", null, "进度", -1)), createTextVNode(toDisplayString(game.current_stage) + "/" + toDisplayString(game.total_stages), 1)]),
-							createBaseVNode("div", _hoisted_11, [createBaseVNode("button", {
-								class: "secondary-button",
+							withDirectives(createBaseVNode("input", {
+								"onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => selectedRole.value = $event),
+								type: "radio",
+								name: "player-role",
+								value: role.role_id
+							}, null, 8, _hoisted_9$2), [[vModelRadio, selectedRole.value]]),
+							createBaseVNode("img", {
+								src: unref(rolePortrait)(role.role_id),
+								alt: ""
+							}, null, 8, _hoisted_10$2),
+							createBaseVNode("span", _hoisted_11$2, [createBaseVNode("strong", null, toDisplayString(role.role_name), 1), createBaseVNode("span", null, toDisplayString(role.public_identity), 1)])
+						], 2);
+					}), 128))], 8, _hoisted_8$2)]),
+					actionError.value ? (openBlock(), createElementBlock("p", _hoisted_12$2, toDisplayString(actionError.value), 1)) : createCommentVNode("", true),
+					createBaseVNode("div", _hoisted_13$2, [createBaseVNode("button", {
+						class: "secondary-button",
+						type: "button",
+						disabled: busy.value,
+						onClick: cancel
+					}, toDisplayString(cancelling.value ? "正在取消…" : "取消本次入场"), 9, _hoisted_14$1), createBaseVNode("button", {
+						class: "primary-button",
+						type: "submit",
+						disabled: !selectedRole.value || busy.value
+					}, toDisplayString(activating.value ? "正在入场…" : "确认角色，进入游戏"), 9, _hoisted_15$1)])
+				], 32)], 544)], 64)) : createCommentVNode("", true)]);
+			};
+		}
+	});
+	function isRecord(value) {
+		return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+	}
+	function eventIdOf(message) {
+		const value = Number(message.event_id || 0);
+		return Number.isSafeInteger(value) && value > 0 ? value : 0;
+	}
+	function createRequestId() {
+		if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+		return `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+	}
+	function buildCommandEnvelope(gameId, command, requestId = createRequestId()) {
+		const { type, ...payload } = command;
+		if (!Number.isSafeInteger(gameId) || gameId <= 0) throw new Error("game_id 必须是正整数");
+		if (typeof type !== "string" || !type) throw new Error("实时命令缺少 type");
+		return {
+			protocol_version: "1.0",
+			kind: "command",
+			type,
+			request_id: requestId,
+			game_id: gameId,
+			payload
+		};
+	}
+	function reduceRealtimeEnvelope(rawMessage, currentEventId) {
+		if (!isRecord(rawMessage)) throw new Error("实时消息必须是对象");
+		if (rawMessage.protocol_version !== "1.0") return {
+			lastEventId: currentEventId,
+			snapshotGame: null,
+			messages: [rawMessage]
+		};
+		const kind = rawMessage.kind;
+		const nextEventId = Math.max(currentEventId, eventIdOf(rawMessage));
+		if (kind === "snapshot") {
+			if (!isRecord(rawMessage.payload) || !isRecord(rawMessage.payload.game)) throw new Error("实时快照缺少 game");
+			const phaseMessages = rawMessage.payload.phase_messages;
+			if (!Array.isArray(phaseMessages) || !phaseMessages.every(isRecord)) throw new Error("实时快照 phase_messages 无效");
+			return {
+				lastEventId: nextEventId,
+				snapshotGame: rawMessage.payload.game,
+				messages: phaseMessages
+			};
+		}
+		if (kind === "resume") {
+			if (!isRecord(rawMessage.payload) || !Array.isArray(rawMessage.payload.events)) throw new Error("实时续传 events 无效");
+			let cursor = currentEventId;
+			const messages = [];
+			for (const event of rawMessage.payload.events) {
+				const reduction = reduceRealtimeEnvelope(event, cursor);
+				cursor = reduction.lastEventId;
+				messages.push(...reduction.messages);
+			}
+			return {
+				lastEventId: Math.max(cursor, nextEventId),
+				snapshotGame: null,
+				messages
+			};
+		}
+		if (kind !== "event" && kind !== "error") throw new Error("不支持的实时消息类型");
+		const eventId = eventIdOf(rawMessage);
+		if (eventId && eventId <= currentEventId) return {
+			lastEventId: currentEventId,
+			snapshotGame: null,
+			messages: []
+		};
+		if (!isRecord(rawMessage.payload)) throw new Error("实时事件 payload 无效");
+		const payloadType = typeof rawMessage.payload.type === "string" ? rawMessage.payload.type : rawMessage.type;
+		if (typeof payloadType !== "string" || !payloadType) throw new Error("实时事件缺少 type");
+		return {
+			lastEventId: nextEventId,
+			snapshotGame: null,
+			messages: [{
+				...rawMessage.payload,
+				type: payloadType,
+				...typeof rawMessage.request_id === "string" ? { request_id: rawMessage.request_id } : {}
+			}]
+		};
+	}
+	//#endregion
+	//#region src/game-session.ts
+	function optimisticSpeech(s, type, content, requestId) {
+		const privateMessage = type === "whisper_speech";
+		s.messages.push({
+			type: privateMessage ? "whisper_message" : "human_speech_echo",
+			role_id: s.init?.role_info?.role_id,
+			sender_role_id: s.init?.role_info?.role_id,
+			content,
+			channel: privateMessage ? "private" : "public",
+			conversation_role_id: privateMessage ? s.whisper.active_target_role_id : void 0,
+			request_id: requestId,
+			client_id: requestId,
+			delivery: "sending"
+		});
+	}
+	function interruptPendingMessages(s) {
+		for (const message of s.messages) if (message.delivery === "sending") message.delivery = "unconfirmed";
+		s.agentActivity = {};
+		s.pendingRequestId = null;
+	}
+	function applyGameEvent(s, event) {
+		if (event.type === "clue_disclosed" && event.scope === "private") event = {
+			...event,
+			channel: "private",
+			conversation_role_id: event.target_role_id
+		};
+		switch (event.type) {
+			case "phase_changed":
+				if (s.phase.phase !== event.phase.phase || s.phase.stage !== event.phase.stage) s.narration = "";
+				s.phase = event.phase;
+				break;
+			case "dm_narration_start":
+				s.narration = "";
+				break;
+			case "dm_narration_chunk":
+				s.narration += event.content;
+				break;
+			case "private_script":
+				s.assignment = event.assignment;
+				break;
+			case "investigation_open":
+				s.info = event.stage_info;
+				s.clues = event.clues || [];
+				s.whisper = event.whisper_status;
+				s.init.search_status = event.search_status;
+				s.searchAp = event.search_status?.remaining_ap ?? null;
+				if (!s.whisper?.active_target_role_id) s.channel = "public";
+				break;
+			case "stage_resolution":
+				s.resolution = event.resolution;
+				s.voteTarget = "";
+				break;
+			case "stage_vote_result":
+				s.resolution = event.resolution || s.resolution;
+				break;
+			case "search_result":
+				if (event.clue && !s.clues.some((c) => c.clue_id === event.clue.clue_id)) s.clues.push(event.clue);
+				s.searchAp = event.remaining_ap;
+				break;
+			case "whisper_accepted":
+				s.whisper = {
+					enabled: true,
+					active_target_role_id: event.target_role_id,
+					remaining_sessions: event.remaining_sessions
+				};
+				s.channel = "private";
+				break;
+			case "whisper_closed":
+				s.whisper = {
+					...s.whisper,
+					active_target_role_id: null
+				};
+				s.channel = "public";
+				break;
+			case "whisper_declined":
+				s.error = event.message || "对方拒绝了私聊";
+				break;
+			case "investigation_progress":
+				s.phase.end_condition = event.condition;
+				break;
+			case "investigation_end_vote":
+				s.endVote = event.vote;
+				break;
+			case "replay":
+				s.replay = event;
+				s.phase.phase = "replay";
+				break;
+			case "agent_activity":
+				s.agentActivity ||= {};
+				s.agentActivity[event.actor_role_id] = {
+					...s.agentActivity[event.actor_role_id],
+					activity: event.activity,
+					at: Date.now(),
+					...event.activity === "searching" ? { searchAt: Date.now() } : {}
+				};
+				break;
+			case "actor_turn_stopped":
+				s.error = event.message || "角色本回合未能完成";
+				break;
+			case "error":
+				s.error = event.message || "操作未执行";
+				for (const message of s.messages) if (event.request_id && message.request_id === event.request_id && message.delivery && message.delivery !== "sent") message.delivery = "failed";
+				if (event.request_id === s.pendingRequestId) {
+					s.busy = false;
+					s.pendingRequestId = null;
+				}
+				break;
+			case "game_command_complete":
+				if (!s.pendingRequestId || event.request_id === s.pendingRequestId) {
+					s.busy = false;
+					s.pendingRequestId = null;
+				}
+				for (const message of s.messages) if (message.request_id === event.request_id && message.delivery === "sending") message.delivery = "unconfirmed";
+		}
+		if ([
+			"human_speech_echo",
+			"ai_speech",
+			"ai_proactive_speech",
+			"dm_task_published",
+			"dm_host_action",
+			"whisper_message",
+			"clue_disclosed",
+			"agent_search_result",
+			"hint",
+			"speech_warning"
+		].includes(event.type)) {
+			const pending = event.request_id && s.messages.find((m) => m.client_id === event.request_id && (event.type === "human_speech_echo" || event.sender_role_id === s.init?.role_info?.role_id));
+			if (pending) Object.assign(pending, event, { delivery: "sent" });
+			else s.messages.push(event);
+			const actor = event.actor_role_id || event.sender_role_id || event.role_id || (event.type.startsWith("dm_") ? "dm" : null);
+			if (actor && actor !== s.init?.role_info?.role_id) {
+				s.agentActivity ||= {};
+				const searching = event.type === "agent_search_result" && !event.content;
+				s.agentActivity[actor] = {
+					...s.agentActivity[actor],
+					activity: "idle",
+					at: Date.now(),
+					[searching ? "searchAt" : "speechAt"]: Date.now()
+				};
+			}
+		}
+	}
+	function useGameSession(gameId) {
+		const s = /* @__PURE__ */ reactive({
+			detail: null,
+			init: null,
+			phase: {},
+			narration: "",
+			openingScene: null,
+			assignment: null,
+			info: [],
+			clues: [],
+			messages: [],
+			whisper: {},
+			resolution: null,
+			replay: null,
+			busy: false,
+			connected: false,
+			conflict: false,
+			error: "",
+			notebook: {
+				automatic: [],
+				manual_notes: ""
+			},
+			searchAp: null,
+			channel: "public",
+			target: "",
+			speech: "",
+			voteTarget: "",
+			endVote: null,
+			remaining: null,
+			agentActivity: {},
+			pendingRequestId: null
+		});
+		let socket = null, stopped = false, cursor = 0, reconnect = 0;
+		let timer;
+		let deadline = null;
+		const clock = setInterval(() => {
+			s.remaining = deadline === null ? null : Math.max(0, Math.ceil((deadline - Date.now()) / 1e3));
+		}, 1e3);
+		let controller = sessionStorage.getItem("game_controller_id");
+		if (!controller) {
+			controller = crypto.randomUUID();
+			sessionStorage.setItem("game_controller_id", controller);
+		}
+		async function refreshNotebook() {
+			try {
+				const manual = s.notebook.manual_notes, dirty = s.notesDirty;
+				s.notebook = await getApiClient().request(`/api/v1/games/${gameId}/notebook`);
+				s.clues = s.notebook.clues || s.clues;
+				if (dirty) s.notebook.manual_notes = manual;
+			} catch (e) {
+				s.error = e.message;
+			}
+		}
+		function snapshot(game) {
+			const pending = s.messages.filter((m) => m.client_id && m.delivery !== "sent");
+			s.init = game;
+			s.phase = game.phase;
+			s.clues = game.clues || [];
+			s.whisper = game.whisper_status || {};
+			s.searchAp = game.search_status?.remaining_ap ?? null;
+			s.info = game.stage_info || [];
+			s.messages = [];
+			for (const record of game.history_events || []) applyGameEvent(s, {
+				type: record.type,
+				...record.payload
+			});
+			for (const message of pending) if (!s.messages.some((m) => m.request_id === message.request_id && (m.type === "human_speech_echo" || m.sender_role_id === game.role_info?.role_id))) s.messages.push({
+				...message,
+				delivery: "unconfirmed"
+			});
+			s.agentActivity = {};
+			s.busy = false;
+			s.pendingRequestId = null;
+		}
+		async function connect() {
+			if (stopped) return;
+			try {
+				const ticket = await getApiClient().request(`/api/v1/games/${gameId}/ws-ticket?controller_id=${encodeURIComponent(controller)}`, { method: "POST" });
+				if (stopped) return;
+				const current = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/v1/games/${gameId}?ticket=${encodeURIComponent(ticket.ticket)}&after_event_id=${cursor}`);
+				socket = current;
+				current.onopen = () => {
+					s.connected = true;
+					reconnect = 0;
+					s.conflict = false;
+				};
+				current.onmessage = (raw) => {
+					if (socket !== current) return;
+					try {
+						const reduction = reduceRealtimeEnvelope(JSON.parse(raw.data), cursor);
+						cursor = reduction.lastEventId;
+						if (reduction.snapshotGame) snapshot(reduction.snapshotGame);
+						for (const event of reduction.messages) {
+							applyGameEvent(s, event);
+							if (event.type === "phase_changed") deadline = typeof s.phase.remaining_seconds === "number" ? Date.now() + s.phase.remaining_seconds * 1e3 : null;
+							if (event.type === "game_command_complete") refreshNotebook();
+						}
+						if (reduction.snapshotGame) refreshNotebook();
+					} catch (e) {
+						s.error = e.message;
+					}
+				};
+				current.onclose = (event) => {
+					if (socket !== current) return;
+					socket = null;
+					s.connected = false;
+					s.busy = false;
+					deadline = null;
+					interruptPendingMessages(s);
+					if (stopped) return;
+					s.error = event.reason || "连接已断开，游戏计时冻结";
+					if (event.code === 4409) {
+						s.conflict = true;
+						return;
+					}
+					if ([4401, 4404].includes(event.code)) return;
+					if (reconnect < 5) timer = setTimeout(() => {
+						connect();
+					}, Math.min(10, 2 ** reconnect++) * 1e3);
+				};
+			} catch (e) {
+				s.error = e.message;
+			}
+		}
+		function command(type, payload = {}) {
+			if (!s.init || !socket || socket.readyState !== WebSocket.OPEN || s.busy) return false;
+			const envelope = buildCommandEnvelope(gameId, {
+				type,
+				...payload
+			});
+			const requestId = String(envelope.request_id);
+			if (["player_speech", "whisper_speech"].includes(type)) optimisticSpeech(s, type, payload.content, requestId);
+			s.busy = true;
+			s.pendingRequestId = requestId;
+			s.error = "";
+			try {
+				socket.send(JSON.stringify(envelope));
+				return true;
+			} catch (e) {
+				applyGameEvent(s, {
+					type: "error",
+					request_id: requestId,
+					message: e.message
+				});
+				return false;
+			}
+		}
+		function disconnect() {
+			stopped = true;
+			clearTimeout(timer);
+			socket?.close();
+			socket = null;
+			deadline = null;
+		}
+		async function pause() {
+			disconnect();
+			if (await saveNotes() === false) throw new Error("手记未能保存，请检查连接后重试");
+			await getApiClient().request(`/api/v1/games/${gameId}/pause`, { method: "POST" });
+		}
+		async function saveNotes() {
+			if (!s.detail || !s.init || s.detail.status === "preparing") return;
+			try {
+				await getApiClient().request(`/api/v1/games/${gameId}/notebook/manual`, {
+					method: "PUT",
+					body: JSON.stringify({ content: s.notebook.manual_notes || "" })
+				});
+				s.notesDirty = false;
+				return true;
+			} catch (e) {
+				s.error = e.message;
+				return false;
+			}
+		}
+		async function takeOver() {
+			await getApiClient().request(`/api/v1/games/${gameId}/takeover`, { method: "POST" });
+			stopped = false;
+			await connect();
+		}
+		async function load() {
+			try {
+				s.detail = await getApiClient().request(`/api/v1/games/${gameId}`);
+				if (s.detail.lifecycle_version >= 4) {
+					if (s.detail.current_phase === "opening") getApiClient().request(`/api/v1/games/${gameId}/preparation`).then((preparation) => {
+						s.openingScene = preparation.opening;
+					}).catch((e) => {
+						s.error = e.message;
+					});
+					await connect();
+				}
+			} catch (e) {
+				s.error = e.message;
+			}
+		}
+		onBeforeUnmount(() => {
+			disconnect();
+			clearInterval(clock);
+		});
+		load();
+		return {
+			s,
+			command,
+			pause,
+			saveNotes,
+			takeOver,
+			refreshNotebook
+		};
+	}
+	//#endregion
+	//#region src/components/RoleAuditView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$2 = { class: "role-records-shell" };
+	var _hoisted_2$2 = { class: "role-records-header" };
+	var _hoisted_3$2 = { class: "case-label" };
+	var _hoisted_4$2 = {
+		key: 0,
+		class: "form-error",
+		role: "alert"
+	};
+	var _hoisted_5$1 = {
+		class: "audit-role-tabs",
+		"aria-label": "选择记录角色"
+	};
+	var _hoisted_6$1 = ["aria-pressed", "onClick"];
+	var _hoisted_7$1 = { key: 0 };
+	var _hoisted_8$1 = { class: "audit-ledger" };
+	var _hoisted_9$1 = { class: "notebook-tabs" };
+	var _hoisted_10$1 = ["aria-pressed"];
+	var _hoisted_11$1 = ["aria-pressed"];
+	var _hoisted_12$1 = { key: 0 };
+	var _hoisted_13$1 = ["disabled"];
+	//#endregion
+	//#region src/components/RoleAuditView.vue
+	var RoleAuditView_default = /* @__PURE__ */ defineComponent({
+		__name: "RoleAuditView",
+		props: { gameId: {} },
+		emits: ["close"],
+		setup(__props, { emit: __emit }) {
+			const props = __props;
+			const emit = __emit;
+			const dialog = /* @__PURE__ */ ref();
+			const records = /* @__PURE__ */ ref();
+			const selected = /* @__PURE__ */ ref("");
+			const logs = /* @__PURE__ */ ref([]);
+			const kind = /* @__PURE__ */ ref("tools");
+			const offset = /* @__PURE__ */ ref(0);
+			const more = /* @__PURE__ */ ref(false);
+			const error = /* @__PURE__ */ ref("");
+			const busy = /* @__PURE__ */ ref(false);
+			const role = computed(() => records.value?.roles.find((r) => r.role_id === selected.value));
+			let pageRequest = 0;
+			async function loadPage(reset = false) {
+				const current = ++pageRequest;
+				if (reset) {
+					offset.value = 0;
+					logs.value = [];
+					error.value = "";
+				}
+				busy.value = true;
+				try {
+					const page = await getApiClient().request(`/api/v1/games/${props.gameId}/execution-log-pages?kind=${kind.value}&actor_role_id=${encodeURIComponent(selected.value)}&offset=${offset.value}`);
+					if (current !== pageRequest) return;
+					logs.value.push(...page.items);
+					offset.value = page.next_offset;
+					more.value = page.has_more;
+				} catch (e) {
+					if (current === pageRequest) error.value = e.message;
+				} finally {
+					if (current === pageRequest) busy.value = false;
+				}
+			}
+			watch([selected, kind], () => {
+				loadPage(true);
+			});
+			onMounted(async () => {
+				await nextTick();
+				dialog.value?.showModal();
+				try {
+					records.value = await getApiClient().request(`/api/v1/games/${props.gameId}/role-records`);
+					records.value.roles.push({
+						role_id: "dm",
+						role_name: "DM 主持"
+					});
+					selected.value = records.value.roles[0]?.role_id || "dm";
+				} catch (e) {
+					error.value = e.message;
+				}
+			});
+			async function download() {
+				const content = await getApiClient().request(`/api/v1/games/${props.gameId}/export`);
+				const url = URL.createObjectURL(new Blob([JSON.stringify(content, null, 2)], { type: "application/json" }));
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `game-${props.gameId}.json`;
+				a.click();
+				URL.revokeObjectURL(url);
+			}
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("dialog", {
+					ref_key: "dialog",
+					ref: dialog,
+					class: "role-records-modal modern-audit",
+					"aria-labelledby": "modernAuditTitle",
+					onCancel: _cache[4] || (_cache[4] = ($event) => emit("close"))
+				}, [createBaseVNode("section", _hoisted_1$2, [
+					createBaseVNode("header", _hoisted_2$2, [
+						createBaseVNode("div", null, [
+							createBaseVNode("p", _hoisted_3$2, "GAME #" + toDisplayString(__props.gameId) + " · POSTGAME AUDIT", 1),
+							_cache[5] || (_cache[5] = createBaseVNode("h2", { id: "modernAuditTitle" }, "全部角色与 DM 记录", -1)),
+							_cache[6] || (_cache[6] = createBaseVNode("p", null, "查看各自的原始线索、证词、判断与实际调用。", -1))
+						]),
+						createBaseVNode("button", {
+							class: "secondary-button",
+							onClick: download
+						}, "导出本局记录"),
+						createBaseVNode("button", {
+							class: "icon-button",
+							"aria-label": "关闭角色记录",
+							onClick: _cache[0] || (_cache[0] = ($event) => emit("close"))
+						}, "×")
+					]),
+					error.value ? (openBlock(), createElementBlock("p", _hoisted_4$2, toDisplayString(error.value), 1)) : createCommentVNode("", true),
+					createBaseVNode("nav", _hoisted_5$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(records.value?.roles, (item) => {
+						return openBlock(), createElementBlock("button", {
+							key: item.role_id,
+							class: normalizeClass({ active: selected.value === item.role_id }),
+							"aria-pressed": selected.value === item.role_id,
+							onClick: ($event) => selected.value = item.role_id
+						}, toDisplayString(item.role_name), 11, _hoisted_6$1);
+					}), 128))]),
+					createBaseVNode("div", { class: normalizeClass(["role-audit-grid", { "dm-audit": selected.value === "dm" }]) }, [selected.value !== "dm" ? (openBlock(), createElementBlock("section", _hoisted_7$1, [_cache[8] || (_cache[8] = createBaseVNode("h3", null, "角色档案", -1)), (openBlock(), createElementBlock(Fragment, null, renderList([
+						["clues", "搜证与披露"],
+						["automatic_notebook", "自动线索"],
+						["reasoning_notebook", "推理记录"],
+						["operations", "操作记录"],
+						["stage_results", "任务结算"]
+					], (section) => {
+						return createBaseVNode("div", { key: section[0] }, [createBaseVNode("h4", null, toDisplayString(section[1]), 1), (openBlock(true), createElementBlock(Fragment, null, renderList(role.value?.[section[0]] || [], (item, index) => {
+							return openBlock(), createElementBlock("article", { key: index }, [
+								createBaseVNode("strong", null, toDisplayString(item.title || item.target_name), 1),
+								createBaseVNode("p", null, toDisplayString(item.content || item.truth_content || item.summary), 1),
+								createBaseVNode("details", null, [_cache[7] || (_cache[7] = createBaseVNode("summary", null, "完整记录", -1)), createBaseVNode("pre", null, toDisplayString(JSON.stringify(item, null, 2)), 1)])
+							]);
+						}), 128))]);
+					}), 64))])) : createCommentVNode("", true), createBaseVNode("section", _hoisted_8$1, [
+						_cache[11] || (_cache[11] = createBaseVNode("h3", null, "执行日志", -1)),
+						createBaseVNode("div", _hoisted_9$1, [createBaseVNode("button", {
+							class: normalizeClass({ active: kind.value === "tools" }),
+							"aria-pressed": kind.value === "tools",
+							onClick: _cache[1] || (_cache[1] = ($event) => kind.value = "tools")
+						}, "函数调用", 10, _hoisted_10$1), createBaseVNode("button", {
+							class: normalizeClass({ active: kind.value === "models" }),
+							"aria-pressed": kind.value === "models",
+							onClick: _cache[2] || (_cache[2] = ($event) => kind.value = "models")
+						}, "模型请求", 10, _hoisted_11$1)]),
+						(openBlock(true), createElementBlock(Fragment, null, renderList(logs.value, (entry) => {
+							return openBlock(), createElementBlock("article", { key: entry.tool_call_id || entry.model_request_id }, [
+								createBaseVNode("span", null, toDisplayString(entry.started_at), 1),
+								createBaseVNode("h4", null, toDisplayString(entry.tool_name || "模型推理") + " · " + toDisplayString(entry.status), 1),
+								createBaseVNode("p", null, [
+									createTextVNode("运行 " + toDisplayString(entry.run_id), 1),
+									_cache[9] || (_cache[9] = createBaseVNode("br", null, null, -1)),
+									createTextVNode("回合 " + toDisplayString(entry.turn_id), 1)
+								]),
+								createBaseVNode("details", null, [_cache[10] || (_cache[10] = createBaseVNode("summary", null, "参数、结果、来源与用量", -1)), createBaseVNode("pre", null, toDisplayString(JSON.stringify(entry, null, 2)), 1)])
+							]);
+						}), 128)),
+						!logs.value.length && !busy.value ? (openBlock(), createElementBlock("p", _hoisted_12$1, "暂无记录")) : createCommentVNode("", true),
+						more.value ? (openBlock(), createElementBlock("button", {
+							key: 1,
+							class: "secondary-button",
+							disabled: busy.value,
+							onClick: _cache[3] || (_cache[3] = ($event) => loadPage())
+						}, "加载更多", 8, _hoisted_13$1)) : createCommentVNode("", true)
+					])], 2)
+				])], 544);
+			};
+		}
+	});
+	//#endregion
+	//#region src/components/AgentAvatar.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1$1 = ["aria-label", "title"];
+	var _hoisted_2$1 = ["src", "alt"];
+	var _hoisted_3$1 = {
+		key: 1,
+		class: "agent-avatar-initial",
+		"aria-hidden": "true"
+	};
+	var _hoisted_4$1 = {
+		key: 2,
+		class: "agent-avatar-wave",
+		"aria-hidden": "true"
+	};
+	var AgentAvatar_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineComponent({
+		__name: "AgentAvatar",
+		props: {
+			name: {},
+			online: { type: Boolean },
+			portrait: {},
+			activity: {},
+			human: { type: Boolean }
+		},
+		setup(__props) {
+			const props = __props;
+			const portraitFailed = /* @__PURE__ */ ref(false);
+			watch(() => props.portrait, () => {
+				portraitFailed.value = false;
+			});
+			const hasPortrait = computed(() => Boolean(props.portrait && !portraitFailed.value));
+			const now = /* @__PURE__ */ ref(Date.now());
+			let expiry;
+			watch(() => [props.activity?.speechAt, props.activity?.searchAt], () => {
+				clearTimeout(expiry);
+				now.value = Date.now();
+				const until = Math.max(props.activity?.speechAt || 0, props.activity?.searchAt || 0) + 2400;
+				if (until > now.value) expiry = setTimeout(() => {
+					now.value = Date.now();
+				}, until - now.value + 1);
+			}, { immediate: true });
+			onBeforeUnmount(() => clearTimeout(expiry));
+			const state = computed(() => !props.online ? "offline" : props.activity?.searchAt && props.activity.searchAt >= (props.activity.speechAt || 0) && now.value - props.activity.searchAt < 2400 ? "searching" : props.activity?.speechAt && now.value - props.activity.speechAt < 2400 ? "speaking" : props.activity?.activity === "thinking" ? "thinking" : "idle");
+			const label = computed(() => props.name + " · " + {
+				offline: "离线",
+				idle: "在线",
+				thinking: "正在思考",
+				speaking: "发言",
+				searching: "搜证"
+			}[state.value]);
+			return (_ctx, _cache) => {
+				return openBlock(), createElementBlock("div", {
+					class: normalizeClass(["agent-avatar", [`activity-${state.value}`, {
+						"is-human": __props.human,
+						"has-portrait": hasPortrait.value
+					}]]),
+					role: "img",
+					"aria-label": label.value,
+					title: label.value
+				}, [
+					_cache[1] || (_cache[1] = createBaseVNode("span", {
+						class: "agent-avatar-ripple",
+						"aria-hidden": "true"
+					}, null, -1)),
+					hasPortrait.value ? (openBlock(), createElementBlock("img", {
+						key: __props.portrait,
+						class: "agent-avatar-portrait",
+						src: __props.portrait,
+						alt: `${__props.name}的角色肖像`,
+						onError: _cache[0] || (_cache[0] = ($event) => portraitFailed.value = true)
+					}, null, 40, _hoisted_2$1)) : (openBlock(), createElementBlock("b", _hoisted_3$1, toDisplayString(__props.name === "DM" ? "DM" : Array.from(__props.name)[0]), 1)),
+					!__props.human ? (openBlock(), createElementBlock("span", _hoisted_4$1, [(openBlock(), createElementBlock(Fragment, null, renderList(5, (bar) => {
+						return createBaseVNode("i", { key: bar });
+					}), 64))])) : createCommentVNode("", true),
+					state.value === "searching" ? (openBlock(), createBlock(unref(Search), {
+						key: 3,
+						class: "agent-avatar-search",
+						size: 19,
+						"aria-hidden": "true"
+					})) : createCommentVNode("", true),
+					_cache[2] || (_cache[2] = createBaseVNode("span", {
+						class: "agent-avatar-beacon",
+						"aria-hidden": "true"
+					}, null, -1))
+				], 10, _hoisted_1$1);
+			};
+		}
+	});
+	//#endregion
+	//#region \0plugin-vue:export-helper
+	var _plugin_vue_export_helper_default = (sfc, props) => {
+		const target = sfc.__vccOpts || sfc;
+		for (const [key, val] of props) target[key] = val;
+		return target;
+	};
+	//#endregion
+	//#region src/components/AgentAvatar.vue
+	var AgentAvatar_default = /*#__PURE__*/ _plugin_vue_export_helper_default(AgentAvatar_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-2daf7e57"]]);
+	//#endregion
+	//#region src/components/GameWorkbenchView.vue?vue&type=script&setup=true&lang.ts
+	var _hoisted_1 = {
+		key: 0,
+		class: "modern-workbench"
+	};
+	var _hoisted_2 = { class: "game-toolbar" };
+	var _hoisted_3 = { class: "game-title-block" };
+	var _hoisted_4 = { class: "case-label" };
+	var _hoisted_5 = { class: "connection-state" };
+	var _hoisted_6 = {
+		key: 0,
+		class: "round-clock"
+	};
+	var _hoisted_7 = { class: "stage-badge" };
+	var _hoisted_8 = { key: 0 };
+	var _hoisted_9 = { key: 1 };
+	var _hoisted_10 = {
+		key: 0,
+		class: "form-error",
+		role: "alert"
+	};
+	var _hoisted_11 = {
+		class: "modern-sequence",
+		"aria-label": "游戏阶段"
+	};
+	var _hoisted_12 = {
+		key: 1,
+		class: "phase-stage modern-stage"
+	};
+	var _hoisted_13 = { class: "modern-phase-content" };
+	var _hoisted_14 = { class: "modern-phase-heading" };
+	var _hoisted_15 = { class: "case-label" };
+	var _hoisted_16 = {
+		key: 0,
+		class: "private-role-card"
+	};
+	var _hoisted_17 = { class: "role-identity" };
+	var _hoisted_18 = { class: "personal-mission" };
+	var _hoisted_19 = ["aria-label"];
+	var _hoisted_20 = {
+		key: 2,
+		class: "stage-resolution"
+	};
+	var _hoisted_21 = { key: 0 };
+	var _hoisted_22 = ["disabled"];
+	var _hoisted_23 = { class: "role-options" };
+	var _hoisted_24 = ["name", "value"];
+	var _hoisted_25 = { class: "modern-vote-actions" };
+	var _hoisted_26 = ["disabled"];
+	var _hoisted_27 = {
+		key: 2,
+		class: "vote-outcome"
+	};
+	var _hoisted_28 = { class: "modern-result-details" };
+	var _hoisted_29 = { class: "modern-result-grid" };
+	var _hoisted_30 = { key: 0 };
+	var _hoisted_31 = {
+		key: 3,
+		class: "replay-card"
+	};
+	var _hoisted_32 = { class: "modern-narration" };
+	var _hoisted_33 = { class: "modern-result-details" };
+	var _hoisted_34 = { class: "replay-sections" };
+	var _hoisted_35 = {
+		key: 0,
+		class: "modern-stage-actions"
+	};
+	var _hoisted_36 = { class: "modern-stage-actions-inner" };
+	var _hoisted_37 = ["disabled"];
+	var _hoisted_38 = { key: 0 };
+	var _hoisted_39 = {
+		key: 2,
+		class: "game-layout modern-investigation"
+	};
+	var _hoisted_40 = { class: "intel-panel investigation-intel" };
+	var _hoisted_41 = {
+		class: "investigation-overview investigation-glass",
+		"aria-label": "本幕任务与搜证"
+	};
+	var _hoisted_42 = { class: "investigation-task-list" };
+	var _hoisted_43 = { class: "search-list" };
+	var _hoisted_44 = ["disabled", "onClick"];
+	var _hoisted_45 = { key: 0 };
+	var _hoisted_46 = {
+		class: "investigation-notebook investigation-glass",
+		"aria-label": "调查笔记"
+	};
+	var _hoisted_47 = {
+		class: "notebook-tabs",
+		role: "group",
+		"aria-label": "调查笔记分类"
+	};
+	var _hoisted_48 = ["aria-pressed", "onClick"];
+	var _hoisted_49 = {
+		key: 0,
+		class: "owned-clues"
+	};
+	var _hoisted_50 = { class: "notebook-clue-actions" };
+	var _hoisted_51 = ["disabled", "onClick"];
+	var _hoisted_52 = [
+		"id",
+		"disabled",
+		"onClick"
+	];
+	var _hoisted_53 = {
+		key: 0,
+		class: "notebook-empty"
+	};
+	var _hoisted_54 = {
+		key: 1,
+		class: "notebook-auto-entries"
+	};
+	var _hoisted_55 = {
+		key: 0,
+		class: "notebook-empty"
+	};
+	var _hoisted_56 = {
+		key: 2,
+		class: "notebook-editor"
+	};
+	var _hoisted_57 = { class: "notebook-editor-footer" };
+	var _hoisted_58 = ["aria-expanded", "aria-controls"];
+	var _hoisted_59 = ["id"];
+	var _hoisted_60 = {
+		key: 0,
+		class: "notebook-empty"
+	};
+	var _hoisted_61 = { class: "dialogue-panel" };
+	var _hoisted_62 = { class: "dialogue-header" };
+	var _hoisted_63 = { class: "message-body" };
+	var _hoisted_64 = { class: "message-sender" };
+	var _hoisted_65 = { class: "message-bubble" };
+	var _hoisted_66 = {
+		key: 0,
+		class: "message-delivery",
+		role: "status"
+	};
+	var _hoisted_67 = {
+		key: 0,
+		class: "sending-spinner",
+		"aria-hidden": "true"
+	};
+	var _hoisted_68 = {
+		key: 0,
+		class: "empty-state"
+	};
+	var _hoisted_69 = { class: "composer-shell" };
+	var _hoisted_70 = { class: "channel-control" };
+	var _hoisted_71 = ["disabled"];
+	var _hoisted_72 = ["aria-label", "disabled"];
+	var _hoisted_73 = ["disabled"];
+	var _hoisted_74 = { class: "dm-panel" };
+	var _hoisted_75 = { class: "dm-status" };
+	var _hoisted_76 = { class: "cast-list" };
+	var _hoisted_77 = { class: "cast-member" };
+	var _hoisted_78 = { class: "cast-presence" };
+	var _hoisted_79 = ["disabled", "onClick"];
+	var _hoisted_80 = { key: 0 };
+	var _hoisted_81 = ["disabled"];
+	var _hoisted_82 = { class: "phase-rules" };
+	var _hoisted_83 = { key: 1 };
+	var _hoisted_84 = ["disabled"];
+	var _hoisted_85 = ["aria-labelledby"];
+	var _hoisted_86 = { class: "case-label" };
+	var _hoisted_87 = ["id"];
+	var _hoisted_88 = {
+		key: 0,
+		class: "form-error"
+	};
+	var _hoisted_89 = ["disabled"];
+	//#endregion
+	//#region src/components/GameWorkbenchView.vue
+	var GameWorkbenchView_default = /* @__PURE__ */ defineComponent({
+		__name: "GameWorkbenchView",
+		props: { gameId: {} },
+		setup(__props) {
+			const props = __props;
+			const { s, command, pause, saveNotes, takeOver } = useGameSession(props.gameId);
+			const currentPhase = computed(() => s.phase.phase || s.detail?.current_phase);
+			const currentStage = computed(() => s.phase.stage || s.detail?.current_stage);
+			const opening = computed(() => currentPhase.value === "opening");
+			const hasOpening = computed(() => s.phase.has_opening ?? s.detail?.has_opening ?? (opening.value || Boolean(s.openingScene)));
+			const beforeFirstStage = computed(() => s.phase.before_first_stage ?? s.detail?.before_first_stage ?? (opening.value || hasOpening.value && currentStage.value === 1 && currentPhase.value === "private_reveal"));
+			const phaseTitle = computed(() => opening.value ? s.phase.stage_title || s.openingScene?.title || "故事开幕" : beforeFirstStage.value ? "角色剧本" : s.phase.stage_title);
+			const phaseLabel = computed(() => s.phase.phase_label || (opening.value ? "故事开幕" : currentPhase.value === "private_reveal" ? "角色剧本" : currentPhase.value === "briefing" ? "本幕开场" : ""));
+			const sequence = computed(() => hasOpening.value && currentStage.value === 1 ? [
+				["opening", "开幕"],
+				["private_reveal", "角色剧本"],
+				["briefing", "第一幕"],
+				["investigation", "自由调查"],
+				["dm_hosting", "DM 主持"],
+				["replay", "复盘"]
+			] : [
+				["briefing", "开场"],
+				["private_reveal", "角色剧本"],
+				["investigation", "自由调查"],
+				["dm_hosting", "DM 主持"],
+				["replay", "复盘"]
+			]);
+			const continueLabel = computed(() => {
+				if (s.phase.continue_label) return s.phase.continue_label;
+				if (opening.value) return "接收角色剧本";
+				if (currentPhase.value === "private_reveal") return beforeFirstStage.value ? "开始第一幕" : "开始调查";
+				if (currentPhase.value === "briefing") return hasOpening.value && currentStage.value === 1 ? "开始调查" : "接收角色剧本";
+				return "进入下一阶段";
+			});
+			const tab = /* @__PURE__ */ ref("clues");
+			const audit = /* @__PURE__ */ ref(false);
+			const roleInfoOpen = /* @__PURE__ */ ref(false);
+			const auditButton = /* @__PURE__ */ ref();
+			const shareDialog = /* @__PURE__ */ ref();
+			const shareDraft = /* @__PURE__ */ ref();
+			const shareText = /* @__PURE__ */ ref("");
+			const shareDestination = /* @__PURE__ */ ref({
+				scope: "public",
+				targetRoleId: null
+			});
+			const shareTriggerId = /* @__PURE__ */ ref("");
+			const roleName = (id) => s.init?.public_roles?.find((r) => r.role_id === id)?.role_name || id || "DM";
+			const targets = computed(() => s.init?.search_status?.targets || (s.init?.active_mechanics?.find((m) => m.name === "search")?.actions?.[0]?.targets || []).filter((t) => t.unlock_stage <= s.phase.stage));
+			const visibleMessages = computed(() => s.messages.filter((m) => s.channel === "private" ? (m.type === "whisper_message" || m.channel === "private") && (m.conversation_role_id || m.target_role_id) === s.whisper.active_target_role_id : m.type !== "whisper_message" && m.channel !== "private"));
+			const privateOpen = computed(() => Boolean(s.whisper?.active_target_role_id));
+			const messagesPanel = /* @__PURE__ */ ref();
+			const phaseScroll = /* @__PURE__ */ ref();
+			watch(() => `${currentStage.value}:${currentPhase.value}`, async () => {
+				await nextTick();
+				if (phaseScroll.value) phaseScroll.value.scrollTop = 0;
+			}, { flush: "post" });
+			watch(() => [visibleMessages.value.length, s.phase.phase], async () => {
+				await nextTick();
+				const panel = messagesPanel.value;
+				if (panel) panel.scrollTop = panel.scrollHeight;
+			}, { flush: "post" });
+			async function leave() {
+				try {
+					await pause();
+					appEvents.emit("navigation:view", { view: "records" });
+				} catch (e) {
+					s.error = e.message;
+				}
+			}
+			function speak() {
+				if (s.speech.trim() && command(s.channel === "private" ? "whisper_speech" : "player_speech", { content: s.speech.trim() })) s.speech = "";
+			}
+			function messageRole(message) {
+				if (message.type === "human_speech_echo") return message.role_id || message.sender_role_id || s.init?.role_info?.role_id || "dm";
+				if (message.type?.startsWith("dm_") || ["hint", "speech_warning"].includes(message.type)) return "dm";
+				return message.sender_role_id || message.actor_role_id || message.role_id || "dm";
+			}
+			function messageName(message) {
+				const id = messageRole(message);
+				if (id === "dm") return "DM";
+				return s.init?.public_roles?.find((role) => role.role_id === id)?.role_name || message.sender_role_name || message.actor_role_name || message.role_name || id;
+			}
+			const ownMessage = (message) => message.type === "human_speech_echo" || messageRole(message) === s.init?.role_info.role_id;
+			const deliveryLabel = (message) => ({
+				sending: "发送中",
+				failed: "发送失败",
+				unconfirmed: "发送状态未确认，请核对聊天记录"
+			})[message.delivery];
+			const canShareDraft = computed(() => s.connected && !s.busy && s.phase.phase === "investigation" && (shareDestination.value.scope !== "private" || shareDestination.value.targetRoleId === s.whisper.active_target_role_id));
+			async function share(clue, mode) {
+				if (mode === "distorted") {
+					shareTriggerId.value = `share-clue-${props.gameId}-${clue.clue_id}`;
+					shareDraft.value = clue;
+					shareText.value = "";
+					shareDestination.value = {
+						scope: s.channel,
+						targetRoleId: s.channel === "private" ? s.whisper.active_target_role_id : null
+					};
+					await nextTick();
+					shareDialog.value?.showModal();
+					return;
+				}
+				command("share_clue", {
+					clue_id: clue.clue_id,
+					mode,
+					content: "",
+					scope: s.channel,
+					target_role_id: s.channel === "private" ? s.whisper.active_target_role_id : null
+				});
+			}
+			function closeShare() {
+				shareDialog.value?.close();
+			}
+			async function restoreShareFocus() {
+				await nextTick();
+				document.getElementById(shareTriggerId.value)?.focus();
+			}
+			function publishShare() {
+				if (!shareDraft.value || !shareText.value.trim() || !canShareDraft.value) return;
+				command("share_clue", {
+					clue_id: shareDraft.value.clue_id,
+					mode: "distorted",
+					content: shareText.value.trim(),
+					scope: shareDestination.value.scope,
+					target_role_id: shareDestination.value.targetRoleId
+				});
+				closeShare();
+			}
+			const taskStatus = (status) => ({
+				completed: "已完成",
+				failed: "未完成",
+				manual_review: "待复盘"
+			})[status] || status;
+			const timelineLabel = (key) => key.startsWith("stage_") ? `第 ${key.slice(6)} 幕` : key;
+			async function closeAudit() {
+				audit.value = false;
+				await nextTick();
+				auditButton.value?.focus();
+			}
+			return (_ctx, _cache) => {
+				return unref(s).detail?.lifecycle_version >= 4 ? (openBlock(), createElementBlock("section", _hoisted_1, [
+					createBaseVNode("header", _hoisted_2, [
+						createBaseVNode("button", {
+							class: "icon-button bordered",
+							"aria-label": "暂停并返回游戏记录",
+							onClick: leave
+						}, "←"),
+						createBaseVNode("div", _hoisted_3, [createBaseVNode("p", _hoisted_4, "GAME #" + toDisplayString(__props.gameId) + " · " + toDisplayString(phaseTitle.value), 1), createBaseVNode("h2", null, toDisplayString(unref(s).detail.title), 1)]),
+						createBaseVNode("span", _hoisted_5, toDisplayString(unref(s).connected ? "已连接" : "计时冻结"), 1),
+						unref(s).remaining !== null && currentPhase.value === "investigation" ? (openBlock(), createElementBlock("div", _hoisted_6, [_cache[16] || (_cache[16] = createBaseVNode("span", null, "调查剩余", -1)), createBaseVNode("strong", null, toDisplayString(Math.floor(unref(s).remaining / 60)) + ":" + toDisplayString(String(unref(s).remaining % 60).padStart(2, "0")), 1)])) : createCommentVNode("", true),
+						createBaseVNode("div", _hoisted_7, [beforeFirstStage.value ? (openBlock(), createElementBlock("span", _hoisted_8, toDisplayString(opening.value ? "故事开幕" : "角色准备"), 1)) : (openBlock(), createElementBlock("span", _hoisted_9, "第 " + toDisplayString(currentStage.value) + " / " + toDisplayString(unref(s).detail.total_stages) + " 幕", 1))])
+					]),
+					unref(s).error ? (openBlock(), createElementBlock("p", _hoisted_10, [createTextVNode(toDisplayString(unref(s).error) + " ", 1), unref(s).conflict ? (openBlock(), createElementBlock("button", {
+						key: 0,
+						class: "secondary-button",
+						onClick: _cache[0] || (_cache[0] = (...args) => unref(takeOver) && unref(takeOver)(...args))
+					}, "接管本场游戏")) : createCommentVNode("", true)])) : createCommentVNode("", true),
+					createBaseVNode("nav", _hoisted_11, [(openBlock(true), createElementBlock(Fragment, null, renderList(sequence.value, (step) => {
+						return openBlock(), createElementBlock("span", {
+							key: step[0],
+							class: normalizeClass({ active: currentPhase.value === step[0] })
+						}, toDisplayString(step[1]), 3);
+					}), 128))]),
+					currentPhase.value !== "investigation" ? (openBlock(), createElementBlock("section", _hoisted_12, [createBaseVNode("div", {
+						ref_key: "phaseScroll",
+						ref: phaseScroll,
+						class: "modern-phase-scroll"
+					}, [createBaseVNode("div", _hoisted_13, [
+						createBaseVNode("header", _hoisted_14, [createBaseVNode("p", _hoisted_15, toDisplayString(phaseLabel.value), 1), createBaseVNode("h2", null, toDisplayString(phaseTitle.value), 1)]),
+						currentPhase.value === "private_reveal" && unref(s).assignment ? (openBlock(), createElementBlock("section", _hoisted_16, [
+							createBaseVNode("h3", null, toDisplayString(unref(s).assignment.role_name), 1),
+							createBaseVNode("p", _hoisted_17, toDisplayString(unref(s).assignment.public_identity), 1),
+							(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).assignment.blocks, (block) => {
+								return openBlock(), createElementBlock("article", {
+									key: block.block_id,
+									class: "dossier-block"
+								}, [createBaseVNode("p", null, toDisplayString(block.content), 1)]);
+							}), 128)),
+							createBaseVNode("div", _hoisted_18, [_cache[17] || (_cache[17] = createBaseVNode("span", null, "我的任务", -1)), createBaseVNode("p", null, toDisplayString(unref(s).assignment.personal_task), 1)])
+						])) : !unref(s).replay ? (openBlock(), createElementBlock("p", {
+							key: 1,
+							class: "modern-narration phase-narration",
+							"aria-label": opening.value ? "剧本开幕" : void 0
+						}, toDisplayString((opening.value ? unref(s).openingScene?.content : "") || (currentPhase.value === "private_reveal" ? "正在读取角色剧本…" : unref(s).narration) || (opening.value ? "正在读取开幕…" : "DM 正在准备本幕内容…")), 9, _hoisted_19)) : createCommentVNode("", true),
+						unref(s).resolution && unref(s).phase.phase === "dm_hosting" ? (openBlock(), createElementBlock("section", _hoisted_20, [
+							createBaseVNode("h3", null, toDisplayString(unref(s).resolution.title || "本幕结算"), 1),
+							unref(s).resolution.summary ? (openBlock(), createElementBlock("p", _hoisted_21, toDisplayString(unref(s).resolution.summary), 1)) : createCommentVNode("", true),
+							unref(s).resolution.vote?.pending ? (openBlock(), createElementBlock("form", {
+								key: 1,
+								class: "modern-vote",
+								onSubmit: _cache[2] || (_cache[2] = withModifiers(($event) => unref(command)("stage_vote", { target_role_id: unref(s).voteTarget }), ["prevent"]))
+							}, [createBaseVNode("fieldset", {
+								class: "vote-options",
+								disabled: unref(s).busy || !unref(s).connected
+							}, [createBaseVNode("legend", null, toDisplayString(unref(s).resolution.vote.prompt || "选择指认对象"), 1), createBaseVNode("div", _hoisted_23, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).resolution.vote.eligible_roles, (role) => {
+								return openBlock(), createElementBlock("label", {
+									key: role.role_id,
+									class: "role-option"
+								}, [withDirectives(createBaseVNode("input", {
+									"onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => unref(s).voteTarget = $event),
+									type: "radio",
+									name: `game-${__props.gameId}-stage-vote`,
+									value: role.role_id
+								}, null, 8, _hoisted_24), [[vModelRadio, unref(s).voteTarget]]), createBaseVNode("span", null, [createBaseVNode("strong", null, toDisplayString(role.role_name), 1), createBaseVNode("span", null, toDisplayString(role.public_identity), 1)])]);
+							}), 128))])], 8, _hoisted_22), createBaseVNode("div", _hoisted_25, [createBaseVNode("span", null, toDisplayString(unref(s).voteTarget ? "已选择 " + roleName(unref(s).voteTarget) : "选择一位角色后提交本幕指认"), 1), createBaseVNode("button", {
+								class: "primary-button",
+								type: "submit",
+								disabled: !unref(s).voteTarget || unref(s).busy || !unref(s).connected
+							}, toDisplayString(unref(s).busy ? "正在提交…" : "提交指认"), 9, _hoisted_26)])], 32)) : (openBlock(), createElementBlock("p", _hoisted_27, toDisplayString(unref(s).resolution.vote?.outcome_text), 1)),
+							createBaseVNode("details", _hoisted_28, [_cache[18] || (_cache[18] = createBaseVNode("summary", null, "查看本幕各角色任务结果", -1)), createBaseVNode("div", _hoisted_29, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).resolution.role_results, (result) => {
+								return openBlock(), createElementBlock("article", { key: result.role_id }, [
+									createBaseVNode("header", null, [createBaseVNode("strong", null, toDisplayString(result.role_name), 1), createBaseVNode("span", null, toDisplayString(unref(s).resolution.metric?.label || "本幕积分") + " " + toDisplayString(result.total) + "（" + toDisplayString(result.delta >= 0 ? "+" : "") + toDisplayString(result.delta) + "）", 1)]),
+									createBaseVNode("ul", null, [(openBlock(true), createElementBlock(Fragment, null, renderList(result.task_results || [], (task, index) => {
+										return openBlock(), createElementBlock("li", { key: index }, [createBaseVNode("span", null, toDisplayString(task.description || task.label), 1), createBaseVNode("b", { class: normalizeClass(task.status) }, toDisplayString(taskStatus(task.status)), 3)]);
+									}), 128))]),
+									!result.task_results?.length ? (openBlock(), createElementBlock("p", _hoisted_30, "本幕暂无可公开的任务结果。")) : createCommentVNode("", true)
+								]);
+							}), 128))])])
+						])) : createCommentVNode("", true),
+						unref(s).replay ? (openBlock(), createElementBlock("section", _hoisted_31, [
+							createBaseVNode("h3", null, toDisplayString(unref(s).replay.verdict || unref(s).replay.final_decision?.outcome_text || "案件复盘"), 1),
+							createBaseVNode("p", _hoisted_32, toDisplayString(unref(s).replay.full_story), 1),
+							createBaseVNode("details", _hoisted_33, [_cache[21] || (_cache[21] = createBaseVNode("summary", null, "案件时间线与角色回顾", -1)), createBaseVNode("div", _hoisted_34, [createBaseVNode("section", null, [_cache[19] || (_cache[19] = createBaseVNode("h4", null, "案件时间线", -1)), (openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).replay.timeline, (content, key) => {
+								return openBlock(), createElementBlock("article", { key }, [createBaseVNode("strong", null, toDisplayString(timelineLabel(String(key))), 1), createBaseVNode("p", null, toDisplayString(content), 1)]);
+							}), 128))]), createBaseVNode("section", null, [_cache[20] || (_cache[20] = createBaseVNode("h4", null, "角色回顾", -1)), (openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).replay.role_arcs, (content, roleId) => {
+								return openBlock(), createElementBlock("article", { key: roleId }, [createBaseVNode("strong", null, toDisplayString(roleName(String(roleId))), 1), createBaseVNode("p", null, toDisplayString(content), 1)]);
+							}), 128))])])]),
+							createBaseVNode("button", {
+								ref_key: "auditButton",
+								ref: auditButton,
+								class: "primary-button",
+								onClick: _cache[3] || (_cache[3] = ($event) => audit.value = true)
+							}, "全部角色与 DM 记录", 512)
+						])) : createCommentVNode("", true)
+					])], 512), !unref(s).replay ? (openBlock(), createElementBlock("footer", _hoisted_35, [createBaseVNode("div", _hoisted_36, [createBaseVNode("button", {
+						class: "primary-button phase-continue",
+						disabled: unref(s).busy || !unref(s).connected || !unref(s).init || !unref(s).phase.phase || unref(s).resolution?.vote?.pending,
+						onClick: _cache[4] || (_cache[4] = ($event) => unref(command)("advance_phase"))
+					}, toDisplayString(unref(s).busy ? "处理中…" : continueLabel.value), 9, _hoisted_37), unref(s).resolution?.vote?.pending ? (openBlock(), createElementBlock("span", _hoisted_38, "完成本幕指认后可继续。")) : createCommentVNode("", true)])])) : createCommentVNode("", true)])) : (openBlock(), createElementBlock("div", _hoisted_39, [
+						createBaseVNode("aside", _hoisted_40, [
+							createBaseVNode("section", _hoisted_41, [
+								_cache[22] || (_cache[22] = createBaseVNode("h3", null, "本幕任务", -1)),
+								createBaseVNode("ul", _hoisted_42, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).phase.public_tasks, (task) => {
+									return openBlock(), createElementBlock("li", { key: task }, toDisplayString(task), 1);
+								}), 128))]),
+								_cache[23] || (_cache[23] = createBaseVNode("h3", null, "现场搜证", -1)),
+								createBaseVNode("div", _hoisted_43, [(openBlock(true), createElementBlock(Fragment, null, renderList(targets.value, (target) => {
+									return openBlock(), createElementBlock("button", {
+										key: target.id,
+										class: "secondary-button wide",
+										disabled: unref(s).busy || !unref(s).connected || unref(s).searchAp === 0,
+										onClick: ($event) => unref(command)("search", { target_id: target.id })
+									}, toDisplayString(target.name || target.target_name || target.id), 9, _hoisted_44);
+								}), 128)), !targets.value.length ? (openBlock(), createElementBlock("p", _hoisted_45, "当前暂无可搜查地点")) : createCommentVNode("", true)])
+							]),
+							createBaseVNode("section", _hoisted_46, [createBaseVNode("div", _hoisted_47, [(openBlock(), createElementBlock(Fragment, null, renderList([
+								["clues", "私有线索"],
+								["auto", "自动归档"],
+								["manual", "推理手记"]
+							], (option) => {
+								return createBaseVNode("button", {
+									key: option[0],
+									class: normalizeClass({ active: tab.value === option[0] }),
+									"aria-pressed": tab.value === option[0],
+									onClick: ($event) => tab.value = option[0]
+								}, toDisplayString(option[1]), 11, _hoisted_48);
+							}), 64))]), createBaseVNode("div", { class: normalizeClass(["investigation-notebook-body", { "is-editor": tab.value === "manual" }]) }, [
+								tab.value === "clues" ? (openBlock(), createElementBlock("div", _hoisted_49, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).clues, (clue) => {
+									return openBlock(), createElementBlock("article", { key: clue.clue_id }, [
+										createBaseVNode("strong", null, toDisplayString(clue.target_name), 1),
+										createBaseVNode("p", null, toDisplayString(clue.truth_content || clue.content), 1),
+										createBaseVNode("div", _hoisted_50, [createBaseVNode("button", {
+											class: "text-button",
+											disabled: unref(s).busy,
+											onClick: ($event) => share(clue, "truthful")
+										}, "分享原文", 8, _hoisted_51), createBaseVNode("button", {
+											id: `share-clue-${__props.gameId}-${clue.clue_id}`,
+											class: "text-button",
+											disabled: unref(s).busy,
+											onClick: ($event) => share(clue, "distorted")
+										}, "改写后分享", 8, _hoisted_52)])
+									]);
+								}), 128)), !unref(s).clues.length ? (openBlock(), createElementBlock("p", _hoisted_53, "尚未取得私有线索")) : createCommentVNode("", true)])) : createCommentVNode("", true),
+								tab.value === "auto" ? (openBlock(), createElementBlock("div", _hoisted_54, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).notebook.automatic, (note) => {
+									return openBlock(), createElementBlock("article", { key: note.id }, [createBaseVNode("strong", null, toDisplayString(note.title), 1), createBaseVNode("p", null, toDisplayString(note.content), 1)]);
+								}), 128)), !unref(s).notebook.automatic.length ? (openBlock(), createElementBlock("p", _hoisted_55, "本局获得的信息会自动归档在这里。")) : createCommentVNode("", true)])) : createCommentVNode("", true),
+								tab.value === "manual" ? (openBlock(), createElementBlock("div", _hoisted_56, [withDirectives(createBaseVNode("textarea", {
+									"onUpdate:modelValue": _cache[5] || (_cache[5] = ($event) => unref(s).notebook.manual_notes = $event),
+									"aria-label": "推理手记",
+									maxlength: "10000",
+									placeholder: "记录时间线与待验证推断…",
+									onInput: _cache[6] || (_cache[6] = ($event) => unref(s).notesDirty = true),
+									onChange: _cache[7] || (_cache[7] = (...args) => unref(saveNotes) && unref(saveNotes)(...args))
+								}, null, 544), [[vModelText, unref(s).notebook.manual_notes]]), createBaseVNode("div", _hoisted_57, [createBaseVNode("span", null, toDisplayString(unref(s).notesDirty ? "有未保存的修改" : "修改会自动保存"), 1), createBaseVNode("button", {
+									class: "secondary-button notebook-save",
+									onClick: _cache[8] || (_cache[8] = (...args) => unref(saveNotes) && unref(saveNotes)(...args))
+								}, "保存手记")])])) : createCommentVNode("", true)
+							], 2)]),
+							createBaseVNode("section", { class: normalizeClass(["investigation-role investigation-glass", { "is-open": roleInfoOpen.value }]) }, [createBaseVNode("button", {
+								class: "investigation-role-toggle",
 								type: "button",
-								onClick: ($event) => openRecord(game)
-							}, [createVNode(unref(FolderOpen), {
-								size: 14,
-								"aria-hidden": "true"
-							}), createTextVNode(toDisplayString(game.status === "completed" ? "查看" : "继续"), 1)], 8, _hoisted_12), createBaseVNode("button", {
-								class: normalizeClass(["record-delete-button", { confirming: confirmingGameId.value === game.id }]),
-								type: "button",
-								disabled: unref(deletingGameId) !== null,
-								onClick: ($event) => requestDelete(game)
-							}, [createVNode(unref(Trash2), {
-								size: 14,
-								"aria-hidden": "true"
-							}), createBaseVNode("b", null, toDisplayString(unref(deletingGameId) === game.id ? "删除中" : confirmingGameId.value === game.id ? "确认删除" : "删除"), 1)], 10, _hoisted_13)])
-						]);
-					}), 128))], 8, _hoisted_3)
-				], 64);
+								"aria-expanded": roleInfoOpen.value,
+								"aria-controls": `game-${__props.gameId}-role-info`,
+								onClick: _cache[9] || (_cache[9] = ($event) => roleInfoOpen.value = !roleInfoOpen.value)
+							}, [
+								createVNode(unref(UserRound), {
+									size: 17,
+									"aria-hidden": "true"
+								}),
+								_cache[24] || (_cache[24] = createBaseVNode("span", null, "我的角色信息", -1)),
+								createVNode(unref(ChevronDown), {
+									size: 16,
+									class: "role-toggle-chevron",
+									"aria-hidden": "true"
+								})
+							], 8, _hoisted_58), roleInfoOpen.value ? (openBlock(), createElementBlock("div", {
+								key: 0,
+								id: `game-${__props.gameId}-role-info`,
+								class: "investigation-role-body"
+							}, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).info, (block) => {
+								return openBlock(), createElementBlock("p", { key: block.block_id }, toDisplayString(block.content), 1);
+							}), 128)), !unref(s).info.length ? (openBlock(), createElementBlock("p", _hoisted_60, "本幕暂无角色补充信息。")) : createCommentVNode("", true)], 8, _hoisted_59)) : createCommentVNode("", true)], 2)
+						]),
+						createBaseVNode("section", _hoisted_61, [
+							createBaseVNode("header", _hoisted_62, [createBaseVNode("div", null, [_cache[25] || (_cache[25] = createBaseVNode("span", null, "INTERROGATION LOG", -1)), createBaseVNode("strong", null, toDisplayString(unref(s).channel === "private" ? "与 " + roleName(unref(s).whisper.active_target_role_id) + " 的私聊" : "公开询问记录"), 1)]), createBaseVNode("span", null, toDisplayString(unref(s).busy ? "Agent 正在行动…" : "等待行动"), 1)]),
+							createBaseVNode("div", {
+								ref_key: "messagesPanel",
+								ref: messagesPanel,
+								class: "messages",
+								role: "log",
+								"aria-label": "聊天记录",
+								"aria-live": "polite"
+							}, [(openBlock(true), createElementBlock(Fragment, null, renderList(visibleMessages.value, (message, index) => {
+								return openBlock(), createElementBlock("article", {
+									key: message.client_id || index,
+									class: normalizeClass(["message message-chat", ownMessage(message) ? "user" : "agent"])
+								}, [createVNode(AgentAvatar_default, {
+									name: messageName(message),
+									portrait: unref(rolePortrait)(messageRole(message)),
+									online: unref(s).connected,
+									human: ownMessage(message)
+								}, null, 8, [
+									"name",
+									"portrait",
+									"online",
+									"human"
+								]), createBaseVNode("div", _hoisted_63, [
+									createBaseVNode("span", _hoisted_64, toDisplayString(messageName(message)), 1),
+									createBaseVNode("p", _hoisted_65, toDisplayString(message.content || message.shared_content || message.summary), 1),
+									deliveryLabel(message) ? (openBlock(), createElementBlock("span", _hoisted_66, [message.delivery === "sending" ? (openBlock(), createElementBlock("i", _hoisted_67)) : createCommentVNode("", true), createTextVNode(toDisplayString(deliveryLabel(message)), 1)])) : createCommentVNode("", true)
+								])], 2);
+							}), 128)), !visibleMessages.value.length ? (openBlock(), createElementBlock("p", _hoisted_68, "从一个问题开始，核对各自掌握的信息。")) : createCommentVNode("", true)], 512),
+							createBaseVNode("div", _hoisted_69, [createBaseVNode("div", _hoisted_70, [createBaseVNode("button", {
+								class: normalizeClass({ active: unref(s).channel === "public" }),
+								onClick: _cache[10] || (_cache[10] = ($event) => unref(s).channel = "public")
+							}, "公开询问", 2), createBaseVNode("button", {
+								disabled: !privateOpen.value,
+								class: normalizeClass({ active: unref(s).channel === "private" }),
+								onClick: _cache[11] || (_cache[11] = ($event) => unref(s).channel = "private")
+							}, "秘密询问", 10, _hoisted_71)]), createBaseVNode("form", {
+								class: "composer",
+								onSubmit: withModifiers(speak, ["prevent"])
+							}, [withDirectives(createBaseVNode("input", {
+								"onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => unref(s).speech = $event),
+								"aria-label": unref(s).channel === "private" ? "私聊消息" : "公开询问消息",
+								maxlength: "4000",
+								placeholder: "输入证词或问题…",
+								disabled: unref(s).busy || !unref(s).connected
+							}, null, 8, _hoisted_72), [[vModelText, unref(s).speech]]), createBaseVNode("button", {
+								class: "primary-button",
+								disabled: unref(s).busy || !unref(s).speech.trim() || !unref(s).connected
+							}, "发送", 8, _hoisted_73)], 32)])
+						]),
+						createBaseVNode("aside", _hoisted_74, [
+							createBaseVNode("div", _hoisted_75, [createVNode(AgentAvatar_default, {
+								name: "DM",
+								online: unref(s).connected,
+								activity: unref(s).agentActivity?.dm
+							}, null, 8, ["online", "activity"]), createBaseVNode("div", null, [_cache[26] || (_cache[26] = createBaseVNode("strong", null, "主持 Agent", -1)), createBaseVNode("p", null, toDisplayString(unref(s).connected ? "在线" : "离线") + " · " + toDisplayString(unref(s).phase.phase_label), 1)])]),
+							_cache[28] || (_cache[28] = createBaseVNode("h3", null, "参与角色", -1)),
+							createBaseVNode("div", _hoisted_76, [(openBlock(true), createElementBlock(Fragment, null, renderList(unref(s).init?.public_roles, (role) => {
+								return openBlock(), createElementBlock("article", { key: role.role_id }, [
+									createBaseVNode("header", _hoisted_77, [createVNode(AgentAvatar_default, {
+										name: role.role_name,
+										portrait: unref(rolePortrait)(role.role_id),
+										online: unref(s).connected,
+										activity: unref(s).agentActivity?.[role.role_id],
+										human: role.role_id === unref(s).init?.role_info.role_id
+									}, null, 8, [
+										"name",
+										"portrait",
+										"online",
+										"activity",
+										"human"
+									]), createBaseVNode("div", null, [createBaseVNode("strong", null, toDisplayString(role.role_name), 1), createBaseVNode("span", _hoisted_78, toDisplayString(role.role_id === unref(s).init?.role_info.role_id ? "我" : unref(s).connected ? "角色 Agent · 在线" : "角色 Agent · 离线"), 1)])]),
+									createBaseVNode("p", null, toDisplayString(role.public_identity), 1),
+									role.role_id !== unref(s).init?.role_info.role_id && unref(s).phase.enabled_actions?.includes("whisper") ? (openBlock(), createElementBlock("button", {
+										key: 0,
+										class: "text-button",
+										disabled: unref(s).busy || !unref(s).connected,
+										onClick: ($event) => {
+											unref(command)("whisper_invite", { target_role_id: role.role_id });
+											unref(s).target = role.role_id;
+										}
+									}, "发起私聊", 8, _hoisted_79)) : createCommentVNode("", true)
+								]);
+							}), 128))]),
+							privateOpen.value ? (openBlock(), createElementBlock("p", _hoisted_80, [createTextVNode("私聊对象：" + toDisplayString(roleName(unref(s).whisper.active_target_role_id)) + " ", 1), createBaseVNode("button", {
+								class: "text-button",
+								disabled: unref(s).busy,
+								onClick: _cache[13] || (_cache[13] = ($event) => {
+									unref(command)("whisper_close");
+									unref(s).channel = "public";
+								})
+							}, "结束私聊", 8, _hoisted_81)])) : createCommentVNode("", true),
+							createBaseVNode("div", _hoisted_82, [_cache[27] || (_cache[27] = createBaseVNode("span", null, "调查结束条件", -1)), createBaseVNode("p", null, toDisplayString(unref(s).phase.end_condition_text), 1)]),
+							unref(s).endVote ? (openBlock(), createElementBlock("p", _hoisted_83, toDisplayString(unref(s).endVote.approved ? "结束投票通过" : "结束投票未通过，可继续调查"), 1)) : createCommentVNode("", true),
+							createBaseVNode("button", {
+								class: "secondary-button wide",
+								disabled: unref(s).busy || !unref(s).connected || !unref(s).phase.can_manual_end,
+								onClick: _cache[14] || (_cache[14] = ($event) => unref(command)("request_phase_end"))
+							}, "发起结束调查投票", 8, _hoisted_84)
+						])
+					])),
+					createBaseVNode("dialog", {
+						ref_key: "shareDialog",
+						ref: shareDialog,
+						class: "clue-share-dialog",
+						"aria-labelledby": `game-${__props.gameId}-share-title`,
+						onCancel: withModifiers(closeShare, ["prevent"]),
+						onClose: restoreShareFocus
+					}, [createBaseVNode("form", { onSubmit: withModifiers(publishShare, ["prevent"]) }, [
+						createBaseVNode("header", null, [
+							createBaseVNode("p", _hoisted_86, toDisplayString(shareDestination.value.scope === "private" ? "私聊分享" : "公开分享"), 1),
+							createBaseVNode("h3", { id: `game-${__props.gameId}-share-title` }, "改写线索说法", 8, _hoisted_87),
+							createBaseVNode("p", null, "分享至：" + toDisplayString(shareDestination.value.scope === "private" ? roleName(shareDestination.value.targetRoleId || "") : "公开频道"), 1)
+						]),
+						createBaseVNode("blockquote", null, toDisplayString(shareDraft.value?.truth_content || shareDraft.value?.content), 1),
+						createBaseVNode("label", null, [_cache[29] || (_cache[29] = createTextVNode("新的线索说法", -1)), withDirectives(createBaseVNode("textarea", {
+							"onUpdate:modelValue": _cache[15] || (_cache[15] = ($event) => shareText.value = $event),
+							maxlength: "4000",
+							required: "",
+							placeholder: "写下你希望分享的说法…"
+						}, null, 512), [[vModelText, shareText.value]])]),
+						_cache[30] || (_cache[30] = createBaseVNode("p", null, "原始线索会保留在你的私人档案中。", -1)),
+						shareDestination.value.scope === "private" && shareDestination.value.targetRoleId !== unref(s).whisper.active_target_role_id ? (openBlock(), createElementBlock("p", _hoisted_88, "私聊已结束，请关闭后重新选择分享对象。")) : createCommentVNode("", true),
+						createBaseVNode("footer", null, [createBaseVNode("button", {
+							class: "secondary-button",
+							type: "button",
+							onClick: closeShare
+						}, "取消"), createBaseVNode("button", {
+							class: "primary-button",
+							disabled: !shareText.value.trim() || !canShareDraft.value
+						}, "确认分享", 8, _hoisted_89)])
+					], 32)], 40, _hoisted_85),
+					audit.value ? (openBlock(), createBlock(RoleAuditView_default, {
+						key: 3,
+						"game-id": __props.gameId,
+						onClose: closeAudit
+					}, null, 8, ["game-id"])) : createCommentVNode("", true)
+				])) : createCommentVNode("", true);
 			};
 		}
 	});
@@ -10434,11 +14642,21 @@
 	var App_default = /* @__PURE__ */ defineComponent({
 		__name: "App",
 		setup(__props) {
+			const route = useRoute();
+			const auth = useAuthStore();
 			return (_ctx, _cache) => {
 				return openBlock(), createElementBlock(Fragment, null, [
 					(openBlock(), createBlock(Teleport, { to: "#authView" }, [createVNode(AuthView_default)])),
 					(openBlock(), createBlock(Teleport, { to: "#appSidebar" }, [createVNode(AppSidebar_default)])),
-					(openBlock(), createBlock(Teleport, { to: "#recordsView" }, [createVNode(CaseRecordsView_default)]))
+					(openBlock(), createBlock(Teleport, { to: "#recordsView" }, [createVNode(CaseRecordsView_default)])),
+					(openBlock(), createBlock(Teleport, { to: "#scriptLibraryView" }, [unref(auth).user && unref(route).name === "script-library" ? (openBlock(), createBlock(ScriptLibraryView_default, { key: 0 })) : createCommentVNode("", true)])),
+					(openBlock(), createBlock(Teleport, { to: "#createView" }, [unref(auth).user && ["script-create", "case-create"].includes(String(unref(route).name)) ? (openBlock(), createBlock(ScriptCreatorView_default, { key: 0 })) : createCommentVNode("", true)])),
+					(openBlock(), createBlock(Teleport, { to: "#personalCenterView" }, [unref(auth).user && unref(route).name === "personal-center" ? (openBlock(), createBlock(PersonalCenterView_default, { key: 0 })) : createCommentVNode("", true)])),
+					(openBlock(), createBlock(Teleport, { to: "#preparationView" }, [unref(auth).user && unref(route).name === "game-prepare" ? (openBlock(), createBlock(GamePreparationView_default, { key: 0 })) : createCommentVNode("", true)])),
+					(openBlock(), createBlock(Teleport, { to: "#modernGameView" }, [unref(auth).user && unref(route).name === "game-detail" ? (openBlock(), createBlock(GameWorkbenchView_default, {
+						key: unref(route).params.gameId,
+						"game-id": Number(unref(route).params.gameId)
+					}, null, 8, ["game-id"])) : createCommentVNode("", true)]))
 				], 64);
 			};
 		}
@@ -10450,12 +14668,6 @@
 			authMode: "login",
 			csrfToken: "",
 			user: null,
-			catalog: null,
-			category: "mystery",
-			mode: "deduction",
-			script: null,
-			builtinScriptId: null,
-			preview: null,
 			game: null,
 			ws: null,
 			expectedSocketClosures: /* @__PURE__ */ new WeakSet(),
@@ -10535,83 +14747,6 @@
 			this.pending.clear();
 		}
 	};
-	function isRecord(value) {
-		return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-	}
-	function eventIdOf(message) {
-		const value = Number(message.event_id || 0);
-		return Number.isSafeInteger(value) && value > 0 ? value : 0;
-	}
-	function createRequestId() {
-		if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-		return `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
-	}
-	function buildCommandEnvelope(gameId, command, requestId = createRequestId()) {
-		const { type, ...payload } = command;
-		if (!Number.isSafeInteger(gameId) || gameId <= 0) throw new Error("game_id 必须是正整数");
-		if (typeof type !== "string" || !type) throw new Error("实时命令缺少 type");
-		return {
-			protocol_version: "1.0",
-			kind: "command",
-			type,
-			request_id: requestId,
-			game_id: gameId,
-			payload
-		};
-	}
-	function reduceRealtimeEnvelope(rawMessage, currentEventId) {
-		if (!isRecord(rawMessage)) throw new Error("实时消息必须是对象");
-		if (rawMessage.protocol_version !== "1.0") return {
-			lastEventId: currentEventId,
-			snapshotGame: null,
-			messages: [rawMessage]
-		};
-		const kind = rawMessage.kind;
-		const nextEventId = Math.max(currentEventId, eventIdOf(rawMessage));
-		if (kind === "snapshot") {
-			if (!isRecord(rawMessage.payload) || !isRecord(rawMessage.payload.game)) throw new Error("实时快照缺少 game");
-			const phaseMessages = rawMessage.payload.phase_messages;
-			if (!Array.isArray(phaseMessages) || !phaseMessages.every(isRecord)) throw new Error("实时快照 phase_messages 无效");
-			return {
-				lastEventId: nextEventId,
-				snapshotGame: rawMessage.payload.game,
-				messages: phaseMessages
-			};
-		}
-		if (kind === "resume") {
-			if (!isRecord(rawMessage.payload) || !Array.isArray(rawMessage.payload.events)) throw new Error("实时续传 events 无效");
-			let cursor = currentEventId;
-			const messages = [];
-			for (const event of rawMessage.payload.events) {
-				const reduction = reduceRealtimeEnvelope(event, cursor);
-				cursor = reduction.lastEventId;
-				messages.push(...reduction.messages);
-			}
-			return {
-				lastEventId: Math.max(cursor, nextEventId),
-				snapshotGame: null,
-				messages
-			};
-		}
-		if (kind !== "event" && kind !== "error") throw new Error("不支持的实时消息类型");
-		const eventId = eventIdOf(rawMessage);
-		if (eventId && eventId <= currentEventId) return {
-			lastEventId: currentEventId,
-			snapshotGame: null,
-			messages: []
-		};
-		if (!isRecord(rawMessage.payload)) throw new Error("实时事件 payload 无效");
-		const payloadType = typeof rawMessage.payload.type === "string" ? rawMessage.payload.type : rawMessage.type;
-		if (typeof payloadType !== "string" || !payloadType) throw new Error("实时事件缺少 type");
-		return {
-			lastEventId: nextEventId,
-			snapshotGame: null,
-			messages: [{
-				...rawMessage.payload,
-				type: payloadType
-			}]
-		};
-	}
 	//#endregion
 	//#region src/legacy-app.js
 	function mountLegacyApp() {
@@ -10626,28 +14761,13 @@
 			"appView",
 			"appSidebar",
 			"createView",
+			"scriptLibraryView",
+			"preparationView",
 			"recordsView",
+			"personalCenterView",
 			"gameView",
-			"categoryGrid",
-			"modeControl",
-			"selectedCategoryText",
-			"selectedModeText",
-			"uploadZone",
-			"scriptFileInput",
-			"chooseFileBtn",
-			"exampleScriptBtn",
-			"uploadTitle",
-			"uploadMeta",
-			"scriptError",
-			"scriptPreview",
-			"previewTitle",
-			"previewStages",
-			"previewRoles",
-			"previewAgents",
-			"roleOptions",
-			"startGameBtn",
+			"modernGameView",
 			"leaveGameBtn",
-			"expandSidebarBtn",
 			"gameModeLabel",
 			"gameTitle",
 			"currentStage",
@@ -10727,6 +14847,8 @@
 			"notebookManualNotes",
 			"notebookSaveState",
 			"roleRecordsModal",
+			"auditExecutionLogs",
+			"auditRoleDetails",
 			"closeRoleRecordsBtn",
 			"auditRoleTabs",
 			"auditClues",
@@ -10738,6 +14860,9 @@
 			"conversationParticipants"
 		].map((id) => [id, document.getElementById(id)]));
 		const avatarActionTimers = /* @__PURE__ */ new WeakMap();
+		els.gameView?.addEventListener("error", (event) => {
+			if (event.target instanceof HTMLImageElement && event.target.hasAttribute("data-role-portrait")) event.target.remove();
+		}, true);
 		const categoryNames = {
 			mystery: "悬疑推理",
 			adventure: "冒险探索",
@@ -10766,9 +14891,6 @@
 			uiStore.setGameActive(false);
 			state.csrfToken = "";
 			state.user = null;
-			state.script = null;
-			state.builtinScriptId = null;
-			state.preview = null;
 			state.game = null;
 			state.lastEventId = 0;
 			state.roleRecords = null;
@@ -10780,11 +14902,6 @@
 			localStorage.removeItem("ai_mm_token");
 			closeGameSocket();
 			stopCountdown();
-			els.uploadTitle.textContent = "拖入案件文件，或从本机选择";
-			els.uploadMeta.textContent = "JSON · 最大 5 MB";
-			els.scriptPreview.classList.add("hidden");
-			els.scriptError.textContent = "";
-			setCreationStep(1);
 			els.authView.classList.remove("hidden");
 			els.appView.classList.add("hidden");
 			const authMode = appRouter.current().name === "register" ? "register" : "login";
@@ -10797,156 +14914,79 @@
 			state.user = authStore.user;
 			els.authView.classList.add("hidden");
 			els.appView.classList.remove("hidden");
-			state.catalog = await api("/api/catalog");
-			renderCatalog();
 			const returnPath = appRouter.consumeReturnPath();
 			if (returnPath) await appRouter.replacePath(returnPath);
 			else if ([
 				"login",
 				"register",
 				"not-found"
-			].includes(appRouter.current().name)) await appRouter.replace({ name: "case-create" });
+			].includes(appRouter.current().name)) await appRouter.replace({ name: "script-library" });
 			await restoreRoute();
 		}
 		function syncAccountAvatar() {
 			uiStore.setGameActive(Boolean(state.user) && els.appView.classList.contains("game-active"));
 		}
-		function renderCatalog() {
-			const category = state.catalog.categories.find((item) => item.id === "mystery");
-			const mode = state.catalog.modes.find((item) => item.id === "deduction");
-			state.category = category?.id || "mystery";
-			state.mode = mode?.id || "deduction";
-			els.selectedCategoryText.textContent = category?.name || "悬疑推理";
-			els.selectedModeText.textContent = mode?.name || "推理对抗";
-			els.categoryGrid.innerHTML = "";
-			els.modeControl.innerHTML = "";
+		async function pauseCurrentGame() {
+			if (state.game?.lifecycle_version >= 2 && els.appView.classList.contains("game-active")) {
+				await api(`/api/games/${state.game.id}/pause`, { method: "POST" });
+				appEvents.emit("records:invalidate", {});
+			}
 		}
-		function showPage(name, updateHistory = true) {
-			closeGameSocket();
-			closeRoleRecords();
-			setSidebarCollapsed(false);
-			els.appView.classList.remove("game-active");
-			syncAccountAvatar();
+		function hideWorkspaceViews() {
 			for (const view of [
 				els.createView,
+				els.scriptLibraryView,
+				els.preparationView,
 				els.recordsView,
-				els.gameView
+				els.personalCenterView,
+				els.gameView,
+				els.modernGameView
 			]) view.classList.add("hidden");
-			if (name === "records") {
-				if (updateHistory) appRouter.push({ name: "case-list" });
-				els.recordsView.classList.remove("hidden");
-				animateView(els.recordsView);
-			} else {
-				if (updateHistory) appRouter.push({ name: "case-create" });
-				els.createView.classList.remove("hidden");
-				setCreationStep(state.preview ? 2 : 1);
-				animateView(els.createView);
+		}
+		async function showPage(name, updateHistory = true) {
+			closeGameSocket();
+			try {
+				await pauseCurrentGame();
+			} catch (error) {
+				toast(error.message);
+				return;
 			}
+			stopCountdown();
+			closeRoleRecords();
+			els.appView.classList.remove("game-active");
+			syncAccountAvatar();
+			hideWorkspaceViews();
+			const page = name === "profile" ? els.personalCenterView : name === "records" ? els.recordsView : name === "create" ? els.createView : els.scriptLibraryView;
+			const route = name === "profile" ? "personal-center" : name === "records" ? "case-list" : name === "create" ? "script-create" : "script-library";
+			if (updateHistory) await appRouter.push({ name: route });
+			page.classList.remove("hidden");
+			animateView(page);
+		}
+		async function openPreparation(gameId, updateHistory = true) {
+			closeGameSocket();
+			await pauseCurrentGame();
+			stopCountdown();
+			closeRoleRecords();
+			els.appView.classList.remove("game-active");
+			syncAccountAvatar();
+			hideWorkspaceViews();
+			if (updateHistory) await appRouter.push({
+				name: "game-prepare",
+				gameId
+			});
+			els.preparationView.classList.remove("hidden");
+			animateView(els.preparationView);
 		}
 		async function restoreRoute() {
 			const route = appRouter.current();
-			if (route.name === "case-detail") {
-				await openGame(route.gameId, null, false);
-				return;
-			}
-			if (route.name === "case-list") {
-				showPage("records", false);
-				return;
-			}
-			if (route.name !== "case-create") await appRouter.replace({ name: "case-create" });
-			showPage("create", false);
-		}
-		function setCreationStep(step) {
-			document.querySelectorAll(".step-indicator span").forEach((item, index) => {
-				const current = index + 1;
-				item.classList.toggle("active", current === step);
-				item.classList.toggle("complete", current < step);
-			});
-		}
-		async function readScriptFile(file) {
-			els.scriptError.textContent = "";
-			if (!file) return;
-			if (file.size > 5242880) {
-				els.scriptError.textContent = "剧本文件不能超过 5 MB";
-				return;
-			}
-			try {
-				state.builtinScriptId = null;
-				state.script = JSON.parse(await file.text());
-				els.uploadTitle.textContent = file.name;
-				els.uploadMeta.textContent = `${Math.max(1, Math.ceil(file.size / 1024))} KB · JSON`;
-				await inspectScript();
-			} catch (error) {
-				state.script = null;
-				els.scriptPreview.classList.add("hidden");
-				setCreationStep(1);
-				els.scriptError.textContent = error instanceof SyntaxError ? "JSON 格式无效" : error.message;
-			}
-		}
-		async function inspectScript() {
-			if (!state.script && !state.builtinScriptId) return;
-			try {
-				state.preview = await api("/api/scripts/inspect", {
-					method: "POST",
-					body: JSON.stringify({
-						mode: state.mode,
-						...scriptSource()
-					})
-				});
-				els.scriptError.textContent = "";
-				renderScriptPreview();
-			} catch (error) {
-				state.preview = null;
-				els.scriptPreview.classList.add("hidden");
-				setCreationStep(1);
-				els.scriptError.textContent = error.message;
-			}
-		}
-		function scriptSource() {
-			return state.builtinScriptId ? { script_id: state.builtinScriptId } : { script: state.script };
-		}
-		function renderScriptPreview() {
-			const preview = state.preview;
-			els.previewTitle.textContent = preview.title;
-			els.previewStages.textContent = String(preview.total_stages);
-			els.previewRoles.textContent = String(preview.role_count);
-			els.previewAgents.textContent = String(preview.ai_agent_count);
-			els.roleOptions.innerHTML = "";
-			preview.playable_roles.forEach((role, index) => {
-				const label = document.createElement("label");
-				label.className = "role-option";
-				label.innerHTML = `
-      <input type="radio" name="player-role" value="${escapeHtml(role.role_id)}" ${index === 0 ? "checked" : ""} />
-      <span><strong>${escapeHtml(role.role_name)}</strong><span>${escapeHtml(role.public_identity)}</span></span>`;
-				els.roleOptions.appendChild(label);
-			});
-			els.scriptPreview.classList.remove("hidden");
-			setCreationStep(2);
-		}
-		async function startGame() {
-			const selectedRole = document.querySelector("input[name=\"player-role\"]:checked");
-			if (!state.script && !state.builtinScriptId || !state.preview || !selectedRole) return;
-			setCreationStep(3);
-			els.startGameBtn.disabled = true;
-			els.startGameBtn.innerHTML = "<span>DM 正在建立调查现场...</span><b>···</b>";
-			try {
-				const game = await api("/api/games", {
-					method: "POST",
-					body: JSON.stringify({
-						category: state.category,
-						mode: state.mode,
-						player_role_id: selectedRole.value,
-						...scriptSource()
-					})
-				});
-				appEvents.emit("records:invalidate", {});
-				await openGame(game.id, game);
-			} catch (error) {
-				setCreationStep(2);
-				toast(error.message);
-			} finally {
-				els.startGameBtn.disabled = false;
-				els.startGameBtn.innerHTML = "<span>启动 DM，进入案发现场</span><b>→</b>";
+			if (route.name === "case-detail" || route.name === "game-detail") await openGame(route.gameId, null, false);
+			else if (route.name === "game-prepare") await openPreparation(route.gameId, false);
+			else if (route.name === "case-list") await showPage("records", false);
+			else if (route.name === "personal-center") await showPage("profile", false);
+			else if (route.name === "script-create" || route.name === "case-create") await showPage("create", false);
+			else {
+				if (route.name !== "script-library") await appRouter.replace({ name: "script-library" });
+				await showPage("library", false);
 			}
 		}
 		async function openGame(gameId, summary = null, updateHistory = true) {
@@ -10959,25 +14999,32 @@
 				toast(error.message);
 				return;
 			}
+			if (detail.status === "preparing") {
+				await openPreparation(Number(gameId));
+				return;
+			}
 			state.game = {
 				...summary || {},
 				...detail
 			};
-			if (updateHistory) appRouter.push({
-				name: "case-detail",
+			if (updateHistory) await appRouter.push({
+				name: detail.lifecycle_version >= 2 ? "game-detail" : "case-detail",
 				gameId: Number(gameId)
 			});
 			state.roleRecords = null;
-			setSidebarCollapsed(false);
+			setSidebarCollapsed(true);
 			els.appView.classList.add("game-active");
 			syncAccountAvatar();
 			closeRoleRecords();
-			els.createView.classList.add("hidden");
-			els.recordsView.classList.add("hidden");
+			hideWorkspaceViews();
+			if (detail.lifecycle_version >= 4) {
+				els.modernGameView.classList.remove("hidden");
+				return;
+			}
 			els.gameView.classList.remove("hidden");
 			animateView(els.gameView);
 			els.gameTitle.textContent = detail.title;
-			els.gameModeLabel.textContent = `${categoryNames[detail.category] || detail.category} · ${modeNames[detail.mode] || detail.mode}`;
+			els.gameModeLabel.textContent = `${categoryNames[detail.category] || detail.category} · ${modeNames[detail.mode] || detail.mode} · GAME #${detail.id}`;
 			els.currentStage.textContent = String(detail.current_stage);
 			els.totalStages.textContent = String(detail.total_stages);
 			els.messages.innerHTML = "";
@@ -10993,14 +15040,13 @@
 			state.sidebarCollapsed = active;
 			uiStore.setSidebarCollapsed(active);
 			els.appView?.classList.toggle("sidebar-collapsed", active);
-			els.appSidebar?.setAttribute("aria-hidden", String(active));
-			els.appSidebar?.toggleAttribute("inert", active);
-			els.expandSidebarBtn?.setAttribute("aria-expanded", String(!active));
+			els.appSidebar?.removeAttribute("aria-hidden");
+			els.appSidebar?.removeAttribute("inert");
 			if (focusTarget) window.requestAnimationFrame(() => {
-				(active ? els.expandSidebarBtn : document.getElementById("collapseSidebarBtn"))?.focus();
+				document.getElementById("collapseSidebarBtn")?.focus();
 			});
 		}
-		const compactGameMedia = window.matchMedia("(max-width: 1180px)");
+		const compactGameMedia = window.matchMedia("(max-width: 780px)");
 		function syncCompactGamePanel() {
 			const compact = compactGameMedia.matches;
 			const panels = {
@@ -11407,7 +15453,12 @@
 			state.reconnectTimer = null;
 			let ticket;
 			try {
-				ticket = (await api(`/api/games/${gameId}/ws-ticket`, { method: "POST" })).ticket;
+				let controller = sessionStorage.getItem("game_controller_id");
+				if (!controller) {
+					controller = crypto.randomUUID();
+					sessionStorage.setItem("game_controller_id", controller);
+				}
+				ticket = (await api(`/api/games/${gameId}/ws-ticket?controller_id=${encodeURIComponent(controller)}`, { method: "POST" })).ticket;
 			} catch (error) {
 				if (state.user) {
 					toast(error.message || "调查连接凭证获取失败");
@@ -11481,6 +15532,16 @@
 		function handleGameMessage(message) {
 			switch (message.type) {
 				case "heartbeat": break;
+				case "game_command_complete":
+					clearAgentActivity();
+					setComposerBusy(false);
+					break;
+				case "dm_task_published":
+					addMessage("dm", "DM · 任务", message.content);
+					break;
+				case "dm_information_available":
+					loadNotebook(state.game?.id);
+					break;
 				case "game_init":
 					renderGameInit(message);
 					break;
@@ -12031,6 +16092,20 @@
 			if (!gameId) return;
 			try {
 				const records = await api(`/api/games/${gameId}/role-records`);
+				if (state.game?.lifecycle_version >= 3) {
+					records.execution = await api(`/api/v1/games/${gameId}/execution-logs`);
+					records.roles.push({
+						role_id: "dm",
+						role_name: "DM 主持",
+						controller: "dm",
+						operations: [],
+						clues: [],
+						automatic_notebook: [],
+						reasoning_notebook: [],
+						stage_results: [],
+						agent_context_audits: []
+					});
+				}
 				state.roleRecords = records;
 				els.auditRoleTabs.innerHTML = "";
 				records.roles.forEach((role, index) => {
@@ -12054,6 +16129,9 @@
 		function renderRoleRecord(roleId) {
 			const role = state.roleRecords?.roles?.find((item) => item.role_id === roleId);
 			if (!role) return;
+			const dmView = roleId === "dm";
+			els.auditRoleDetails.classList.toggle("hidden", dmView);
+			els.auditExecutionLogs.closest(".role-audit-grid").classList.toggle("dm-audit", dmView);
 			[...els.auditRoleTabs.children].forEach((button, index) => {
 				const selected = state.roleRecords.roles[index]?.role_id === roleId;
 				button.classList.toggle("active", selected);
@@ -12064,6 +16142,7 @@
 			renderAuditEntries(els.auditReasoningEntries, role.reasoning_notebook, "该角色没有留下推理记录");
 			renderAuditStageResults(role.stage_results || []);
 			renderAgentContextAudits(role.agent_context_audits || []);
+			renderExecutionLogs(roleId);
 			els.auditOperations.innerHTML = "";
 			if (!role.operations.length) els.auditOperations.innerHTML = "<div class=\"audit-empty\">该角色没有执行操作</div>";
 			else role.operations.forEach((operation) => {
@@ -12073,6 +16152,47 @@
         <strong>${escapeHtml(notebookSourceLabel(operation.event_type))}</strong>
         <p>${escapeHtml(operation.summary)}</p>`;
 				els.auditOperations.appendChild(item);
+			});
+		}
+		function renderExecutionLogs(roleId) {
+			if (!els.auditExecutionLogs) return;
+			const logs = state.roleRecords?.execution;
+			els.auditExecutionLogs.innerHTML = "";
+			if (!logs) {
+				els.auditExecutionLogs.innerHTML = "<div class=\"audit-empty\">此存档使用旧版执行器</div>";
+				return;
+			}
+			const entries = [...logs.model_requests.filter((row) => row.actor_role_id === roleId).map((row) => ({
+				id: row.model_request_id,
+				kind: "模型请求",
+				title: row.metadata_json ? JSON.parse(row.metadata_json).purpose : "角色推理",
+				...row,
+				details: {
+					input: row.input,
+					output: row.output,
+					usage: row.usage_json ? JSON.parse(row.usage_json) : null
+				}
+			})), ...logs.tool_calls.filter((row) => row.actor_role_id === roleId).map((row) => ({
+				id: row.tool_call_id,
+				kind: "函数调用",
+				title: row.tool_name,
+				...row,
+				details: {
+					arguments: JSON.parse(row.arguments_json),
+					result: row.result_json ? JSON.parse(row.result_json) : null
+				}
+			}))].sort((a, b) => a.started_at.localeCompare(b.started_at));
+			if (!entries.length) {
+				els.auditExecutionLogs.innerHTML = "<div class=\"audit-empty\">该角色没有新版本执行记录</div>";
+				return;
+			}
+			entries.forEach((row) => {
+				const item = document.createElement("article");
+				item.innerHTML = `<span>游戏 #${escapeHtml(logs.game_id)} · ${escapeHtml(row.kind)}</span>
+      <strong>${escapeHtml(row.title)} · ${escapeHtml(row.status)}</strong>
+      <p>调用 ${escapeHtml(row.id)}<br>运行 ${escapeHtml(row.run_id)}<br>回合 ${escapeHtml(row.turn_id)}</p>
+      <details><summary>参数、结果与用量</summary><pre>${escapeHtml(JSON.stringify(row.details, null, 2))}</pre></details>`;
+				els.auditExecutionLogs.appendChild(item);
 			});
 		}
 		function renderAgentContextAudits(audits) {
@@ -12267,16 +16387,20 @@
 			const normalizedLabel = String(label || roleName(normalizedRoleId) || "DM");
 			const identityLabel = state.game?.publicRoles?.find((role) => role.role_id === normalizedRoleId)?.role_name || normalizedLabel.split("·", 1)[0].trim() || normalizedLabel;
 			const initial = normalizedRoleId === "dm" ? "DM" : [...identityLabel.replace(/\s/g, "")].slice(-1).join("") || "?";
+			const tone = avatarTone(normalizedRoleId);
+			const portrait = rolePortrait(normalizedRoleId);
 			return `
     <span class="${[
 				"role-avatar",
-				`avatar-tone-${avatarTone(normalizedRoleId)}`,
+				`avatar-tone-${tone}`,
 				options.size === "small" ? "role-avatar-small" : "",
 				options.isHuman ? "role-avatar-human" : "",
 				options.action ? `avatar-${options.action}` : "",
 				options.session ? "avatar-private-session" : ""
-			].filter(Boolean).join(" ")}" data-role-avatar="${escapeHtml(normalizedRoleId)}"${options.live ? " data-avatar-live=\"true\"" : ""} title="${escapeHtml(normalizedLabel)}">
-      <i aria-hidden="true"></i><b>${escapeHtml(initial)}</b><em aria-hidden="true"></em>
+			].filter(Boolean).join(" ")}" data-role-avatar="${escapeHtml(normalizedRoleId)}"${options.live ? " data-avatar-live=\"true\"" : ""} role="img" aria-label="${escapeHtml(normalizedLabel)}" title="${escapeHtml(normalizedLabel)}">
+      <i aria-hidden="true"></i><b aria-hidden="true">${escapeHtml(initial)}</b>
+      ${portrait ? `<img data-role-portrait src="${escapeHtml(portrait)}" alt="${escapeHtml(identityLabel)}的角色肖像" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 28%;border-radius:inherit;z-index:1" />` : ""}
+      <em aria-hidden="true" style="z-index:2"></em>
     </span>`;
 		}
 		function avatarTone(roleId) {
@@ -12311,6 +16435,9 @@
 				const label = avatar.querySelector("b");
 				if (label && initial) label.textContent = initial;
 				avatar.title = name;
+				avatar.setAttribute("aria-label", name);
+				const portrait = avatar.querySelector("img[data-role-portrait]");
+				if (portrait) portrait.alt = `${name}的角色肖像`;
 			});
 		}
 		function renderConversationParticipants(targetRoleId) {
@@ -12399,23 +16526,6 @@
 			requestAnimationFrame(() => element.classList.add("view-enter"));
 			window.setTimeout(() => element.classList.remove("view-enter"), 500);
 		}
-		const glassInteractiveSelector = [
-			"button",
-			".role-option",
-			".upload-zone"
-		].join(",");
-		document.addEventListener("pointerdown", (event) => {
-			const target = event.target.closest(glassInteractiveSelector);
-			if (!target || target.matches(":disabled")) return;
-			const rect = target.getBoundingClientRect();
-			const x = (event.clientX - rect.left) / Math.max(rect.width, 1) * 100;
-			const y = (event.clientY - rect.top) / Math.max(rect.height, 1) * 100;
-			target.style.setProperty("--press-x", `${x}%`);
-			target.style.setProperty("--press-y", `${y}%`);
-			target.classList.remove("glass-pressed");
-			requestAnimationFrame(() => target.classList.add("glass-pressed"));
-			window.setTimeout(() => target.classList.remove("glass-pressed"), 680);
-		});
 		appEvents.on("auth:authenticated", ({ user }) => {
 			enterApp(user).catch((error) => toast(error.message || "进入调查室失败"));
 		});
@@ -12423,7 +16533,15 @@
 			showAuth(preserveReturnPath);
 			if (broadcast) authChannel?.postMessage({ type: "logout" });
 		});
-		appEvents.on("navigation:view", ({ view }) => showPage(view));
+		appEvents.on("navigation:view", ({ view }) => {
+			showPage(view);
+		});
+		appEvents.on("games:prepare", ({ gameId }) => {
+			openPreparation(gameId);
+		});
+		appEvents.on("games:activated", ({ gameId }) => {
+			openGame(gameId);
+		});
 		appEvents.on("sidebar:set", ({ collapsed, focusTarget }) => {
 			setSidebarCollapsed(collapsed, focusTarget);
 		});
@@ -12439,7 +16557,6 @@
 			toast(`已删除案件“${title}”`);
 		});
 		appEvents.on("toast:show", ({ message }) => toast(message));
-		els.expandSidebarBtn.addEventListener("click", () => setSidebarCollapsed(false, true));
 		document.querySelectorAll(".compact-game-tab").forEach((button) => {
 			button.addEventListener("click", () => setCompactGamePanel(button.dataset.panel));
 			button.addEventListener("keydown", (event) => {
@@ -12452,35 +16569,9 @@
 			});
 		});
 		compactGameMedia.addEventListener("change", syncCompactGamePanel);
-		els.chooseFileBtn.addEventListener("click", () => els.scriptFileInput.click());
-		els.uploadZone.addEventListener("dblclick", () => els.scriptFileInput.click());
-		els.uploadZone.addEventListener("keydown", (event) => {
-			if (event.key === "Enter") els.scriptFileInput.click();
+		els.leaveGameBtn.addEventListener("click", () => {
+			showPage("records");
 		});
-		els.scriptFileInput.addEventListener("change", () => readScriptFile(els.scriptFileInput.files[0]));
-		for (const eventName of ["dragenter", "dragover"]) els.uploadZone.addEventListener(eventName, (event) => {
-			event.preventDefault();
-			els.uploadZone.classList.add("dragging");
-		});
-		for (const eventName of ["dragleave", "drop"]) els.uploadZone.addEventListener(eventName, (event) => {
-			event.preventDefault();
-			els.uploadZone.classList.remove("dragging");
-		});
-		els.uploadZone.addEventListener("drop", (event) => readScriptFile(event.dataTransfer.files[0]));
-		els.exampleScriptBtn.addEventListener("click", async () => {
-			try {
-				const preview = await api("/api/scripts/example");
-				state.script = null;
-				state.builtinScriptId = preview.script_id;
-				els.uploadTitle.textContent = "fog_harbor_clocktower.json";
-				els.uploadMeta.textContent = "内置悬疑案件 · JSON";
-				await inspectScript();
-			} catch (error) {
-				els.scriptError.textContent = error.message;
-			}
-		});
-		els.startGameBtn.addEventListener("click", startGame);
-		els.leaveGameBtn.addEventListener("click", () => showPage("records"));
 		els.notebookAutoTab.addEventListener("click", () => setNotebookSection("automatic"));
 		els.notebookCluesTab.addEventListener("click", () => setNotebookSection("clues"));
 		els.notebookManualTab.addEventListener("click", () => setNotebookSection("manual"));

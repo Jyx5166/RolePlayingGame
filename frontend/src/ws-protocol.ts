@@ -106,6 +106,7 @@ export function reduceRealtimeEnvelope(
   return {
     lastEventId: nextEventId,
     snapshotGame: null,
-    messages: [{ ...rawMessage.payload, type: payloadType }],
+    messages: [{ ...rawMessage.payload, type: payloadType,
+      ...(typeof rawMessage.request_id==='string' ? {request_id:rawMessage.request_id} : {}) }],
   };
 }

@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { createApp } from "vue";
 
 import App from "./App.vue";
+import "./app-shell.css";
 import { mountLegacyApp } from "./legacy-app.js";
 import { createAppRouter } from "./router";
 import { initializeFrontendRuntime } from "./runtime";
