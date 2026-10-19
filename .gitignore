@@ -27,3 +27,26 @@ frontend/.tmp/
 # 防止旧路径重新生成后被提交。
 /docs/
 /Projects/RolePlayingGame/docs/
+
+# Credentials and local database files.
+*.env
+*.db
+*.db-*
+*.sqlite*
+*.pem
+*.key
+*.p12
+*.pfx
+.ssh/
+id_rsa
+id_rsa.pub
+id_dsa
+id_dsa.pub
+id_ecdsa
+id_ecdsa.pub
+id_ed25519
+id_ed25519.pub
+/Y
+/Y.pub
+/Projects/RolePlayingGame/Y
+/Projects/RolePlayingGame/Y.pub
