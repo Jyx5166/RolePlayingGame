@@ -4,6 +4,43 @@
 
 当前以悬疑推理和 `deduction` 模式为主。Windows 启动器启动本地服务并打开浏览器，前端由 FastAPI 同源托管。
 
+## 界面预览
+
+以下为当前 Web 界面的实际截图，使用独立 Echo 演示数据。点击图片可查看原图。
+
+### 登录入口
+
+![剧镜登录入口](media/screenshots/01-login.jpg)
+
+### 剧本库
+
+![剧本库与案件预览](media/screenshots/02-script-library.jpg)
+
+### 角色选择
+
+![选择玩家角色](media/screenshots/04-role-selection.jpg)
+
+### 调查界面
+
+![公开询问、现场搜证与角色 Agent](media/screenshots/06-investigation.jpg)
+
+<details>
+<summary>更多界面：剧本详情、第一幕开场与剧本创作</summary>
+
+### 剧本详情
+
+![剧本详情与入场准备](media/screenshots/03-case-detail.jpg)
+
+### 第一幕开场
+
+![DM 主持第一幕开场](media/screenshots/05-dm-opening.jpg)
+
+### 剧本创作
+
+![剧本导入与发布入口](media/screenshots/07-script-creator.jpg)
+
+</details>
+
 ## 当前能力
 
 - 案件与角色：六个内置案件，独立游戏编号、剧本版本和工作流快照；全剧开幕、选角、私人剧本与逐幕调查。
