@@ -1,0 +1,556 @@
+{
+  "script_meta": {
+    "script_id": "floorboard_echo",
+    "title": "地板下的回声",
+    "total_stages": 2,
+    "supported_skills": [
+      "deduction"
+    ],
+    "adaptation_source": {
+      "title": "The Tell-Tale Heart",
+      "author": "Edgar Allan Poe",
+      "original_publication_year": 1843,
+      "author_death_year": 1849,
+      "catalog_url": "https://www.gutenberg.org/ebooks/2148",
+      "text_url": "https://www.gutenberg.org/cache/epub/2148/pg2148-images.html",
+      "rights_basis": "英文原作目录标为 Public domain in the USA；本案只借鉴地板藏尸、夜间声音与叙述不可靠性，未复制现代译文。"
+    },
+    "content_notice": "含虚构死亡与隐瞒证词。中文人物、案情、线索和任务为本项目独立创作的测试改编，非商业剧本复刻。",
+    "recommended_test_role_id": "lin_que"
+  },
+  "story_background": "旧剧院最后一场演出结束后，经理唐衡没有出现在清点会上。后台的门没有被破坏，排练厅却传出规律的敲击声。暴雨令街道暂时封闭，在场的三个人都承认与唐衡有过冲突，却各自藏着另一件事。你们需要先还原他失踪的二十分钟，再决定谁应为死亡负责。时间均以剧院校准过的电子系统为准，敲击声本身不等于心跳或灵异证据。",
+  "roles": [
+    {
+      "role_id": "lin_que",
+      "role_name": "林雀",
+      "human_playable": true,
+      "public_identity": "剧院舞台助理，负责钥匙登记与演出收尾。",
+      "personality": "敏锐而急躁，害怕一次违规毁掉自己的工作。",
+      "hidden_goal": "找出唐衡失踪的原因，同时说明私自复制舞台图纸与杀人无关。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "lin_que_s1_private",
+              "type": "secret",
+              "content": "22:02，你为被扣的工钱与唐衡争吵，借走后台总钥匙去拿自己留在库房的图纸。22:08，你把钥匙交回韩朔并签名；之后一直在售票厅整理外送包裹。你确实把图纸副本卖给了另一家剧团，这令你不敢马上解释取图纸的原因。你离开时唐衡仍在排练厅门口与韩朔说话，你没有看到其后的事。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "lin_que"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "lin_que_s2_private",
+              "type": "memory",
+              "content": "调查员把钥匙簿递给你核对，你确认 22:08 的归还签名是自己写的；该钥匙簿在第一幕可搜得。你愿意承认图纸交易，但不知道地下检修仓里的物品从何而来。售票厅有连续摄像，你可以要求众人查看原始记录，不必依靠韩朔替你作证。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "lin_que"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "han_shuo",
+      "role_name": "韩朔",
+      "human_playable": true,
+      "public_identity": "剧院木工兼夜间管理员，负责后台维修与门禁。",
+      "personality": "讲话温和，习惯把控制局面包装成照顾大家。",
+      "hidden_goal": "公开维持正常值班的形象，尽量隐瞒自己杀害唐衡并藏尸的事实。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "han_shuo_s1_private",
+              "type": "secret",
+              "content": "你知道自己就是凶手。唐衡发现你虚报维修款，准备次日报警。22:08，你收回林雀归还的总钥匙；22:11 用自己的门禁牌进入后廊，22:13 在排练厅用后台压景块袭击唐衡，随后把遗体移入本来就能开启的地下检修仓。22:23 你退出后廊。你把失踪说成唐衡独自外出，没料到值班牌边缘在移动仓盖时断裂。规律的响声来自道具节拍器，你可以歪曲它的意义，但不能忘记自己已经做过的事。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "han_shuo"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "han_shuo_s2_private",
+              "type": "memory",
+              "content": "你没有获得调查员在地下检修仓取得的鉴定报告，也不知道别人何时会找到断裂值班牌。你记得值班牌剩余部分仍在自己的工具袋里，自己的门禁号是 H-03。你可以选择保密或质疑证词；如果正式共享已搜得的线索，应自行承担如实或歪曲陈述的后果；你无法让别人已经找到的证据消失。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "han_shuo"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "su_qing",
+      "role_name": "苏青",
+      "human_playable": true,
+      "public_identity": "剧院音响师，保管演出录音与控制室设备。",
+      "personality": "谨慎细致，容易用沉默掩盖自己的失职。",
+      "hidden_goal": "说明规律声音的来源，并区分私录演出与唐衡失踪。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "su_qing_s1_private",
+              "type": "secret",
+              "content": "你在 21:58 到 22:26 留在音控室，曾擅自保存一份演出录音打算交给朋友。22:12，你通过内线听见唐衡催韩朔交维修票据；22:15 左右听见排练厅方向有规律的敲击声。音控室与后台没有直接通道，必须经过有摄像的门廊。你担心私录被发现，只说自己在检查设备，没有说明录音。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "su_qing"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "su_qing_s2_private",
+              "type": "memory",
+              "content": "你想起演出道具里有一只机械节拍器，慢档声音与那晚的敲击声相似；这是关于声音来源的推断，需要现场搜证确认。你愿意交出录音，但不应把一段声音当成看见凶手。音控室门廊的连续摄像能核对你是否离开，林雀的售票厅记录也有独立时间戳。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "su_qing"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [
+        4,
+        5
+      ],
+      "search_targets": [
+        {
+          "id": "stage_door",
+          "name": "后台钥匙簿",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "echo_key_log",
+              "content": "22:02 林雀借总钥匙，22:08 当面归还给韩朔，双方签名齐全。钥匙簿旁的内线记录显示唐衡在 22:12 仍催问维修票据。因此林雀拿钥匙离开的时段早于最后一次确认死者活着的时间。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "rehearsal_surface",
+          "name": "排练厅与道具架",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "echo_floor_marks",
+              "content": "排练厅检修仓盖有当天的新拖痕，仓盖本来就能开启，不需要拆地板。后台压景块少了一块。道具架上的机械节拍器仍在慢档摆动，其节奏与 22:15 的敲击声一致；声音不能证明某人在那时还活着。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "payroll_desk",
+          "name": "经理办公桌",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "echo_repair_account",
+              "content": "唐衡批注的维修账显示韩朔名下重复报销，末页写着明晨带原票据报案。另一张便签记着林雀卖图纸、苏青私录的处理意见，三人的工作违规性质不同，不能直接等同于杀人。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "inspection_vault",
+          "name": "地下检修仓鉴定",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "echo_body_report",
+              "content": "调查员在地下检修仓找到唐衡，初步鉴定与现场记录共同把死亡限定在 22:12 至 22:20。头部创伤与缺失的压景块吻合，遗体衣领旁有值班牌断片 H-03，断口为新裂痕。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "control_archive",
+          "name": "门禁与连续摄像原件",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "echo_alibis",
+              "content": "校时一致的连续原件显示：林雀 22:09 至 22:25 在售票厅；苏青 21:58 至 22:26 未离开音控室，两处到排练厅都必须经过摄像门廊。后廊仅 H-03 于 22:11 进入、22:23 退出，登记持有人是韩朔。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "carpenter_bag",
+          "name": "木工工具袋封存记录",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "echo_badge_match",
+              "content": "工具袋由韩朔本人确认，内有值班牌 H-03 的剩余部分。它与检修仓断片的断口完全拼合，袋内布套沾有与现场压景块相同的漆屑。门禁、死者最后内线与断片共同指向实际进入和藏尸者，不能只凭欠款动机定罪。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 2,
+      "role_available_from_stage": {
+        "lin_que": 1,
+        "han_shuo": 1,
+        "su_qing": 1
+      }
+    }
+  },
+  "stage_flow": {
+    "stage_1": {
+      "title": "第一幕 · 经理缺席",
+      "public_briefing": "22:30，清点会只来了你们三人。唐衡去向不明，排练厅的规律声音仍未停止。先检查钥匙、后台与经理留下的工作记录，不要把没有完整解释的证词直接当成杀人证据。",
+      "public_tasks": [
+        "确认最后一次有人证明唐衡活着的时间",
+        "核对总钥匙交还与三人的工作冲突",
+        "用现场资料解释规律声音"
+      ],
+      "personal_tasks": {
+        "lin_que": "至少搜证一次并如实公开一条新线索；说明钥匙归还，图纸交易是否解释清楚由复盘评审。",
+        "han_shuo": "至少公开说明一次自己的值班行动；尽量维持失踪说法，隐瞒目标由复盘评审。",
+        "su_qing": "至少搜证一次并如实公开一条新线索；明确听见声音不等于看见凶手。"
+      },
+      "personal_task_checks": {
+        "lin_que": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "su_qing": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "han_shuo": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 360,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第1幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "vote": {
+          "prompt": "本幕谁的证词最需要进一步核实？这不是凶手裁决。",
+          "eligible_role_ids": [
+            "lin_que",
+            "han_shuo",
+            "su_qing"
+          ],
+          "penalty": {
+            "label": "补充说明",
+            "description": "下一幕搜证次数减少 1 次，并公开说明一次自己的行踪。此限制不改变证据内容。",
+            "target_stage_offset": 1,
+            "search_ap_reduction": 1,
+            "extra_task": "下一幕至少公开说明一次自己的行踪；是否解释清楚由复盘者评审。",
+            "completion_checks": [
+              {
+                "label": "完成一次公开说明",
+                "type": "activity_count",
+                "event_types": [
+                  "public_speech",
+                  "autonomous_public_speech"
+                ],
+                "minimum": 1
+              }
+            ]
+          }
+        }
+      },
+      "dm_hosting": "钥匙已经归还，声音也可能来自道具。本幕只封存证词；下一幕开放地下检修仓鉴定、门禁影像与木工袋封存资料。"
+    },
+    "stage_2": {
+      "title": "第二幕 · 仓盖之下",
+      "public_briefing": "检修仓发现唐衡遗体。现在可以查阅鉴定、连续门禁影像和工具袋封存资料。请把动机、作案时间和物证合起来；违规的人未必就是凶手。",
+      "public_tasks": [
+        "闭合最后存活、作案与藏尸时间",
+        "排除两名无辜者的杀人嫌疑",
+        "完成最终指认"
+      ],
+      "personal_tasks": {
+        "lin_que": "至少搜证一次并如实公开一条新线索；用影像区分图纸违规与杀人责任。",
+        "han_shuo": "至少公开说明一次自己的行动；决定如何回应门禁与值班牌，隐瞒是否成功由复盘评审。",
+        "su_qing": "至少搜证一次并如实公开一条新线索；交代私录事实并核对独立时间记录。"
+      },
+      "personal_task_checks": {
+        "lin_que": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "su_qing": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "han_shuo": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 360,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第2幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "final_decision": {
+          "prompt": "请区分工作违规、隐瞒证词与杀人责任，最终指认真正的杀人者。",
+          "eligible_role_ids": [
+            "lin_que",
+            "han_shuo",
+            "su_qing"
+          ],
+          "correct_verdict": "指认成立。你们闭合了作案条件、时间与物证的证据链，DM 将公开本案完整真相。",
+          "incorrect_verdict": "指认未成立。{selected_role_name}并非本案杀人者，调查以错误指认结束；未公开的真相不会在此结局中公布。",
+          "reveal_truth_on_correct": true
+        }
+      },
+      "dm_hosting": "调查资料已经封存。最终表决将决定本案以查明真相还是错误指认结束，调查记录分数不代表凶手判断正确。"
+    }
+  },
+  "hard_constraints": [],
+  "truth": {
+    "culprit_role_id": "han_shuo",
+    "full_story": "韩朔虚报维修款被唐衡发现。22:08 林雀归还钥匙，22:12 的内线证明唐衡随后仍活着。韩朔用 H-03 门禁于 22:11 进入后廊，在 22:13 袭击唐衡，把遗体移入排练厅地下检修仓，22:23 离开；值班牌断片遗留在仓里，与其工具袋中的另一半完全拼合。机械节拍器制造了规律敲击，不能作为心跳或死亡时间证据。林雀卖过图纸，苏青私录过演出，但两人在 22:12 至 22:20 的杀人时间都有独立连续影像，两件违规均与杀人有别。",
+    "complete_timeline": {
+      "stage_1": "22:02 借钥匙，22:08 归还；22:12 内线确认唐衡仍活着；22:15 道具发声；22:30 清点会报告失踪。",
+      "stage_2": "22:11 至 22:23 韩朔后廊出入，22:13 袭击与藏尸；死亡窗口、门禁、断牌和两名无辜者影像在最终幕完成互证。"
+    },
+    "role_arcs": {
+      "lin_que": "承认图纸交易，以独立记录洗清杀人嫌疑。",
+      "han_shuo": "值班表象被时间与藏尸物证打破。",
+      "su_qing": "承认私录，区分声音观察与推断。"
+    },
+    "evidence_chain": [
+      {
+        "label": "死亡窗口与作案条件",
+        "clue_ids": [
+          "echo_key_log",
+          "echo_body_report",
+          "echo_alibis"
+        ],
+        "inference": "唐衡在钥匙归还后仍活着；死亡窗口中只有韩朔进入后廊。"
+      },
+      {
+        "label": "藏尸人与动机互证",
+        "clue_ids": [
+          "echo_floor_marks",
+          "echo_repair_account",
+          "echo_body_report",
+          "echo_badge_match"
+        ],
+        "inference": "压景块、新断值班牌与韩朔工具袋连到藏尸行为，维修款提供动机；节拍器排除假心跳。"
+      }
+    ],
+    "innocent_explanations": {
+      "lin_que": {
+        "clue_ids": [
+          "echo_key_log",
+          "echo_alibis"
+        ],
+        "explanation": "钥匙已在死者最后活着之前交还，死亡窗口人在售票厅。"
+      },
+      "su_qing": {
+        "clue_ids": [
+          "echo_floor_marks",
+          "echo_alibis"
+        ],
+        "explanation": "敲击为道具声，连续影像证明死亡窗口未离开音控室。"
+      }
+    }
+  }
+}

@@ -1,0 +1,1017 @@
+{
+  "script_meta": {
+    "script_id": "moonstone_transfer",
+    "title": "月石移交夜",
+    "total_stages": 3,
+    "supported_skills": [
+      "deduction"
+    ],
+    "adaptation_source": {
+      "title": "The Moonstone",
+      "author": "Wilkie Collins",
+      "original_publication_year": 1868,
+      "author_death_year": 1889,
+      "catalog_url": "https://www.gutenberg.org/ebooks/155",
+      "text_url": "https://www.gutenberg.org/cache/epub/155/pg155-images.html",
+      "rights_basis": "英文原作目录标为 Public domain in the USA；借鉴宝石转移、多人证词与看似有罪的中间持有人，重写为原创博物馆谋杀，不复用原作药物失忆或现代译文。"
+    },
+    "content_notice": "含虚构死亡与隐瞒证词。中文人物、案情、线索和任务为本项目独立创作的测试改编，非商业剧本复刻。",
+    "recommended_test_role_id": "chen_yu"
+  },
+  "story_background": "一颗被称为月石的藏品将在明早交由公共博物馆保管。移交晚会结束时展柜空了，登记员闻望又死在档案室。管理员、赞助人、修复师、合同代理和摄影记者都在现场。有人移动过宝石，有人制作过复制品，有人删过照片；这不意味着五个人都参与杀人。你们要分别回答宝石经过谁的手、谁杀害了闻望，以及移交文件是否真实完整。后两类叙事目标由复盘者审阅，最终规则表决只判断凶手。",
+  "roles": [
+    {
+      "role_id": "chen_yu",
+      "role_name": "陈屿",
+      "human_playable": true,
+      "public_identity": "藏品管理员，负责展柜和临时移交柜。",
+      "personality": "规矩而拘谨，犯错时会先试图补手续。",
+      "hidden_goal": "交代宝石转移链，承认未核实指令，保护藏品完整移交。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "chen_yu_s1_private",
+              "type": "secret",
+              "content": "21:59，你收到盖有闻望工作章的便签，要求为防渗水把真月石从展柜移到临时移交柜。22:01，你依指令从展柜取出真月石；22:02，你将它放入临时移交柜并锁好柜门，把自己的在用钥匙随身保管。22:02 至 22:20 你在移交前厅核对清单，没有到档案室。你没有亲自向闻望确认便签，怕众人认为你偷了宝石，最初只说自己在核对藏品。你不知道备用卡何时被谁使用。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "chen_yu"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "chen_yu_s2_private",
+              "type": "memory",
+              "content": "你看见移交柜的主锁完整，才意识到移动藏品和之后柜中失窃可能是两件事。你记得便签由罗晋夹在赞助资料中交来，但不知道工作章是否经闻望授权。应核对柜子出入记录，而不是靠你的记忆指定凶手。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "chen_yu"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "chen_yu_s3_private",
+              "type": "memory",
+              "content": "你愿意交出随身钥匙，与柜内开锁日志比对。那晚移交前厅的摄像能核对你未离开，手续错误可以承认，却不能因此替人承担杀人责任。你没有看到闻望死亡过程；对送回月石及修订手续的目标须在结局后人工评审。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "chen_yu"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "luo_jin",
+      "role_name": "罗晋",
+      "human_playable": true,
+      "public_identity": "展览赞助人，获准持有移交柜的应急备用卡。",
+      "personality": "善于表演热心，习惯用赞助关系获取便利。",
+      "hidden_goal": "维持公开发言，尽量隐瞒盗取月石与杀害闻望，保住体面形象。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "luo_jin_s1_private",
+              "type": "secret",
+              "content": "你知道自己是凶手。你把月石暗中列作私人借款担保，担心正式移交后骗局败露。你用借来的工作章伪造搬柜便签，令陈屿于 22:01 从展柜取出真月石，22:02 放入临时移交柜并锁好柜门。22:07，你用本人保管的 B-7 备用卡打开移交柜，把真石放进自己的黑色运画筒。22:11，你到档案室，被闻望指出伪造指令和担保问题；22:12 用桌上铜质奖座袭击他，22:14 退出。你收起奖座时碰伤了画筒内层，知道它还留在自己的行李里。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "luo_jin"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "luo_jin_s2_private",
+              "type": "memory",
+              "content": "你知道柜子把应急卡记为 B-7，但没有看过后台映射表是否已经交给调查员。闻望工作章借用登记和担保资料可能使你难以自圆其说。你可以暗示陈屿移动藏品或苏南制作复制品，却不能忘记两人并未参与自己的杀人。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "luo_jin"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "luo_jin_s3_private",
+              "type": "memory",
+              "content": "你不知道调查员何时会拆开运画筒，也无法替自己虚构已确认的不在场影像。你可以自保、保密或正式扭曲共享已持有的线索；是否维持可信度由复盘评审，调查记录分数本身不会抹去盗窃与杀人。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "luo_jin"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "su_nan",
+      "role_name": "苏南",
+      "human_playable": true,
+      "public_identity": "藏品修复师，为展陈准备了带标识的复制品。",
+      "personality": "专注细节，面对外行质疑容易不耐烦。",
+      "hidden_goal": "证明真石和复制品可区分，说明自己制作复制品的授权不足。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "su_nan_s1_private",
+              "type": "secret",
+              "content": "你制作过一枚复制品，底座有自己刻的 REPLICA-S 标记；展陈负责人尚未补全授权手续。21:50 你与方知一起拍下真月石仍在展柜的照片。22:04 至 22:18 你留在东侧修复廊等干燥检测，廊道摄像覆盖了唯一出口。你怕被问复制品手续，没有主动说它在自己的衣帽箱里，但你从未进移交柜或档案室。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "su_nan"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "su_nan_s2_private",
+              "type": "memory",
+              "content": "你记得真月石有内部月牙裂纹，复制品只有表面仿纹，照片和放大检测能区别；不能凭同名石头指控陈屿。你在修复廊看到罗晋抱黑画筒经过，但没看见筒内是什么，也不能把经过时间当作杀人目击。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "su_nan"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "su_nan_s3_private",
+              "type": "memory",
+              "content": "你可以核对运画筒搜得石头是否有原始裂纹，也愿意承认复制品授权没有补完。东侧廊道影像能解释自己的行踪。最终要保护藏品真实性，还需其他人如实说明移交过程，单靠你的专业身份不足以要求信任。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "su_nan"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "qiu_he",
+      "role_name": "邱禾",
+      "human_playable": true,
+      "public_identity": "移交合同代理，代表捐赠方核对藏品归属文件。",
+      "personality": "重视形式，开始时容易低估程序漏洞。",
+      "hidden_goal": "公开合同缺口，区分私人担保与公共移交，避免掩盖自己的审查疏漏。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "qiu_he_s1_private",
+              "type": "secret",
+              "content": "你把一份未签全的移交清单带到了晚会，知道手续明早才正式完成。21:58 至 22:18 你在西侧会议室与捐赠方视频核对签字，视频会议自动留存全程，出口也有摄像。你曾签收罗晋提供的担保附件，却没查它是否得到藏品所有人同意。你害怕专业失误曝光，没有主动提附件；不知道它是否与闻望死亡有关。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "qiu_he"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "qiu_he_s2_private",
+              "type": "memory",
+              "content": "你收到的原件显示私人担保没有藏品所有人签名，应与正式移交清单分开核对。你只负责指出文件中的缺口，不要把作品内的虚构合同当成现实法律结论。闻望曾要求罗晋补授权，但你没有看到两人的最后见面。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "qiu_he"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "qiu_he_s3_private",
+              "type": "memory",
+              "content": "你愿意交出视频会议原件和担保附件，说明自己的审查失误。你可以建议在复盘中修订移交手续，但现场仍须补齐授权与签收，不能仅凭几句说明就认定手续和归还已经完成。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "qiu_he"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "role_id": "fang_zhi",
+      "role_name": "方知",
+      "human_playable": true,
+      "public_identity": "摄影记者，负责记录晚会与藏品交接。",
+      "personality": "好奇而圆滑，习惯先保护消息来源。",
+      "hidden_goal": "恢复证词的完整性，交代删片，区分影像内容与自己的猜测。",
+      "stage_knowledge": {
+        "stage_1": {
+          "blocks": [
+            {
+              "block_id": "fang_zhi_s1_private",
+              "type": "secret",
+              "content": "21:50，你和苏南拍摄真月石；22:01 又拍到陈屿从展柜搬走藏品。你删掉相机上的预览图以保护向你提供内幕的工作人员，但存储卡底片没有被格式化。22:08 至 22:17，你在前厅做连续机位直播，场内摄像覆盖直播位唯一出口。你当时只能看到前厅，不知道档案室发生了什么。",
+              "visibility": "self_only",
+              "unlock_stage": 1,
+              "owner_role": "fang_zhi"
+            }
+          ]
+        },
+        "stage_2": {
+          "blocks": [
+            {
+              "block_id": "fang_zhi_s2_private",
+              "type": "memory",
+              "content": "你愿意交出存储卡，但担心消息来源身份曝光。陈屿搬走藏品这张照片只证明一次移动，不证明之后的盗窃或杀人。你还记得罗晋黑画筒口的纸套在晚会后换过一次，原因不明，不能当作已经确证的赃物。",
+              "visibility": "self_only",
+              "unlock_stage": 2,
+              "owner_role": "fang_zhi"
+            }
+          ]
+        },
+        "stage_3": {
+          "blocks": [
+            {
+              "block_id": "fang_zhi_s3_private",
+              "type": "memory",
+              "content": "你保留的前厅直播能与陈屿所在移交区的摄像互证。关于其他人的画面须取得原件后才能下结论。选择是否公布消息来源属于个人叙事目标；至少可以如实公开一条不涉及来源身份的现场线索。",
+              "visibility": "self_only",
+              "unlock_stage": 3,
+              "owner_role": "fang_zhi"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "mechanics_enabled": [
+    "search",
+    "whisper"
+  ],
+  "mechanics_config": {
+    "search": {
+      "ap_per_stage": [
+        4,
+        5,
+        6
+      ],
+      "search_targets": [
+        {
+          "id": "exhibition_case",
+          "name": "展柜与藏品照片",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "moon_real_stone",
+              "content": "21:50 的双机照片显示真月石仍在展柜：内部有月牙裂纹，封签 M-18 完好。展柜没有撬痕，22:01 的存储卡底片拍到陈屿正常开柜，拿着藏品朝移交区走去。这证明移动，不证明谁后来盗窃或杀人。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "handover_desk",
+          "name": "搬柜便签与移交清单",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "moon_false_instruction",
+              "content": "便签盖闻望工作章，要求防渗水搬柜；陈屿 22:02 签了移入栏，闻望没有签验收栏。便签夹在罗晋的赞助资料中。工作章借用簿记罗晋于 21:45 借章、22:05 归还，便签真伪需要进一步核实。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "cloakroom",
+          "name": "修复师衣帽箱",
+          "unlock_stage": 1,
+          "clues": [
+            {
+              "id": "moon_replica",
+              "content": "箱内复制品底座刻有 REPLICA-S，只有表面仿纹，没有真石内部月牙裂纹。苏南的复制品授权未签全，但现存的这枚复制品不能证明移交柜里曾被调包。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "archive_scene",
+          "name": "档案室鉴定与奖座底垫",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "moon_murder_window",
+              "content": "鉴定与 22:10 闻望仍在电话中的记录，将死亡窗口限定为 22:10 至 22:15，创伤对应铜质奖座；桌上奖座失踪。电话记录末句是要求补齐担保与用章授权。现场痕迹对应一次袭击；其他人是否到场仍需独立行踪核对。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "transfer_log",
+          "name": "移交柜开锁日志",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "moon_card_log",
+              "content": "22:02 主钥匙打开临时移交柜、放入藏品并锁好柜门，22:07 应急卡 B-7 打开柜门，22:20 盘点发现柜内已空。没有强行开柜记录。主钥匙搬柜与应急卡取石是不同动作，B-7 的持有人映射在最后一批门禁原件中。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "sponsor_files",
+          "name": "赞助与担保附件",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "moon_financial_motive",
+              "content": "罗晋把真月石列为私人借款担保，但附件缺少藏品所有人签名。闻望的核对便条要求罗晋补齐授权，若补不齐将在明早交接时公开报告。邱禾签过收件栏，仍不能替罗晋补足所有人授权。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "press_envelope",
+          "name": "记者私人稿件袋",
+          "unlock_stage": 2,
+          "clues": [
+            {
+              "id": "moon_press_side_note",
+              "content": "方知的未发稿写着不要暴露内部消息来源，另有拖欠稿费催款。它解释记者为何删预览图，却不提供谁杀害闻望的证据。此支线只有最先搜得者持有，不影响关键证据链。",
+              "exclusivity": "exclusive"
+            }
+          ]
+        },
+        {
+          "id": "security_originals",
+          "name": "门禁映射与连续原件",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "moon_route_and_alibis",
+              "content": "应急卡 B-7 由罗晋本人保管且当晚未交回。门禁与连续影像记录罗晋 22:07 到移交柜、22:11 进入档案室、22:14 离开。死亡窗口中陈屿在移交前厅、苏南在东廊、邱禾在会议室连续视频、方知在前厅直播，四处唯一出口影像均无缺口；他们没有到档案室。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "courier_tube",
+          "name": "赞助人运画筒封存",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "moon_stone_and_weapon",
+              "content": "罗晋本人签认的黑运画筒内，有内部月牙裂纹及封签 M-18 的真月石，另有失踪的铜质奖座。奖座的血迹与死者一致，破损底垫与档案室留下的底垫断口匹配，画筒内层有新撞痕。",
+              "exclusivity": "shared"
+            }
+          ]
+        },
+        {
+          "id": "photo_contact_sheet",
+          "name": "照片原件与移交柜留样",
+          "unlock_stage": 3,
+          "clues": [
+            {
+              "id": "moon_transfer_chain",
+              "content": "相机底片和移交柜留样确认：21:50 真石在展柜，22:01 陈屿从展柜取出真石，22:02 放入临时移交柜并锁好柜门的也是真石，REPLICA-S 复制品始终留在苏南衣帽箱。22:07 应急卡取石后才失窃。搬柜手续和删预览各有缺陷，但不等于后来的盗窃与杀人。",
+              "exclusivity": "shared"
+            }
+          ]
+        }
+      ]
+    },
+    "whisper": {
+      "max_sessions_per_stage": 2,
+      "role_available_from_stage": {
+        "chen_yu": 1,
+        "luo_jin": 1,
+        "su_nan": 1,
+        "qiu_he": 1,
+        "fang_zhi": 1
+      }
+    }
+  },
+  "stage_flow": {
+    "stage_1": {
+      "title": "第一幕 · 空展柜",
+      "public_briefing": "22:25，月石不在展柜，闻望被发现死在档案室。现在开放展柜照片、搬柜便签与复制品实物记录。先把看见谁移动藏品和看见谁杀人这两件事分开。",
+      "public_tasks": [
+        "确认照片里的是真石还是复制品",
+        "核对搬柜指令与交接签名",
+        "记录各人的行踪与隐瞒"
+      ],
+      "personal_tasks": {
+        "chen_yu": "至少搜证一次并如实公开新线索；承认搬柜与未核实指令，叙事目标由复盘评审。",
+        "luo_jin": "至少公开说明一次自己的行动；尽量把嫌疑引向搬柜，隐瞒目标由复盘评审。",
+        "su_nan": "至少搜证一次并如实公开新线索；解释复制品标识，承认授权未补。",
+        "qiu_he": "至少搜证一次并如实公开新线索；解释清单缺签，承认审查疏漏。",
+        "fang_zhi": "至少搜证一次并如实公开新线索；说明删预览不等于删底片。"
+      },
+      "personal_task_checks": {
+        "chen_yu": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "su_nan": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "qiu_he": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "fang_zhi": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "luo_jin": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 600,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第1幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "vote": {
+          "prompt": "本幕谁的证词最需要进一步核实？这不是凶手裁决。",
+          "eligible_role_ids": [
+            "chen_yu",
+            "luo_jin",
+            "su_nan",
+            "qiu_he",
+            "fang_zhi"
+          ],
+          "penalty": {
+            "label": "补充说明",
+            "description": "下一幕搜证次数减少 1 次，并公开说明一次自己的行踪。此限制不改变证据内容。",
+            "target_stage_offset": 1,
+            "search_ap_reduction": 1,
+            "extra_task": "下一幕至少公开说明一次自己的行踪；是否解释清楚由复盘者评审。",
+            "completion_checks": [
+              {
+                "label": "完成一次公开说明",
+                "type": "activity_count",
+                "event_types": [
+                  "public_speech",
+                  "autonomous_public_speech"
+                ],
+                "minimum": 1
+              }
+            ]
+          }
+        }
+      },
+      "dm_hosting": "一次移动可以留下嫌疑，也可以是受到错误指令。下一幕开放死亡窗口、移交柜日志、赞助附件和记者支线资料。"
+    },
+    "stage_2": {
+      "title": "第二幕 · 两次开柜",
+      "public_briefing": "鉴定与柜子日志已经交来，搬柜和取石之间存在两次独立开锁。你们仍可秘密询问，但任何私下证词必须由持有人自行选择是否分享。",
+      "public_tasks": [
+        "区分搬柜、取石与杀人三个时间节点",
+        "核对担保授权和用章记录",
+        "避免把旁支债务当成定罪证据"
+      ],
+      "personal_tasks": {
+        "chen_yu": "至少搜证一次并如实公开新线索；用开锁日志解释搬柜和失窃不同。",
+        "luo_jin": "至少公开说明一次自己的行踪；回应授权与应急卡问题。",
+        "su_nan": "至少搜证一次并如实公开新线索；只报告自己看到的画筒经过。",
+        "qiu_he": "至少搜证一次并如实公开新线索；区分担保附件与正式移交文件。",
+        "fang_zhi": "至少搜证一次并如实公开新线索；公开不涉及消息来源的现场事实。"
+      },
+      "personal_task_checks": {
+        "chen_yu": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "su_nan": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "qiu_he": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "fang_zhi": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "luo_jin": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 600,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第2幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "vote": {
+          "prompt": "本幕谁的证词最需要进一步核实？这不是凶手裁决。",
+          "eligible_role_ids": [
+            "chen_yu",
+            "luo_jin",
+            "su_nan",
+            "qiu_he",
+            "fang_zhi"
+          ],
+          "penalty": {
+            "label": "补充说明",
+            "description": "下一幕搜证次数减少 1 次，并公开说明一次自己的行踪。此限制不改变证据内容。",
+            "target_stage_offset": 1,
+            "search_ap_reduction": 1,
+            "extra_task": "下一幕至少公开说明一次自己的行踪；是否解释清楚由复盘者评审。",
+            "completion_checks": [
+              {
+                "label": "完成一次公开说明",
+                "type": "activity_count",
+                "event_types": [
+                  "public_speech",
+                  "autonomous_public_speech"
+                ],
+                "minimum": 1
+              }
+            ]
+          }
+        }
+      },
+      "dm_hosting": "死亡窗口与应急卡编号已经确认，卡的持有人和封存行李将在最后一幕开放。调查贡献与叙事目标仍需分别评审。"
+    },
+    "stage_3": {
+      "title": "第三幕 · 画筒中的月光",
+      "public_briefing": "最后开放门禁映射、连续行踪原件、运画筒封存及照片留样。所有角色都可以在这些共享资料中找关键证据；独占记者便签不承担定罪作用。最终表决判断杀人者，藏品归还和手续修订留待人工复盘。",
+      "public_tasks": [
+        "闭合真石转移与作案路线",
+        "解释四人的非杀人隐瞒",
+        "最终指认闻望的杀人者"
+      ],
+      "personal_tasks": {
+        "chen_yu": "至少搜证一次并如实公开新线索；明确真石路径，归还与手续修订由复盘评审。",
+        "luo_jin": "至少公开说明一次自己的行动；是否维持体面由复盘评审。",
+        "su_nan": "至少搜证一次并如实公开新线索；用裂纹核对真石，保护真实性由复盘评审。",
+        "qiu_he": "至少搜证一次并如实公开新线索；交代视频行踪，合同修订由复盘评审。",
+        "fang_zhi": "至少搜证一次并如实公开新线索；校对影像链，保护消息来源由复盘评审。"
+      },
+      "personal_task_checks": {
+        "chen_yu": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "su_nan": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "qiu_he": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "fang_zhi": [
+          {
+            "label": "完成一次现场搜证",
+            "type": "activity_count",
+            "event_types": [
+              "search"
+            ],
+            "minimum": 1
+          },
+          {
+            "label": "如实公开一条本幕尚未公开的线索",
+            "type": "clue_disclosure",
+            "channel": "public",
+            "disclosure_mode": "truthful",
+            "new_public": true
+          }
+        ],
+        "luo_jin": [
+          {
+            "label": "公开说明一次自己的行动",
+            "type": "activity_count",
+            "event_types": [
+              "public_speech",
+              "autonomous_public_speech"
+            ],
+            "minimum": 1
+          }
+        ]
+      },
+      "investigation": {
+        "duration_seconds": 600,
+        "enabled_actions": [
+          "public_speech",
+          "search",
+          "whisper"
+        ],
+        "allow_manual_end": true,
+        "autonomy": {
+          "enabled": true,
+          "initial_delay_seconds": 10,
+          "interval_seconds": 30,
+          "max_turns": 6,
+          "allow_private": true
+        },
+        "end_conditions": {
+          "mode": "all",
+          "actor_scope": "human",
+          "auto_end": false,
+          "minimum_public_messages": 1,
+          "minimum_searches": 1
+        }
+      },
+      "resolution": {
+        "title": "第3幕 · 证词封存",
+        "metric": {
+          "key": "investigation_record",
+          "label": "调查记录",
+          "unit": "点",
+          "initial": 0
+        },
+        "scoring_rules": [
+          {
+            "label": "取得现场资料",
+            "event_types": [
+              "search"
+            ],
+            "points_per_event": 1,
+            "max_points": 5
+          },
+          {
+            "label": "公开交流",
+            "event_types": [
+              "public_speech",
+              "public_response",
+              "autonomous_public_speech",
+              "autonomous_public_response"
+            ],
+            "points_per_event": 1,
+            "max_points": 3
+          },
+          {
+            "label": "正式披露",
+            "event_types": [
+              "clue_disclosure"
+            ],
+            "points_per_event": 1,
+            "max_points": 4
+          }
+        ],
+        "final_decision": {
+          "prompt": "请区分工作违规、隐瞒证词与杀人责任，最终指认真正的杀人者。",
+          "eligible_role_ids": [
+            "chen_yu",
+            "luo_jin",
+            "su_nan",
+            "qiu_he",
+            "fang_zhi"
+          ],
+          "correct_verdict": "指认成立。你们闭合了作案条件、时间与物证的证据链，DM 将公开本案完整真相。",
+          "incorrect_verdict": "指认未成立。{selected_role_name}并非本案杀人者，调查以错误指认结束；未公开的真相不会在此结局中公布。",
+          "reveal_truth_on_correct": true
+        }
+      },
+      "dm_hosting": "移交链、行踪与凶器已可核对。DM 按有效最终票型发布结局，错误指认不会自动获得完整真相。"
+    }
+  },
+  "hard_constraints": [],
+  "truth": {
+    "culprit_role_id": "luo_jin",
+    "full_story": "罗晋在没有所有人授权的情况下用月石作私人借款担保，闻望发现用章和担保漏洞。罗晋 21:45 借工作章伪造搬柜指令，陈屿 22:01 依指令从展柜取出真石，22:02 移入临时移交柜并锁好柜门；苏南的标识复制品没有进入移交链。罗晋 22:07 用本人保管的 B-7 应急卡取走真石，22:11 进入档案室，22:12 为阻止闻望报告而用铜质奖座杀人，22:14 离开，把石头和奖座藏进黑运画筒。卡号映射、死亡窗口、完整行踪与画筒中的真石凶器互证。陈屿的手续违规、苏南的复制品授权、邱禾的审查疏漏和方知的删预览都应说明，但四人的连续原件证明他们不在杀人现场。公共移交是否完成、合同如何修订属于人工复盘事项。",
+    "complete_timeline": {
+      "stage_1": "21:45 借工作章，21:50 真石仍在展柜，21:59 伪造便签送达，22:01 陈屿从展柜取出真石，22:02 放入临时移交柜并锁柜，22:25 发现展柜空与闻望死亡。",
+      "stage_2": "22:07 B-7 打开移交柜，22:10 闻望最后电话，22:10 至 22:15 死亡窗口；担保缺授权为报告动机。",
+      "stage_3": "B-7 映射罗晋，22:11 入档案室、22:12 袭击、22:14 离开；画筒真石与奖座、照片留样、四人连续行踪闭合。"
+    },
+    "role_arcs": {
+      "chen_yu": "承认手续错误，恢复实际移交链。",
+      "luo_jin": "赞助者形象被卡号和行李物证打破。",
+      "su_nan": "以标识与裂纹区分复制品和真石。",
+      "qiu_he": "承认审查疏漏，分清叙事目标与规则结果。",
+      "fang_zhi": "交出底片，区分删预览和毁证。"
+    },
+    "evidence_chain": [
+      {
+        "label": "真石转移链",
+        "clue_ids": [
+          "moon_real_stone",
+          "moon_false_instruction",
+          "moon_replica",
+          "moon_card_log",
+          "moon_transfer_chain"
+        ],
+        "inference": "陈屿先搬真石，B-7 后取石；复制品和删预览不改变转移链。"
+      },
+      {
+        "label": "杀人责任",
+        "clue_ids": [
+          "moon_murder_window",
+          "moon_financial_motive",
+          "moon_route_and_alibis",
+          "moon_stone_and_weapon"
+        ],
+        "inference": "罗晋在死亡窗口到场，真石与匹配凶器在其确认的画筒内；授权漏洞提供动机，四人影像排除同案杀人。"
+      }
+    ],
+    "innocent_explanations": {
+      "chen_yu": {
+        "clue_ids": [
+          "moon_route_and_alibis",
+          "moon_transfer_chain"
+        ],
+        "explanation": "受伪造指令搬柜，死亡窗口在移交前厅。"
+      },
+      "su_nan": {
+        "clue_ids": [
+          "moon_route_and_alibis",
+          "moon_transfer_chain"
+        ],
+        "explanation": "标识复制品未进入转移链，死亡窗口在东廊。"
+      },
+      "qiu_he": {
+        "clue_ids": [
+          "moon_route_and_alibis",
+          "moon_transfer_chain"
+        ],
+        "explanation": "担保审查疏漏不等于谋杀，死亡窗口在视频会议室。"
+      },
+      "fang_zhi": {
+        "clue_ids": [
+          "moon_route_and_alibis",
+          "moon_transfer_chain"
+        ],
+        "explanation": "只删预览，底片仍在，死亡窗口在前厅连续直播。"
+      }
+    }
+  }
+}
