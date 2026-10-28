@@ -10,7 +10,7 @@ from loader.script_loader import ScriptLoader
 from storage import AppStore
 from runtime.contracts import RuntimeScope
 from runtime.store import RuntimeStore
-from agent.archive import MemoryArchive
+from memory.archive import MemoryArchive
 from agent.context import role_can_read_block
 from runtime.leases import GameLeases
 from workflow_config import WorkflowSettings, load_workflow_settings

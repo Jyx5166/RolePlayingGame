@@ -22,7 +22,7 @@ async def run():
     from workflow_config import load_workflow_settings
     from agent.director import DMDirector
     from runtime.contracts import ExecutionFrame,execution_frame
-    from runtime.workflow import GameWorkflow
+    from workflow import GameWorkflow
     from tools.contracts import tool_definitions
     from tools.gateway import ToolGateway
     settings=load_settings();ledger=RequestLedger(100,root/'requests.json');ledger.calls=raw['calls'];ledger.section='post_patch_director_dispatch'

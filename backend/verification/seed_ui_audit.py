@@ -27,7 +27,7 @@ async def main() -> None:
     os.environ['LLM_PROVIDER'] = 'echo'
     sys.path.insert(0, str(ROOT / 'backend' / 'app'))
     from main import create_app
-    from runtime.workflow import GameWorkflow
+    from workflow import GameWorkflow
     from script_catalog import ScriptCatalog
 
     app = create_app(target / 'app.db')

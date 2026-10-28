@@ -4,6 +4,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
 
@@ -83,6 +84,18 @@ class MemoryUpgradeTest(unittest.IsolatedAsyncioTestCase):
                                  "content": "x" * 10000}], 1)
         with self.assertRaises(ContextBudgetError):
             await self.agent.respond(self.context())
+        self.assertFalse(hasattr(self.llm, "messages"))
+
+    def test_exhausted_reserved_budget_rejects_before_input_construction(self) -> None:
+        context = self.context()
+        for reserved_tokens in (self.agent.budget.input_limit, self.agent.budget.input_limit + 1):
+            with self.subTest(reserved_tokens=reserved_tokens):
+                with patch.object(self.agent, "_compose_system_prompt", side_effect=AssertionError("Prompt construction must not run")) as compose:
+                    with patch.object(self.agent, "_memory_records", side_effect=AssertionError("Memory construction must not run")) as records:
+                        with self.assertRaisesRegex(ContextBudgetError, "本回合工具续接已占满输入预算"):
+                            self.agent.prepare(context, reserved_tokens=reserved_tokens)
+                        compose.assert_not_called()
+                        records.assert_not_called()
         self.assertFalse(hasattr(self.llm, "messages"))
 
     async def test_future_and_foreign_knowledge_stays_out_after_restore(self) -> None:

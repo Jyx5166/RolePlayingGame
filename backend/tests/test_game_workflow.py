@@ -15,7 +15,7 @@ from llm.echo import EchoLLM
 from llm.tools import parse_native_message
 from main import create_app
 from runtime.contracts import ExecutionFrame, RuntimeAccessError, execution_frame
-from runtime.workflow import GameWorkflow
+from workflow import GameWorkflow
 from runtime.models import recorded_model_call
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from tools.gateway import ToolGateway

@@ -7,7 +7,7 @@ from copy import deepcopy
 from dataclasses import asdict
 from typing import Any
 from agent.context import AgentContext
-from agent.memory import PROMPT_VERSION
+from memory.selection import PROMPT_VERSION
 from dm.validator import ValidationResult
 from runtime.contracts import execution_frame
 from runtime.models import recorded_model_call

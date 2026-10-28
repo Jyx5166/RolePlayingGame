@@ -11,7 +11,7 @@ from unittest.mock import patch
 from main import create_app
 from runtime.contracts import RuntimeAccessError
 from runtime.leases import GameLeases
-from runtime.workflow import GameWorkflow
+from workflow import GameWorkflow
 from workflow_config import load_workflow_settings
 from loader.script_loader import ScriptLoader
 

@@ -8,9 +8,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from agent.context import AgentContext, ContextAccessError, role_can_read_block
-from agent.memory import PreparedInput, prepare_input, terms
+from memory.selection import PreparedInput, prepare_role_input
 from llm.base import BaseLLM
-from llm.budget import ContextBudget
+from llm.budget import ContextBudget, ContextBudgetError
 from runtime.contracts import RuntimeScope
 
 
@@ -98,44 +98,13 @@ class AgentInstance:
         if context.role_id != self.role_id or context.stage != self._current_stage:
             raise ContextAccessError("上下文接收角色或幕数与 Agent 不匹配")
         self._validate_runtime_scope(context)
-        from dataclasses import replace
-        from llm.budget import ContextBudgetError
         if reserved_tokens >= self.budget.input_limit:
             raise ContextBudgetError("本回合工具续接已占满输入预算，原文已保存；请结束本回合")
-        budget = replace(self.budget, input_limit=self.budget.input_limit-reserved_tokens)
-        records = self._memory_records()
-        original_source_keys=[record['source_key'] for record in records]
-        archived = self.archive is not None and self.workflow_settings.context_strategy == "archive_retrieval"
-        if archived:
-            from agent.archive import extract_summary
-            query = " ".join(message.content for message in context.messages[-3:])
-            ranked = sorted(records, key=lambda row: (bool(row.get('required')), len(terms(query)&terms(row['content'])), row.get('sequence', 0)), reverse=True)
-            selected = ranked[:self.workflow_settings.memory_index_items]
-            for record in selected:
-                content = record['content']
-                if record['kind']=='role_profile' and len(content.encode('utf-8'))>1800:
-                    profile=json.loads(content)
-                    def compact(value):
-                        if isinstance(value,dict):return {key:(item if key=='role_id' else compact(item)) for key,item in value.items()}
-                        if isinstance(value,list):return [compact(item) for item in value]
-                        return extract_summary(value,100) if isinstance(value,str) and len(value)>120 else value
-                    record.update(content=json.dumps(compact(profile),ensure_ascii=False),representation='extractive_partial',original_chars=len(content))
-                # Keep compact, mandatory identity/tasks verbatim. Large facts are explicitly indexed.
-                if record['kind']!='role_profile' and (len(content.encode('utf-8')) > 900 or not record.get('required')):
-                    record.update(content=extract_summary(content), representation='extractive_partial', original_chars=len(content))
-                record['required'] = record['kind'] in {'role_profile','personal_task'}
-            records = selected
-            index = self.archive.index(self.runtime_scope, context.stage, query, self.workflow_settings.memory_index_items)
-            records.append({'source_key':'archive-index','owner_role_id':self.role_id,'kind':'archive_index','stage':context.stage,
-                            'scope':'role_private','recipients':[self.role_id], 'required':True,
-                            'content':json.dumps(index,ensure_ascii=False)})
-        prepared = prepare_input(context, self._compose_system_prompt(), records, budget)
-        prepared.selection.update(context_strategy='archive_retrieval' if archived else 'legacy_bounded',
-                                  originals_retained=True, reserved_tokens=reserved_tokens)
-        if archived:
-            selected=set(prepared.selection['selected_source_keys'])
-            prepared.selection['omitted_source_keys']=[key for key in original_source_keys if key not in selected]
-        return prepared
+        return prepare_role_input(
+            context, self._compose_system_prompt(), self._memory_records(), self.budget,
+            archive=self.archive, scope=self.runtime_scope, settings=self.workflow_settings,
+            reserved_tokens=reserved_tokens,
+        )
 
     async def respond(self, context: AgentContext, *, prepared: PreparedInput | None = None) -> str:
         if not isinstance(context, AgentContext):

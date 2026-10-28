@@ -333,7 +333,7 @@ class BlindAcceptance:
                     break
 
     async def run_case(self, script_id, *, continuing=False):
-        from runtime.workflow import GameWorkflow
+        from workflow import GameWorkflow
         from script_catalog import script_version
         self.original = ScriptLoader(PROJECT / "backend/resources/scripts").load(script_id)
         script = deepcopy(self.original)

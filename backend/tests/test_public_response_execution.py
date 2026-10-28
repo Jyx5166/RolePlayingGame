@@ -9,7 +9,7 @@ from pathlib import Path
 from llm.echo import EchoLLM
 from llm.tools import parse_native_message
 from main import create_app
-from runtime.workflow import GameWorkflow
+from workflow import GameWorkflow
 from workflow_config import WorkflowSettings, load_workflow_settings
 
 

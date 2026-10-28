@@ -47,6 +47,26 @@ RolePlayingGame/
 | 带日期的记录或验收批次 | `YYYY-MM-DD-topic.md` 或 `YYYY-MM-DD/topic/` |
 | 目录说明入口 | `README.md` |
 
+### Agent 与游戏运行模块
+
+`backend/app/` 中的相关模块按以下职责组织：
+
+| 目录 | 职责与主要文件 |
+| --- | --- |
+| `agent/` | `instance.py`、`pool.py` 管理角色实例；`context.py` 构造授权上下文；`director.py` 处理 DM 模型决策；`execution.py`、`action.py`、`autonomy.py` 处理角色调用与行为。 |
+| `memory/` | `selection.py` 选择、整理预算内的记忆与对话输入；`archive.py` 保存记忆原文、摘要和检索索引，并提供分段读取。 |
+| `llm/` | `base.py`、`factory.py`、`openai_compatible.py`、`echo.py` 提供统一模型接入；`budget.py` 管理上下文预算；`tools.py` 处理模型侧工具调用格式。 |
+| `tools/` | `contracts.py` 定义工具参数和结果；`gateway.py` 校验权限、运行范围与预算并提交收据；`domain.py` 将工具提案转为游戏操作。 |
+| `workflow/` | `state.py` 定义图过程状态；`actor_graph.py` 实现单个行动者的模型与工具循环；`director_graph.py` 实现外层调度和 `GameWorkflow` 请求入口。 |
+| `runtime/` | `contracts.py` 定义运行范围和回合标识；`store.py` 记录运行批次与调用；`models.py` 包装模型执行；`leases.py` 管理控制权与心跳；`decisions.py` 校验结构化控制决策。 |
+| `dm/` | `engine.py` 组合游戏引擎；其余模块负责信息权限、轮次、发言校验、任务检查和终局复盘。 |
+| `domain/` | `state.py` 保存游戏事实；其余模块实现场景流转、交互、结算、事件记录与状态快照。 |
+| `mechanics/` | `base.py` 定义玩法接口；`search.py` 实现游戏搜证；`whisper.py` 实现私聊。 |
+
+业务代码从 `memory.selection`、`memory.archive` 和 `workflow` 导入对应能力。原 `agent.memory`、`agent.archive` 和 `runtime.workflow` 保留薄兼容出口，共用同一实现，不维护第二套逻辑。
+
+角色私有状态由 Agent 实例持有，记忆模块负责存取与输入选择；游戏事实状态、图过程状态和运行调用记录分别归属 `domain`、`workflow`、`runtime`。模型提出的行动统一经过工具网关和游戏规则层，角色记忆不会直接替代游戏事实。
+
 ## 前端开发与构建
 
 ### 热更新

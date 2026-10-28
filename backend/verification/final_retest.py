@@ -138,7 +138,7 @@ class FinalRetest(BlindAcceptance):
 
     async def run_case(self, script_id):
         from domain.state import ScenePhase
-        from runtime.workflow import GameWorkflow
+        from workflow import GameWorkflow
         source = self.source_cases[script_id]
         self.original = ScriptLoader(PROJECT / "backend/resources/scripts").load(script_id)
         self.case = {"script_id": script_id, "title": source["title"], "game_id": source["game_id"],

@@ -31,7 +31,7 @@ from agent.pool import AgentPool
 from config import load_settings
 from dm.engine import DMEngine
 from game_service import GameService
-from runtime.workflow import GameWorkflow
+from workflow import GameWorkflow
 from runtime.contracts import RuntimeAccessError
 from llm.factory import LLMFactory
 from loader.script_loader import ScriptLoader
