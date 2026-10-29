@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import json
 import os
 import sys
@@ -21,6 +23,7 @@ from starlette.websockets import WebSocketDisconnect
 
 class SecurityUpgradeTest(unittest.TestCase):
     def setUp(self) -> None:
+        self.credentials = new_test_account("secure")
         self.temp_dir = tempfile.TemporaryDirectory()
         self.client = TestClient(create_app(Path(self.temp_dir.name) / "test.db"))
         self.script = json.loads(
@@ -33,10 +36,11 @@ class SecurityUpgradeTest(unittest.TestCase):
         self.client.close()
         self.temp_dir.cleanup()
 
-    def register(self, username: str = "secure_user") -> dict[str, object]:
+    def register(self, prefix: str | None = None) -> dict[str, object]:
+        credentials = self.credentials if prefix is None else new_test_account(prefix)
         response = self.client.post(
             "/api/auth/register",
-            json={"username": username, "password": "secret12"},
+            json=credentials,
         )
         self.assertEqual(response.status_code, 200)
         return response.json()
@@ -50,12 +54,12 @@ class SecurityUpgradeTest(unittest.TestCase):
         self.assertTrue(session_cookie)
         self.assertIn("HttpOnly", self.client.post(
             "/api/auth/login",
-            json={"username": "secure_user", "password": "secret12"},
+            json={"username": self.credentials["username"], "password": self.credentials["password"]},
         ).headers["set-cookie"])
 
         me = self.client.get("/api/me")
         self.assertEqual(me.status_code, 200)
-        self.assertEqual(me.json()["username"], "secure_user")
+        self.assertEqual(me.json()["username"], self.credentials["username"])
         self.assertEqual(me.headers["cache-control"], "no-store, private")
 
     def test_cookie_write_requires_csrf_and_logout_revokes_session(self) -> None:
@@ -233,12 +237,12 @@ class SecurityUpgradeTest(unittest.TestCase):
         for _ in range(5):
             failed = self.client.post(
                 "/api/auth/login",
-                json={"username": "secure_user", "password": "wrong-password"},
+                json={"username": self.credentials["username"], "password": self.credentials["password"] + "_invalid"},
             )
             self.assertEqual(failed.status_code, 401)
         limited = self.client.post(
             "/api/auth/login",
-            json={"username": "secure_user", "password": "wrong-password"},
+            json={"username": self.credentials["username"], "password": self.credentials["password"] + "_invalid"},
         )
         self.assertEqual(limited.status_code, 429)
         self.assertIn("Retry-After", limited.headers)
@@ -247,7 +251,7 @@ class SecurityUpgradeTest(unittest.TestCase):
         try:
             second_auth = second_client.post(
                 "/api/auth/register",
-                json={"username": "script_user", "password": "secret12"},
+                json=new_test_account("script_user"),
             ).json()
             oversized_roles = {
                 "roles": [{"role_id": f"role_{index}"} for index in range(51)]

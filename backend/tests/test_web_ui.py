@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import hashlib
 import json
 import os
@@ -31,7 +33,7 @@ class WebUiTest(unittest.TestCase):
                 allow_legacy_token_response=True,
             )
         )
-        register = self.client.post("/api/auth/register", json={"username": "web_user", "password": "secret12"})
+        register = self.client.post("/api/auth/register", json=new_test_account('web_user'))
         self.token = register.json()["token"]
         self.headers = {"Authorization": f"Bearer {self.token}"}
 

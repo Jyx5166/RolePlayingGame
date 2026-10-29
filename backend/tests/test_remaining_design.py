@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from backend.tests.account_fixtures import new_test_account
 import asyncio
 import json
 import os
@@ -27,7 +29,8 @@ class RemainingDesignTest(unittest.IsolatedAsyncioTestCase):
         self.temp=tempfile.TemporaryDirectory()
         self.app=create_app(Path(self.temp.name)/'test.db')
         self.service=self.app.state.game_service; self.store=self.service.store
-        self.user=self.store.register('remaining_owner','secret12')['user']['id']
+        self.owner_credentials=new_test_account("remaining_owner")
+        self.user=self.store.register(**self.owner_credentials)['user']['id']
         self.script=json.loads((ROOT/'backend/resources/scripts/fog_harbor_clocktower.json').read_text(encoding='utf-8'))
         self.settings=load_workflow_settings()
         self.game=self.store.prepare_game(self.user,self.script,'builtin','v',workflow_config=self.settings.model_dump())
@@ -152,7 +155,7 @@ class RemainingDesignTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(workshop.revisions(self.user,original['catalog_id'])),2)
         self.assertEqual(catalog.resolve(self.user,original['catalog_id'],original['version'])['script']['script_meta']['title'],'原版')
         self.assertEqual(self.store.get_game(self.user,game['id'],include_script=True)['script']['script_meta']['title'],'原版')
-        other=self.store.register('other_author','secret12')['user']['id']
+        other=self.store.register(**new_test_account('other_author'))['user']['id']
         with self.assertRaises(KeyError):workshop.job(other,job['job_id'])
 
     async def test_dm_model_hosting_is_source_bound_and_audited(self):
@@ -246,7 +249,7 @@ class RemainingDesignTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_authoring_http_preview_restore_cancel_and_owner_boundary(self):
         import httpx
-        auth=self.store.login('remaining_owner','secret12')
+        auth=self.store.login(**self.owner_credentials)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app),base_url='http://test',
             cookies={self.app.state.cookie_name:auth['token']},headers={'X-CSRF-Token':auth['csrf_token']}) as client:
             response=await client.post('/api/v1/authoring-jobs',json={'mode':'import','request_id':'http-authoring-0001','script':self.script,'title':'HTTP 草稿','tags':['悬疑']})
@@ -259,7 +262,7 @@ class RemainingDesignTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(restored['preview']['title'],'HTTP 草稿')
             self.assertEqual((await client.post(f'/api/v1/authoring-jobs/{job_id}/cancel')).json()['status'],'interrupted')
             self.assertEqual((await client.post(f'/api/v1/authoring-jobs/{job_id}/publish')).status_code,409)
-            foreign=self.store.register('foreign_author','secret12')
+            foreign=self.store.register(**new_test_account('foreign_author'))
             client.cookies.set(self.app.state.cookie_name,foreign['token']);client.headers['X-CSRF-Token']=foreign['csrf_token']
             self.assertEqual((await client.get('/api/v1/authoring-jobs/'+job_id)).status_code,404)
             self.assertEqual((await client.post(f'/api/v1/authoring-jobs/{job_id}/cancel')).status_code,404)

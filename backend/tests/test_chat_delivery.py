@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import asyncio
 import json
 import tempfile
@@ -20,7 +22,7 @@ class ChatDeliveryTest(unittest.TestCase):
             app=create_app(Path(directory)/'app.db',allow_legacy_token_response=True)
             app.state.game_service.workflow_defaults=WorkflowSettings()
             with TestClient(app) as client:
-                auth=client.post('/api/auth/register',json={'username':'stream_owner','password':'test-only-123'}).json()
+                auth=client.post('/api/auth/register',json=new_test_account('stream_owner')).json()
                 headers={'Authorization':'Bearer '+auth['token']}
                 item=client.get('/api/v1/scripts',headers=headers).json()[0]
                 game=client.post('/api/v1/game-preparations',headers=headers,json={'catalog_id':item['catalog_id'],'version':item['version']}).json()

@@ -21,6 +21,7 @@ from llm.budget import estimate_tokens
 from storage import AppStore
 from ws.handlers import build_phase_messages
 from backend.tests.test_engine_flow import build_engine, actual_input
+from backend.verification.accounts import new_verification_account
 
 
 class CaptureLLM(BaseLLM):
@@ -144,7 +145,7 @@ async def run() -> dict:
 
     with tempfile.TemporaryDirectory(prefix="rpg-memory-assessment-") as directory:
         store = AppStore(Path(directory) / "app.db")
-        user = store.register("qa_memory_contract", "diagnostic-password")["user"]
+        user = store.register(**new_verification_account("memory_contract"))["user"]
         service = GameService(store, build_engine)
         game = await service.create_game(user["id"], dm.script, "mystery", "deduction", "shen_zhiwei")
         store.update_game(game["id"], 2, "playing")

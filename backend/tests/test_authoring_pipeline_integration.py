@@ -1,6 +1,8 @@
 """Durable staged authoring, publication gates and model accounting regressions."""
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import asyncio
 from copy import deepcopy
 import json
@@ -33,9 +35,11 @@ class AuthoringPipelineIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.app = create_app(self.database)
         self.workshop = self.app.state.script_workshop
         self.store = self.app.state.game_service.store
-        self.auth = self.store.register("authoring_owner", "secret12")
+        self.owner_credentials = new_test_account("authoring_owner")
+        self.other_credentials = new_test_account("authoring_other")
+        self.auth = self.store.register(**self.owner_credentials)
         self.user = self.auth["user"]["id"]
-        self.other = self.store.register("authoring_other", "secret12")["user"]["id"]
+        self.other = self.store.register(**self.other_credentials)["user"]["id"]
         self.script, self.plan = staged_authoring_fixture()
         self.tasks = []
 
@@ -454,7 +458,7 @@ class AuthoringPipelineIntegrationTest(unittest.IsolatedAsyncioTestCase):
                   "source_job_id": source["job_id"]}
         with self.assertRaises(KeyError):
             self.workshop.create(self.other, "foreign-source-0001", "import", values)
-        foreign = self.store.login("authoring_other", "secret12")
+        foreign = self.store.login(**self.other_credentials)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://test",
             cookies={self.app.state.cookie_name: foreign["token"]},
             headers={"X-CSRF-Token": foreign["csrf_token"]}) as client:
@@ -745,7 +749,7 @@ class AuthoringPipelineIntegrationTest(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(restored["steps"])
             self.assertNotIn("input_json", response.text)
             self.assertNotIn("PRIVATE_HISTORY", response.text)
-            other_auth = self.store.login("authoring_other", "secret12")
+            other_auth = self.store.login(**self.other_credentials)
             client.cookies.set(self.app.state.cookie_name, other_auth["token"])
             self.assertEqual((await client.get("/api/v1/authoring-jobs/" + job["job_id"])).status_code, 404)
 

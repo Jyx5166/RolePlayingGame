@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import { randomUUID } from "node:crypto";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -38,6 +39,7 @@ describe("AuthView", () => {
   });
 
   it("reveals the password without submitting and hides it when changing modes", async () => {
+    const password = randomUUID();
     const router = createTestRouter();
     await router.push("/login");
     await router.isReady();
@@ -45,7 +47,7 @@ describe("AuthView", () => {
       global: { plugins: [createPinia(), router] },
     });
 
-    await wrapper.get("#passwordInput").setValue("test-password");
+    await wrapper.get("#passwordInput").setValue(password);
     const toggle = wrapper.get(".auth-password-toggle");
     expect(toggle.attributes("type")).toBe("button");
     await toggle.trigger("click");
@@ -56,6 +58,6 @@ describe("AuthView", () => {
     await wrapper.get("#registerTab").trigger("click");
     await flushPromises();
     expect(wrapper.get("#passwordInput").attributes("type")).toBe("password");
-    expect((wrapper.get("#passwordInput").element as HTMLInputElement).value).toBe("test-password");
+    expect((wrapper.get("#passwordInput").element as HTMLInputElement).value).toBe(password);
   });
 });

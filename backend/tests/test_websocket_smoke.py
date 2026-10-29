@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import json
 import os
 import sys
@@ -32,7 +34,7 @@ class WebSocketSmokeTest(unittest.TestCase):
                 allow_legacy_token_response=True,
             )
         )
-        auth = self.client.post("/api/auth/register", json={"username": "socket_user", "password": "secret12"}).json()
+        auth = self.client.post("/api/auth/register", json=new_test_account('socket_user')).json()
         self.token = auth["token"]
         self.headers = {"Authorization": f"Bearer {self.token}"}
         self.script = json.loads(

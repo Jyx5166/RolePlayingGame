@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import asyncio
 import json
 import os
@@ -21,6 +23,7 @@ from main import create_app
 
 class AuthAndHistoryTest(unittest.TestCase):
     def setUp(self) -> None:
+        self.credentials = new_test_account("auth")
         self.temp_dir = tempfile.TemporaryDirectory()
         self.client = TestClient(
             create_app(
@@ -36,19 +39,20 @@ class AuthAndHistoryTest(unittest.TestCase):
         self.client.close()
         self.temp_dir.cleanup()
 
-    def register(self, username: str) -> dict[str, str]:
-        response = self.client.post("/api/auth/register", json={"username": username, "password": "secret12"})
+    def register(self, prefix: str | None = None) -> dict[str, str]:
+        credentials = self.credentials if prefix is None else new_test_account(prefix)
+        response = self.client.post("/api/auth/register", json=credentials)
         self.assertEqual(response.status_code, 200)
         return {"Authorization": f"Bearer {response.json()['token']}"}
 
     def test_login_and_duplicate_username(self) -> None:
-        self.register("alice")
-        duplicate = self.client.post("/api/auth/register", json={"username": "ALICE", "password": "secret12"})
+        self.register()
+        duplicate = self.client.post("/api/auth/register", json={"username": self.credentials["username"].upper(), "password": self.credentials["password"]})
         self.assertEqual(duplicate.status_code, 400)
-        login = self.client.post("/api/auth/login", json={"username": "alice", "password": "secret12"})
+        login = self.client.post("/api/auth/login", json={"username": self.credentials["username"], "password": self.credentials["password"]})
         self.assertEqual(login.status_code, 200)
         me = self.client.get("/api/me", headers={"Authorization": f"Bearer {login.json()['token']}"})
-        self.assertEqual(me.json()["username"], "alice")
+        self.assertEqual(me.json()["username"], self.credentials["username"])
 
     def test_game_records_are_isolated_by_user(self) -> None:
         alice_headers = self.register("alice")

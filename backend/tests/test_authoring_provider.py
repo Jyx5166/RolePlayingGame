@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 from types import SimpleNamespace
 import json
 from pathlib import Path
@@ -56,7 +58,7 @@ class AuthoringProviderTest(unittest.IsolatedAsyncioTestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(Path(directory)/'authoring.db')
-            user_id = app.state.store.register('provider_check','secret12')['user']['id']
+            user_id = app.state.store.register(**new_test_account('provider_check'))['user']['id']
             workshop = app.state.script_workshop
             job,_ = workshop.create(user_id,'provider-parameters','ai',{'title':'参数验证','tags':[],'topic':'两人两幕'})
             with patch('llm.factory.LLMFactory.create',return_value=client), patch.object(client,'_request',side_effect=respond):

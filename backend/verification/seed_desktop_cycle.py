@@ -11,18 +11,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data-dir", type=Path, required=True)
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[2]
-os.environ["AI_MURDER_MYSTERY_DATA_DIR"] = str(args.data_dir.resolve())
+target = args.data_dir.resolve()
+os.environ["AI_MURDER_MYSTERY_DATA_DIR"] = str(target)
 os.environ["LLM_PROVIDER"] = "echo"
+sys.path.insert(0, str(root))
 sys.path.insert(0, str(root / "backend" / "app"))
+from backend.verification.accounts import verification_session
 from main import create_app
 app = create_app()
 store, catalog_service = app.state.store, app.state.game_service
 from script_catalog import ScriptCatalog
 catalog = ScriptCatalog(store, catalog_service)
-try:
-    session = store.register("preview_cycle", "PreviewCycle20261013")
-except ValueError:
-    session = store.login("preview_cycle", "PreviewCycle20261013")
+session = verification_session(store, target, prefix="preview_cycle")
 user_id = session["user"]["id"]
 script = json.loads((root / "backend/resources/scripts/fog_harbor_clocktower.json").read_text(encoding="utf-8"))
 existing = {item["title"] for item in catalog.list(user_id)}

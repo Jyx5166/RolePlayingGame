@@ -19,6 +19,7 @@ import uvicorn
 import websockets
 
 PROJECT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "backend" / "app"))
 FULL_GAME_SEARCH_TARGETS = {1: ["archive_desk"], 2: ["medicine_cabinet"], 3: ["clocktower_log", "fireplace"]}
 
@@ -26,6 +27,7 @@ from config import load_settings
 from llm.budget import ContextBudget
 from llm.echo import EchoLLM
 from llm.openai_compatible import OpenAICompatibleLLM
+from backend.verification.accounts import new_verification_account, save_verification_account
 
 
 class RequestLimitExceeded(RuntimeError):
@@ -182,8 +184,8 @@ class Acceptance:
         self.url = ""
         self.data = PROJECT / "backend" / "data" / "verification" / args.report.stem
         self.data.mkdir(parents=True, exist_ok=False)
-        self.password = uuid.uuid4().hex
-        self.username = "live_qa_" + uuid.uuid4().hex[:10]
+        account = new_verification_account("live_qa")
+        self.username, self.password = account["username"], account["password"]
 
     def save(self):
         calls = self.ledger.calls
@@ -464,7 +466,7 @@ class Acceptance:
                 "requests": len(self.ledger.calls), "checks": dict(Counter(c["status"] for c in self.report["checks"]))}, ensure_ascii=False), flush=True)
             if self.args.hold_seconds:
                 # Only completed games may be opened during this read-only inspection window.
-                (self.data / "qa-access.json").write_text(json.dumps({"username": self.username, "password": self.password}), encoding="utf-8")
+                save_verification_account(self.data / "qa-access.json", {"username": self.username, "password": self.password})
                 await asyncio.sleep(self.args.hold_seconds)
         finally:
             self.save()

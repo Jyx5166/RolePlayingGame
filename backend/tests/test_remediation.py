@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import sys
 import os
 import tempfile
@@ -333,7 +335,7 @@ class APIRemediationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.client = TestClient(create_app(Path(self.temp.name) / "audit.db"), raise_server_exceptions=False)
-        auth = self.client.post("/api/v1/auth/register", json={"username": "remediation", "password": "secret12"})
+        auth = self.client.post("/api/v1/auth/register", json=new_test_account('remediation'))
         self.assertEqual(auth.status_code, 200)
         self.headers = {"X-CSRF-Token": auth.json()["csrf_token"]}
 

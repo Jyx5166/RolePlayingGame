@@ -15,6 +15,7 @@ from pathlib import Path
 PROJECT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(PROJECT));sys.path.insert(0,str(PROJECT/'backend/app'))
 from backend.verification.live_game_check import RequestLedger, WireSession, FULL_GAME_SEARCH_TARGETS
+from backend.verification.accounts import new_verification_account, save_verification_account
 from config import load_settings
 from llm.openai_compatible import OpenAICompatibleLLM
 from llm.echo import EchoLLM
@@ -110,9 +111,9 @@ async def run(args):
                 access=json.loads(access_file.read_text(encoding='utf-8'))
                 registered=(await http.post('/api/v1/auth/login',json=access)).raise_for_status().json()
             else:
-                access={'username':'native_qa_'+uuid.uuid4().hex[:10],'password':uuid.uuid4().hex}
-                access_file.write_text(json.dumps(access),encoding='utf-8')
+                access=new_verification_account('native_qa')
                 registered=(await http.post('/api/v1/auth/register',json=access)).raise_for_status().json()
+                save_verification_account(access_file, access)
             http.headers['X-CSRF-Token']=registered['csrf_token'];user_id=registered['user']['id']
             script=json.loads((PROJECT/'backend/resources/scripts/fog_harbor_clocktower.json').read_text(encoding='utf-8'))
             for flow in script['stage_flow'].values():

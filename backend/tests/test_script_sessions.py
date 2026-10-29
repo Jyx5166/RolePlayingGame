@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import json
 import sqlite3
 import sys
@@ -23,8 +25,8 @@ class ScriptSessionTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.app = create_app(Path(self.temp.name) / "test.db", allow_legacy_token_response=True)
         self.client = TestClient(self.app)
-        self.headers = {"Authorization": "Bearer " + self.client.post("/api/auth/register", json={"username": "script_owner", "password": "secret12"}).json()["token"]}
-        self.other = {"Authorization": "Bearer " + self.client.post("/api/auth/register", json={"username": "other_owner", "password": "secret12"}).json()["token"]}
+        self.headers = {"Authorization": "Bearer " + self.client.post("/api/auth/register", json=new_test_account('script_owner')).json()["token"]}
+        self.other = {"Authorization": "Bearer " + self.client.post("/api/auth/register", json=new_test_account('other_owner')).json()["token"]}
         self.script = json.loads((ROOT / "backend/resources/scripts/fog_harbor_clocktower.json").read_text(encoding="utf-8"))
         self.item = self.client.get("/api/v1/scripts", headers=self.headers).json()[0]
 

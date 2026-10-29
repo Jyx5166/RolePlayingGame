@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import json
 import sys
 import tempfile
@@ -16,7 +18,7 @@ class NotebookPermissionsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.store = AppStore(Path(self.directory.name) / "notebook.db")
-        self.user_id = self.store.register("notebook_owner", "password123")["user"]["id"]
+        self.user_id = self.store.register(**new_test_account('notebook_owner'))["user"]["id"]
         self.script = json.loads((ROOT / "resources/scripts/fog_harbor_clocktower.json").read_text(encoding="utf-8"))
         self.role_id = self.script["roles"][0]["role_id"]
         # Historical stored games can contain data accepted by the old validator.
@@ -79,7 +81,7 @@ class NotebookPermissionsTest(unittest.TestCase):
         self.assertEqual(notes["reasoning_entries"][0]["content"], "My own notes")
 
     def test_other_user_cannot_read_notebook(self) -> None:
-        other = self.store.register("other_notebook", "password123")["user"]["id"]
+        other = self.store.register(**new_test_account('other_notebook'))["user"]["id"]
         with self.assertRaises(KeyError):
             self.service.get_player_notebook(other, self.game["id"])
 

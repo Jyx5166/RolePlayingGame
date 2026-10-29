@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import json
 import sys
 import tempfile
@@ -194,7 +196,7 @@ class ArchiveAttributionTest(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(Path(directory) / "test.db")
             service = app.state.game_service
-            user = service.store.register("attribution_owner", "secret12")["user"]["id"]
+            user = service.store.register(**new_test_account('attribution_owner'))["user"]["id"]
             script = ScriptLoader(BACKEND / "resources/scripts").load("fog_harbor_clocktower")
             game = service.store.prepare_game(user, script, "builtin", "v")
             await service.activate_game(user, game["id"], "shen_zhiwei")

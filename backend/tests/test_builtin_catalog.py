@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 from backend.tests.script_fixtures import advance_to_investigation
 
 import json
@@ -33,7 +35,7 @@ class BuiltinCatalogTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.app = create_app(Path(self.directory.name) / "catalog.db", allow_legacy_token_response=True)
         self.client = TestClient(self.app)
-        token = self.client.post("/api/auth/register", json={"username": "catalog_owner", "password": "password123"}).json()["token"]
+        token = self.client.post("/api/auth/register", json=new_test_account('catalog_owner')).json()["token"]
         self.headers = {"Authorization": "Bearer " + token}
 
     def tearDown(self) -> None:

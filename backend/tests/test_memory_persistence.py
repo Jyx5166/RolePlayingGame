@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import asyncio
 import json
 import sqlite3
@@ -37,7 +39,7 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.path = Path(self.directory.name) / "app.db"
         self.store = AppStore(self.path)
-        self.user = self.store.register("memory_tests", "secret123")["user"]
+        self.user = self.store.register(**new_test_account('memory_tests'))["user"]
         self.service = GameService(self.store, build_engine)
         script = build_engine().script_loader.load("fog_harbor_clocktower")
         self.game = await self.service.create_game(self.user["id"], script, "mystery", "deduction", "shen_zhiwei")
@@ -160,7 +162,7 @@ class MemoryPersistenceTest(unittest.IsolatedAsyncioTestCase):
             self.store.save_manual_notes(self.user["id"], self.game["id"], "gu_linchuan", "illegal")
         await self.dm._call_agent(self.context())
         self.service.save_player_manual_notes(self.user["id"], self.game["id"], "v1")
-        other = self.store.register("other_user", "secret123")["user"]
+        other = self.store.register(**new_test_account('other_user'))["user"]
         with self.assertRaises(KeyError):
             self.store.list_agent_attempts(other["id"], self.game["id"])
         self.service.delete_game(self.user["id"], self.game["id"])
@@ -210,7 +212,7 @@ class LegacyNoteMigrationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "test.db"
             store = AppStore(path)
-            user = store.register("legacy_user", "secret123")["user"]
+            user = store.register(**new_test_account('legacy_user'))["user"]
             script = build_engine().script_loader.load("fog_harbor_clocktower")
             game = store.create_game(user["id"], script, "mystery", "deduction", "shen_zhiwei")
             with store._connect() as connection:

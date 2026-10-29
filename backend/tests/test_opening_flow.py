@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import asyncio
 import json
 import os
@@ -242,7 +244,7 @@ class OpeningNotebookAPITest(TestCase):
             with patch("llm.openai_compatible.OpenAICompatibleLLM._request", new=paid_request):
                 with TestClient(create_app(Path(directory) / "test.db", allow_legacy_token_response=True)) as client:
                     auth = client.post(
-                        "/api/auth/register", json={"username": "opening_notebook", "password": "secret12"}
+                        "/api/auth/register", json=new_test_account('opening_notebook')
                     ).json()
                     headers = {"Authorization": f"Bearer {auth['token']}"}
                     script = build_engine().script_loader.load("fog_harbor_clocktower")

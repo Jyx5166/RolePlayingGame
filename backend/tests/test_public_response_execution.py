@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.tests.account_fixtures import new_test_account
+
 import json
 import tempfile
 import unittest
@@ -42,7 +44,7 @@ class PublicResponseExecutionTest(unittest.IsolatedAsyncioTestCase):
         self.app = create_app(Path(self.temp.name) / "public-response.db")
         self.store = self.app.state.store
         self.service = self.app.state.game_service
-        self.user_id = self.store.register("public_response_owner", "secret12")["user"]["id"]
+        self.user_id = self.store.register(**new_test_account('public_response_owner'))["user"]["id"]
         self.script = json.loads((ROOT / "backend/resources/scripts/fog_harbor_clocktower.json").read_text(encoding="utf-8"))
         await self.start_game()
 

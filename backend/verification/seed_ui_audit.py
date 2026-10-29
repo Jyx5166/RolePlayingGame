@@ -25,14 +25,16 @@ async def main() -> None:
     target.mkdir(parents=True, exist_ok=True)
     os.environ['AI_MURDER_MYSTERY_DATA_DIR'] = str(target)
     os.environ['LLM_PROVIDER'] = 'echo'
+    sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(ROOT / 'backend' / 'app'))
+    from backend.verification.accounts import verification_session
     from main import create_app
     from workflow import GameWorkflow
     from script_catalog import ScriptCatalog
 
     app = create_app(target / 'app.db')
     service, store = app.state.game_service, app.state.store
-    session = store.login('ui_audit_preview', 'UiAudit20261013') if args.append_vote else store.register('ui_audit_preview', 'UiAudit20261013')
+    session = verification_session(store, target, prefix='ui_audit', require_existing=args.append_vote)
     user_id = session['user']['id']
     script = json.loads((ROOT / 'backend/resources/scripts/fog_harbor_clocktower.json').read_text(encoding='utf-8'))
     for flow in script['stage_flow'].values():
